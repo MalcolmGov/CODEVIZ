@@ -1,0 +1,838 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Enterprise Security Platform - Understand Your Code in Seconds</title>
+    <meta name="description" content="The all-in-one platform for codebase analysis, visualization, and security. Scan any repository and get instant insights about architecture, code quality, and vulnerabilities.">
+    <meta name="keywords" content="code analysis, codebase visualization, security scanning, code quality, architecture analysis">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+            background: #ffffff;
+            color: #1f2937;
+            line-height: 1.6;
+        }
+        
+        /* Navigation */
+        nav {
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid #e5e7eb;
+            padding: 0 20px;
+        }
+        
+        .nav-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            height: 70px;
+        }
+        
+        .logo {
+            font-size: 24px;
+            font-weight: 800;
+            background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            letter-spacing: -1px;
+        }
+        
+        .nav-links {
+            display: flex;
+            gap: 40px;
+            list-style: none;
+        }
+        
+        .nav-links a {
+            color: #6b7280;
+            text-decoration: none;
+            font-weight: 500;
+            transition: color 0.3s;
+        }
+        
+        .nav-links a:hover {
+            color: #3b82f6;
+        }
+        
+        .nav-cta {
+            background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
+            color: white;
+            padding: 10px 24px;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: 600;
+            transition: all 0.3s;
+            box-shadow: 0 4px 15px rgba(59, 130, 246, 0.3);
+        }
+        
+        .nav-cta:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 25px rgba(59, 130, 246, 0.4);
+        }
+        
+        /* Hero Section */
+        .hero {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 100px 20px;
+            text-align: center;
+        }
+        
+        .hero h1 {
+            font-size: 64px;
+            font-weight: 900;
+            line-height: 1.1;
+            margin-bottom: 20px;
+            color: #000;
+        }
+        
+        .hero .gradient-text {
+            background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        
+        .hero p {
+            font-size: 22px;
+            color: #6b7280;
+            margin-bottom: 40px;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        
+        .hero-cta {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            margin-bottom: 60px;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+            color: white;
+            padding: 14px 40px;
+            border-radius: 10px;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 16px;
+            border: none;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 10px 25px rgba(59, 130, 246, 0.3);
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 15px 40px rgba(59, 130, 246, 0.5);
+        }
+        
+        .btn-secondary {
+            background: transparent;
+            color: #3b82f6;
+            padding: 14px 40px;
+            border-radius: 10px;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 16px;
+            border: 2px solid #3b82f6;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .btn-secondary:hover {
+            background: rgba(59, 130, 246, 0.1);
+            transform: translateY(-4px);
+        }
+        
+        .hero-image {
+            max-width: 800px;
+            height: 400px;
+            background: linear-gradient(135deg, #f0f4ff 0%, #f3e8ff 100%);
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 80px;
+            margin: 0 auto;
+            border: 2px solid #e0e7ff;
+            box-shadow: 0 20px 60px rgba(59, 130, 246, 0.1);
+            animation: float 3s ease-in-out infinite;
+        }
+        
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-20px); }
+        }
+        
+        /* Value Props */
+        .value-props {
+            background: #f9fafb;
+            padding: 80px 20px;
+        }
+        
+        .value-container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        .section-title {
+            font-size: 44px;
+            font-weight: 900;
+            text-align: center;
+            margin-bottom: 60px;
+            color: #000;
+        }
+        
+        .props-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 40px;
+        }
+        
+        .prop-card {
+            background: white;
+            padding: 40px;
+            border-radius: 16px;
+            border: 1px solid #e5e7eb;
+            transition: all 0.3s;
+        }
+        
+        .prop-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 50px rgba(59, 130, 246, 0.1);
+            border-color: #3b82f6;
+        }
+        
+        .prop-icon {
+            font-size: 48px;
+            margin-bottom: 20px;
+            display: block;
+        }
+        
+        .prop-card h3 {
+            font-size: 20px;
+            margin-bottom: 10px;
+            color: #000;
+        }
+        
+        .prop-card p {
+            color: #6b7280;
+            line-height: 1.8;
+        }
+        
+        /* Problem/Solution */
+        .problem-solution {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 80px 20px;
+        }
+        
+        .comparison {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 40px;
+            margin-top: 40px;
+        }
+        
+        .comparison-col {
+            padding: 40px;
+            border-radius: 16px;
+            border: 2px solid #e5e7eb;
+        }
+        
+        .comparison-col.before {
+            background: #fef2f2;
+            border-color: #fecaca;
+        }
+        
+        .comparison-col.after {
+            background: #f0fdf4;
+            border-color: #86efac;
+        }
+        
+        .comparison-col h4 {
+            font-size: 24px;
+            margin-bottom: 25px;
+        }
+        
+        .comparison-col ul {
+            list-style: none;
+        }
+        
+        .comparison-col li {
+            padding: 10px 0;
+            color: #6b7280;
+        }
+        
+        .comparison-col.before li:before {
+            content: "✗ ";
+            color: #dc2626;
+            font-weight: bold;
+            margin-right: 10px;
+        }
+        
+        .comparison-col.after li:before {
+            content: "✓ ";
+            color: #16a34a;
+            font-weight: bold;
+            margin-right: 10px;
+        }
+        
+        /* Stats */
+        .stats {
+            background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
+            color: white;
+            padding: 80px 20px;
+        }
+        
+        .stats-container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        .stats-title {
+            font-size: 44px;
+            font-weight: 900;
+            text-align: center;
+            margin-bottom: 60px;
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 40px;
+        }
+        
+        .stat {
+            text-align: center;
+        }
+        
+        .stat-number {
+            font-size: 56px;
+            font-weight: 900;
+            display: block;
+            margin-bottom: 10px;
+        }
+        
+        .stat-label {
+            font-size: 16px;
+            opacity: 0.9;
+        }
+        
+        /* Features Grid */
+        .features-section {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 80px 20px;
+        }
+        
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 30px;
+            margin-top: 40px;
+        }
+        
+        .feature-item {
+            padding: 30px;
+            background: #f9fafb;
+            border-radius: 12px;
+            border: 1px solid #e5e7eb;
+        }
+        
+        .feature-item h4 {
+            font-size: 18px;
+            margin-bottom: 10px;
+            color: #000;
+        }
+        
+        .feature-item p {
+            color: #6b7280;
+            font-size: 14px;
+        }
+        
+        /* Testimonials */
+        .testimonials {
+            background: #f9fafb;
+            padding: 80px 20px;
+        }
+        
+        .testimonials-container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        .testimonials-title {
+            font-size: 44px;
+            font-weight: 900;
+            text-align: center;
+            margin-bottom: 60px;
+        }
+        
+        .testimonials-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 30px;
+        }
+        
+        .testimonial {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            border: 1px solid #e5e7eb;
+        }
+        
+        .testimonial-text {
+            color: #6b7280;
+            margin-bottom: 20px;
+            font-style: italic;
+        }
+        
+        .testimonial-author {
+            font-weight: 600;
+            color: #000;
+        }
+        
+        .testimonial-title {
+            font-size: 14px;
+            color: #9ca3af;
+        }
+        
+        /* Pricing */
+        .pricing {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 80px 20px;
+        }
+        
+        .pricing-title {
+            font-size: 44px;
+            font-weight: 900;
+            text-align: center;
+            margin-bottom: 60px;
+        }
+        
+        .pricing-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 30px;
+        }
+        
+        .pricing-card {
+            background: #f9fafb;
+            padding: 40px;
+            border-radius: 16px;
+            border: 2px solid #e5e7eb;
+            text-align: center;
+            transition: all 0.3s;
+        }
+        
+        .pricing-card:hover {
+            transform: translateY(-5px);
+            border-color: #3b82f6;
+            box-shadow: 0 20px 50px rgba(59, 130, 246, 0.1);
+        }
+        
+        .pricing-card.featured {
+            background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
+            color: white;
+            border-color: #3b82f6;
+            transform: scale(1.05);
+        }
+        
+        .pricing-name {
+            font-size: 24px;
+            font-weight: 700;
+            margin-bottom: 15px;
+        }
+        
+        .pricing-price {
+            font-size: 48px;
+            font-weight: 900;
+            margin-bottom: 10px;
+        }
+        
+        .pricing-period {
+            opacity: 0.8;
+            margin-bottom: 30px;
+        }
+        
+        .pricing-list {
+            list-style: none;
+            text-align: left;
+            margin-bottom: 30px;
+        }
+        
+        .pricing-list li {
+            padding: 10px 0;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+        }
+        
+        .pricing-card.featured .pricing-list li {
+            border-bottom-color: rgba(255, 255, 255, 0.2);
+        }
+        
+        .pricing-list li:before {
+            content: "✓ ";
+            font-weight: bold;
+            margin-right: 10px;
+        }
+        
+        .pricing-cta {
+            width: 100%;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .pricing-card:not(.featured) .pricing-cta {
+            background: #3b82f6;
+            color: white;
+        }
+        
+        .pricing-card.featured .pricing-cta {
+            background: white;
+            color: #3b82f6;
+        }
+        
+        /* CTA Banner */
+        .final-cta {
+            background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
+            color: white;
+            padding: 80px 20px;
+            text-align: center;
+        }
+        
+        .final-cta h2 {
+            font-size: 44px;
+            font-weight: 900;
+            margin-bottom: 20px;
+        }
+        
+        .final-cta p {
+            font-size: 20px;
+            margin-bottom: 40px;
+            opacity: 0.95;
+        }
+        
+        /* Footer */
+        footer {
+            background: #1f2937;
+            color: white;
+            padding: 40px 20px;
+            text-align: center;
+        }
+        
+        footer p {
+            opacity: 0.8;
+        }
+        
+        /* Responsive */
+        @media (max-width: 768px) {
+            .hero h1 { font-size: 40px; }
+            .hero p { font-size: 18px; }
+            .section-title { font-size: 32px; }
+            .nav-links { display: none; }
+            .comparison { grid-template-columns: 1fr; }
+            .pricing-card.featured { transform: scale(1); }
+            .hero-cta { flex-direction: column; }
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav>
+        <div class="nav-container">
+            <div class="logo">🔍 CodeViz</div>
+            <ul class="nav-links">
+                <li><a href="#features">Features</a></li>
+                <li><a href="#pricing">Pricing</a></li>
+                <li><a href="#stats">Stats</a></li>
+            </ul>
+            <a href="/chat" class="nav-cta">Get Started Free →</a>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="hero">
+        <h1>Understand Your Code <span class="gradient-text">in Seconds</span></h1>
+        <p>The all-in-one platform for codebase analysis, visualization, and security. No setup. No configuration. Just insights.</p>
+        <div class="hero-cta">
+            <a href="/chat" class="btn-primary">Start Scanning Now</a>
+            <a href="#features" class="btn-secondary">Learn More</a>
+        </div>
+        <div class="hero-image">🕸️📊🔐</div>
+    </section>
+
+    <!-- Value Propositions -->
+    <section class="value-props">
+        <div class="value-container">
+            <h2 class="section-title">Why Engineers Love CodeViz</h2>
+            
+            <div class="props-grid">
+                <div class="prop-card">
+                    <span class="prop-icon">⚡</span>
+                    <h3>See Everything Instantly</h3>
+                    <p>Scan any repository and instantly see all APIs, classes, functions, models, and more. No manual mapping required.</p>
+                </div>
+                
+                <div class="prop-card">
+                    <span class="prop-icon">🎨</span>
+                    <h3>Beautiful Visualizations</h3>
+                    <p>Interactive graphs show how your code connects. Drag, click, filter—understand relationships at a glance.</p>
+                </div>
+                
+                <div class="prop-card">
+                    <span class="prop-icon">🔐</span>
+                    <h3>Security Built-In</h3>
+                    <p>Detect vulnerable dependencies, find security anti-patterns, and get a security score for your codebase.</p>
+                </div>
+                
+                <div class="prop-card">
+                    <span class="prop-icon">📊</span>
+                    <h3>Measure What Matters</h3>
+                    <p>Code complexity, test coverage, maintainability, quality—all in beautiful cards with actionable insights.</p>
+                </div>
+                
+                <div class="prop-card">
+                    <span class="prop-icon">🚀</span>
+                    <h3>Zero Setup Required</h3>
+                    <p>No installation, no configuration. Point to your repo—local or GitHub—and start scanning immediately.</p>
+                </div>
+                
+                <div class="prop-card">
+                    <span class="prop-icon">🧪</span>
+                    <h3>Test All APIs Instantly</h3>
+                    <p>Discover every endpoint, test them all at once, view response times. All from one place.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Problem/Solution -->
+    <section class="problem-solution">
+        <h2 class="section-title">The Problem You're Solving</h2>
+        
+        <div class="comparison">
+            <div class="comparison-col before">
+                <h4>❌ Before CodeViz</h4>
+                <ul>
+                    <li>Manually documenting code structure</li>
+                    <li>Using 5+ different tools</li>
+                    <li>Switching between platforms</li>
+                    <li>Missing security vulnerabilities</li>
+                    <li>No visual understanding</li>
+                    <li>Hours of analysis</li>
+                    <li>Onboarding takes weeks</li>
+                    <li>Guessing about code quality</li>
+                </ul>
+            </div>
+            
+            <div class="comparison-col after">
+                <h4>✓ With CodeViz</h4>
+                <ul>
+                    <li>Automatic artifact discovery</li>
+                    <li>Everything in one platform</li>
+                    <li>Unified interface</li>
+                    <li>Vulnerability detection</li>
+                    <li>Interactive graph visualization</li>
+                    <li>5-30 second analysis</li>
+                    <li>New team members self-onboard</li>
+                    <li>Measurable code metrics</li>
+                </ul>
+            </div>
+        </div>
+    </section>
+
+    <!-- Stats -->
+    <section class="stats">
+        <div class="stats-container">
+            <h2 class="stats-title">The Numbers</h2>
+            
+            <div class="stats-grid">
+                <div class="stat">
+                    <span class="stat-number">16</span>
+                    <span class="stat-label">Interactive Tabs</span>
+                </div>
+                <div class="stat">
+                    <span class="stat-number">10</span>
+                    <span class="stat-label">Artifact Types</span>
+                </div>
+                <div class="stat">
+                    <span class="stat-number">5-30s</span>
+                    <span class="stat-label">Analysis Time</span>
+                </div>
+                <div class="stat">
+                    <span class="stat-number">15+</span>
+                    <span class="stat-label">Languages</span>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features -->
+    <section class="features-section" id="features">
+        <h2 class="section-title">16 Powerful Tabs</h2>
+        
+        <div class="features-grid">
+            <div class="feature-item">
+                <h4>🔌 APIs</h4>
+                <p>All REST endpoints with methods, paths, and parameters</p>
+            </div>
+            <div class="feature-item">
+                <h4>📦 Classes</h4>
+                <p>Class definitions, inheritance chains, and relationships</p>
+            </div>
+            <div class="feature-item">
+                <h4>⚙️ Functions</h4>
+                <p>Every method and function in your codebase</p>
+            </div>
+            <div class="feature-item">
+                <h4>🔗 Middleware</h4>
+                <p>Interceptors, decorators, and middleware chain</p>
+            </div>
+            <div class="feature-item">
+                <h4>⚠️ Errors</h4>
+                <p>Error handlers organized by HTTP status</p>
+            </div>
+            <div class="feature-item">
+                <h4>🗄️ Models</h4>
+                <p>Database models and ORM definitions</p>
+            </div>
+            <div class="feature-item">
+                <h4>🔷 Interfaces</h4>
+                <p>Type definitions and contracts</p>
+            </div>
+            <div class="feature-item">
+                <h4>📋 Enums</h4>
+                <p>Enumeration definitions</p>
+            </div>
+            <div class="feature-item">
+                <h4>🔢 Constants</h4>
+                <p>Global constants and configuration</p>
+            </div>
+            <div class="feature-item">
+                <h4>🛠️ Tech Stack</h4>
+                <p>Languages, frameworks, databases detected</p>
+            </div>
+            <div class="feature-item">
+                <h4>🕸️ Graph</h4>
+                <p>Interactive visualization of code relationships</p>
+            </div>
+            <div class="feature-item">
+                <h4>📊 Metrics</h4>
+                <p>Code quality, complexity, security scores</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Testimonials -->
+    <section class="testimonials">
+        <div class="testimonials-container">
+            <h2 class="testimonials-title">What Engineers Say</h2>
+            
+            <div class="testimonials-grid">
+                <div class="testimonial">
+                    <div class="testimonial-text">
+                        "Finally, a tool that shows me the whole picture. Took 5 minutes to understand our entire architecture."
+                    </div>
+                    <div class="testimonial-author">Sarah Chen</div>
+                    <div class="testimonial-title">Tech Lead, TechCorp</div>
+                </div>
+                
+                <div class="testimonial">
+                    <div class="testimonial-text">
+                        "Found 3 security vulnerabilities in minutes. This paid for itself instantly. Absolutely essential."
+                    </div>
+                    <div class="testimonial-author">Marcus Rodriguez</div>
+                    <div class="testimonial-title">Security Engineer, SecureCloud</div>
+                </div>
+                
+                <div class="testimonial">
+                    <div class="testimonial-text">
+                        "Onboarding new team members is so much faster now. They can explore the codebase themselves."
+                    </div>
+                    <div class="testimonial-author">Lisa Park</div>
+                    <div class="testimonial-title">Engineering Manager, StartupXYZ</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Pricing -->
+    <section class="pricing" id="pricing">
+        <h2 class="pricing-title">Simple, Transparent Pricing</h2>
+        
+        <div class="pricing-grid">
+            <div class="pricing-card">
+                <div class="pricing-name">Starter</div>
+                <div class="pricing-price">$0</div>
+                <div class="pricing-period">Forever Free</div>
+                <ul class="pricing-list">
+                    <li>Up to 3 scans/month</li>
+                    <li>16 interactive tabs</li>
+                    <li>Graph visualization</li>
+                    <li>Metrics & security scanning</li>
+                    <li>Community support</li>
+                </ul>
+                <button class="pricing-cta">Get Started</button>
+            </div>
+            
+            <div class="pricing-card featured">
+                <div class="pricing-name">Professional</div>
+                <div class="pricing-price">$49</div>
+                <div class="pricing-period">per month</div>
+                <ul class="pricing-list">
+                    <li>Unlimited scans</li>
+                    <li>All Starter features</li>
+                    <li>API testing</li>
+                    <li>Priority support</li>
+                    <li>Export capabilities</li>
+                    <li>Team collaboration</li>
+                </ul>
+                <button class="pricing-cta">Start Free Trial</button>
+            </div>
+            
+            <div class="pricing-card">
+                <div class="pricing-name">Enterprise</div>
+                <div class="pricing-price">Custom</div>
+                <div class="pricing-period">per year</div>
+                <ul class="pricing-list">
+                    <li>Everything in Pro</li>
+                    <li>Self-hosted option</li>
+                    <li>Custom integrations</li>
+                    <li>Dedicated support</li>
+                    <li>SLA guarantee</li>
+                    <li>Advanced security</li>
+                </ul>
+                <button class="pricing-cta">Contact Sales</button>
+            </div>
+        </div>
+    </section>
+
+    <!-- Final CTA -->
+    <section class="final-cta">
+        <h2>Ready to Understand Your Codebase?</h2>
+        <p>Join hundreds of engineers who've simplified their development workflow.</p>
+        <a href="/chat" class="btn-primary">Start Scanning Now — It's Free</a>
+    </section>
+
+    <!-- Footer -->
+    <footer>
+        <p>&copy; 2026 CodeViz. The enterprise platform for code understanding.</p>
+    </footer>
+
+</body>
+</html>

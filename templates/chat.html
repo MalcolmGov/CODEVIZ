@@ -1,0 +1,1785 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Enterprise Security Platform - Analyze codebases, visualize artifacts, measure quality">
+    <meta name="theme-color" content="#0f172a">
+    <title>Enterprise Security Platform - Codebase Analysis</title>
+    <!-- Preload critical resources -->
+    <link rel="preconnect" href="https://cdnjs.cloudflare.com">
+    <link rel="dns-prefetch" href="https://cdnjs.cloudflare.com">
+    <!-- vis.js for network visualization -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/vis/4.21.0/vis.min.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/vis/4.21.0/vis.min.css" rel="stylesheet" type="text/css" />
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html { scroll-behavior: smooth; }
+        body { 
+            font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif; 
+            background: #f5f5f5; 
+            padding: 20px;
+            transition: background 0.3s ease;
+        }
+        
+        /* Performance optimizations */
+        @media (prefers-reduced-motion: reduce) {
+            * { animation: none !important; transition: none !important; }
+        }
+        
+        /* Smooth transitions */
+        body.dark-mode { background: #1a1a1a; color: #e0e0e0; }
+        body.dark-mode .container { background: #2a2a2a; }
+        .container { max-width: 1200px; margin: 0 auto; }
+        .header { background: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; box-shadow: 0 2px 10px rgba(0,0,0,0.08); }
+        .header h1 { color: #1e293b; margin-bottom: 10px; }
+        .header p { color: #666; font-size: 14px; }
+        .input-section { background: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; box-shadow: 0 2px 10px rgba(0,0,0,0.08); display: flex; gap: 10px; }
+        .input-section input { flex: 1; padding: 12px; border: 1px solid #e5e7eb; border-radius: 6px; font-size: 14px; }
+        .btn { 
+            padding: 12px 24px; 
+            border: none; 
+            border-radius: 8px; 
+            font-size: 14px; 
+            font-weight: 600; 
+            cursor: pointer; 
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .btn-primary { 
+            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+            color: white;
+            box-shadow: 0 4px 15px rgba(59, 130, 246, 0.3);
+        }
+        .btn-primary:hover { 
+            background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(59, 130, 246, 0.4);
+        }
+        .btn-primary:active {
+            transform: translateY(0);
+        }
+        .btn-primary:disabled { 
+            background: #9ca3af; 
+            cursor: not-allowed;
+            box-shadow: none;
+        }
+        .btn-test { background: #8b5cf6; color: white; padding: 6px 12px; font-size: 12px; white-space: nowrap; }
+        .btn-test:hover { background: #7c3aed; }
+        .scan-container { display: none; }
+        .scan-container.active { display: block; }
+        .scan-progress { background: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; box-shadow: 0 2px 10px rgba(0,0,0,0.08); }
+        .progress-item { margin-bottom: 15px; padding: 12px; background: #f9fafb; border-radius: 6px; border-left: 3px solid #e5e7eb; }
+        .progress-item.done { background: #f0fdf4; border-left-color: #10b981; }
+        .progress-item-title { font-weight: 600; color: #1e293b; margin-bottom: 4px; }
+        .progress-item-detail { font-size: 13px; color: #666; }
+        .scan-stats { background: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; box-shadow: 0 2px 10px rgba(0,0,0,0.08); display: none; }
+        .scan-stats.active { display: block; }
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px; }
+        .stat-card { background: #f9fafb; padding: 15px; border-radius: 6px; text-align: center; border: 1px solid #e5e7eb; }
+        .stat-value { font-size: 28px; font-weight: 700; color: #3b82f6; }
+        .stat-label { font-size: 12px; color: #666; text-transform: uppercase; margin-top: 4px; }
+        .artifacts-section { background: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; box-shadow: 0 2px 10px rgba(0,0,0,0.08); display: none; }
+        .artifacts-section.active { display: block; }
+        .artifacts-section h3 { color: #1e293b; margin-bottom: 15px; font-size: 16px; }
+        .artifact-list { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 15px; }
+        .artifact-card { 
+            background: #f9fafb; 
+            padding: 12px; 
+            border-radius: 8px; 
+            border-left: 3px solid #8b5cf6; 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: flex-start; 
+            gap: 10px;
+            animation: fadeIn 0.3s ease-out;
+            transition: all 0.3s ease;
+        }
+        .artifact-card:hover {
+            transform: translateX(4px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .artifact-content { flex: 1; }
+        .artifact-title { font-weight: 600; color: #1e293b; font-size: 13px; margin-bottom: 4px; }
+        .artifact-detail { font-size: 12px; color: #666; }
+        .tabs { 
+            display: flex; 
+            gap: 10px; 
+            margin-bottom: 15px; 
+            border-bottom: 2px solid #e5e7eb; 
+            flex-wrap: wrap;
+            animation: slideDown 0.4s ease-out;
+        }
+        @keyframes slideDown {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .tab { 
+            padding: 10px 14px; 
+            background: none; 
+            border: none; 
+            cursor: pointer; 
+            color: #666; 
+            font-weight: 600; 
+            border-bottom: 2px solid transparent; 
+            margin-bottom: -2px; 
+            font-size: 13px; 
+            white-space: nowrap;
+            transition: all 0.3s ease;
+        }
+        .tab:hover {
+            color: #3b82f6;
+            transform: translateY(-2px);
+        }
+        .tab.active { 
+            color: #3b82f6; 
+            border-bottom-color: #3b82f6;
+            box-shadow: 0 2px 8px rgba(59, 130, 246, 0.2);
+        }
+        .artifacts-content { display: none; }
+        .artifacts-content.active { display: block; }
+        .test-results { display: none; background: #f9fafb; padding: 15px; border-radius: 6px; margin-bottom: 15px; border-left: 3px solid #10b981; }
+        .test-results.active { display: block; }
+        .chat-section { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.08); display: none; }
+        .chat-section.active { display: block; }
+        .chat-header { font-size: 16px; font-weight: 700; color: #1e293b; margin-bottom: 15px; }
+        .chat-messages { height: 400px; overflow-y: auto; margin-bottom: 15px; padding: 15px; background: #f9fafb; border-radius: 6px; border: 1px solid #e5e7eb; }
+        .message { margin-bottom: 12px; display: flex; flex-direction: column; }
+        .message.user { align-items: flex-end; }
+        .message-content { max-width: 70%; padding: 10px 12px; border-radius: 6px; font-size: 13px; line-height: 1.5; }
+        .message.user .message-content { background: #3b82f6; color: white; }
+        .message.bot .message-content { background: #e5e7eb; color: #1e293b; }
+        .chat-input-area { display: flex; gap: 10px; }
+        .chat-input-area input { flex: 1; padding: 12px; border: 1px solid #e5e7eb; border-radius: 6px; font-size: 14px; }
+        /* Graph visualization styles */
+        #graphContainer { position: relative; }
+        .graph-info-panel { position: absolute; top: 10px; left: 10px; background: rgba(255, 255, 255, 0.95); padding: 12px 16px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1); max-width: 300px; z-index: 100; font-size: 12px; color: #1e293b; }
+        .graph-info-panel h4 { margin: 0 0 8px 0; font-size: 13px; font-weight: 600; color: #0f172a; }
+        .graph-controls { position: absolute; bottom: 10px; left: 10px; display: flex; gap: 8px; z-index: 100; }
+        .graph-btn { padding: 6px 12px; background: #3b82f6; color: white; border: none; border-radius: 6px; font-size: 11px; cursor: pointer; transition: background 0.2s; }
+        .graph-btn:hover { background: #2563eb; }
+        .graph-legend { position: absolute; bottom: 10px; right: 10px; background: rgba(255, 255, 255, 0.95); padding: 12px 16px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1); font-size: 11px; z-index: 100; }
+        .legend-item { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+        .legend-color { width: 12px; height: 12px; border-radius: 50%; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🔍 Repository Scanner & Chat</h1>
+            <p>Scan your codebase, view all artifacts, then ask AI questions about it</p>
+        </div>
+
+        <div class="input-section">
+            <input type="text" id="repoPath" placeholder="Repository path (e.g., /app/src, https://github.com/user/repo)" value="/app">
+            <button class="btn btn-primary" onclick="startScan()" id="scanBtn">🚀 Scan Repository</button>
+        </div>
+
+        <div class="scan-container" id="scanContainer">
+            <div class="scan-progress">
+                <div class="progress-item" id="progress-structure">
+                    <div class="progress-item-title">📁 Scanning Directory Structure</div>
+                    <div class="progress-item-detail">Analyzing folders and files...</div>
+                </div>
+                <div class="progress-item" id="progress-apis">
+                    <div class="progress-item-title">🔌 Extracting APIs & Routes</div>
+                    <div class="progress-item-detail">Looking for endpoints...</div>
+                </div>
+                <div class="progress-item" id="progress-functions">
+                    <div class="progress-item-title">⚙️ Finding Functions</div>
+                    <div class="progress-item-detail">Parsing function definitions...</div>
+                </div>
+                <div class="progress-item" id="progress-dependencies">
+                    <div class="progress-item-title">📦 Extracting Dependencies</div>
+                    <div class="progress-item-detail">Checking requirements.txt, package.json...</div>
+                </div>
+                <div class="progress-item" id="progress-files">
+                    <div class="progress-item-title">📄 Reading Key Files</div>
+                    <div class="progress-item-detail">Loading main files...</div>
+                </div>
+            </div>
+
+            <div class="scan-stats" id="scanStats">
+                <h3>📊 Repository Statistics</h3>
+                <div class="stats-grid" id="statsGrid"></div>
+            </div>
+
+            <div class="artifacts-section" id="artifactsSection">
+                <h3>📦 Discovered Artifacts</h3>
+                <div class="tabs">
+                    <button class="tab active" onclick="showTab('apis')">🔌 APIs</button>
+                    <button class="tab" onclick="showTab('classes')">📦 Classes</button>
+                    <button class="tab" onclick="showTab('functions')">⚙️ Functions</button>
+                    <button class="tab" onclick="showTab('middleware')">🔗 Middleware</button>
+                    <button class="tab" onclick="showTab('errorhandlers')">⚠️ Errors</button>
+                    <button class="tab" onclick="showTab('models')">🗄️ Models</button>
+                    <button class="tab" onclick="showTab('interfaces')">🔷 Interfaces</button>
+                    <button class="tab" onclick="showTab('enums')">📋 Enums</button>
+                    <button class="tab" onclick="showTab('constants')">🔢 Constants</button>
+                    <button class="tab" onclick="showTab('dependencies')">📦 Deps</button>
+                    <button class="tab" onclick="showTab('techstack')">🛠️ Stack</button>
+                    <button class="tab" onclick="showTab('architecture')">🏛️ Arch</button>
+                    <button class="tab" onclick="showTab('uxarch')">🎨 UX</button>
+                    <button class="tab" onclick="showTab('graphview')">🕸️ Graph</button>
+                    <button class="tab" onclick="showTab('metrics')">📊 Metrics</button>
+                    <button class="tab" onclick="showTab('dependencies')">🔗 Dependencies</button>
+                </div>
+                
+                <div class="artifacts-content active" id="apis">
+                    <div style="margin-bottom: 15px;">
+                        <button class="btn btn-primary" onclick="testAllAPIs()" id="testAllBtn">🧪 Test All APIs</button>
+                    </div>
+                    <div class="test-results" id="testResults">
+                        <div style="font-weight: 600; margin-bottom: 10px; display: flex; align-items: center; gap: 8px;">
+                            <span>🧪 API Test Results</span>
+                            <span id="testStatus" style="font-size: 12px; color: #666;"></span>
+                        </div>
+                        <div id="resultsContent"></div>
+                    </div>
+                    <div class="artifact-list" id="apisList"></div>
+                </div>
+
+                <div class="artifacts-content" id="classes">
+                    <div class="artifact-list" id="classesList"></div>
+                </div>
+
+                <div class="artifacts-content" id="functions">
+                    <div class="artifact-list" id="functionsList"></div>
+                </div>
+
+                <div class="artifacts-content" id="middleware">
+                    <div class="artifact-list" id="middlewareList"></div>
+                </div>
+
+                <div class="artifacts-content" id="errorhandlers">
+                    <div class="artifact-list" id="errorHandlersList"></div>
+                </div>
+
+                <div class="artifacts-content" id="models">
+                    <div class="artifact-list" id="modelsList"></div>
+                </div>
+
+                <div class="artifacts-content" id="interfaces">
+                    <div class="artifact-list" id="interfacesList"></div>
+                </div>
+
+                <div class="artifacts-content" id="enums">
+                    <div class="artifact-list" id="enumsList"></div>
+                </div>
+
+                <div class="artifacts-content" id="constants">
+                    <div class="artifact-list" id="constantsList"></div>
+                </div>
+
+                <div class="artifacts-content" id="dependencies">
+                    <div class="artifact-list" id="dependenciesList"></div>
+                </div>
+
+                <div class="artifacts-content" id="techstack">
+                    <div class="artifact-list" id="techstackList"></div>
+                </div>
+
+                <div class="artifacts-content" id="architecture">
+                    <div class="artifact-list" id="architectureList"></div>
+                </div>
+
+                <div class="artifacts-content" id="uxarch">
+                    <div class="artifact-list" id="uxarchList"></div>
+                </div>
+
+
+                <div class="artifacts-content" id="graphview">
+                    <div id="graphContainer" style="width: 100%; height: 600px; background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%); border-radius: 12px; overflow: hidden; position: relative;"></div>
+                </div>
+
+                <div class="artifacts-content" id="metrics">
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 20px;" id="metricsGrid"></div>
+                    <div style="background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.08);">
+                        <h3 style="margin-bottom: 15px; color: #1e293b;">📈 Code Quality Analysis</h3>
+                        <div id="qualityDetails" style="font-size: 14px; line-height: 1.8; color: #666;"></div>
+                    </div>
+                </div>
+
+                <div class="artifacts-content" id="dependencies">
+                    <div style="margin-bottom: 20px;">
+                        <div style="background: white; padding: 15px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.08); margin-bottom: 15px;">
+                            <h4 style="color: #1e293b; margin-bottom: 10px;">🚨 Security Warnings</h4>
+                            <div id="securityWarnings" style="font-size: 13px;"></div>
+                        </div>
+                    </div>
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 15px;">
+                        <div style="background: white; padding: 15px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.08);">
+                            <h4 style="color: #1e293b; margin-bottom: 10px;">📦 Production Dependencies</h4>
+                            <div id="prodDeps" style="font-size: 12px; max-height: 300px; overflow-y: auto;"></div>
+                        </div>
+                        <div style="background: white; padding: 15px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.08);">
+                            <h4 style="color: #1e293b; margin-bottom: 10px;">🛠️ Development Dependencies</h4>
+                            <div id="devDeps" style="font-size: 12px; max-height: 300px; overflow-y: auto;"></div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+            <div class="chat-section" id="chatSection">
+                <div class="chat-header">💬 Ask Questions About Your Code</div>
+                <div class="chat-messages" id="chatMessages"></div>
+                <div class="chat-input-area">
+                    <input type="text" id="chatInput" placeholder="Ask about the code..." onkeypress="if(event.key==='Enter') sendMessage()">
+                    <button class="btn btn-primary" onclick="sendMessage()">Send</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentSessionId = null;
+        let discoveredAPIs = [];
+
+        async function startScan() {
+            const repoPath = document.getElementById('repoPath').value.trim() || '/app/src';
+            const btn = document.getElementById('scanBtn');
+            
+            btn.disabled = true;
+            btn.textContent = '⏳ Creating session...';
+            
+            try {
+                console.log('Starting scan with repo:', repoPath);
+                
+                // Create session
+                let response = await fetch('/api/chat/session', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ repo_path: repoPath })
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`Session failed: ${response.status}`);
+                }
+                
+                let data = await response.json();
+                console.log('Session:', data);
+                
+                if (data.status !== 'success') throw new Error(data.message || 'Session failed');
+                currentSessionId = data.session_id;
+                
+                document.getElementById('scanContainer').classList.add('active');
+                btn.textContent = '🔍 Scanning...';
+                
+                response = await fetch(`/api/chat/scan/${currentSessionId}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+                
+                if (!response.ok) throw new Error(`Scan failed: ${response.status}`);
+                
+                data = await response.json();
+                console.log('Scan results:', data);
+                
+                if (data.status !== 'success') throw new Error(data.message || 'Scan failed');
+                
+                showScanResults(data);
+                btn.textContent = '✅ Scan Complete';
+                btn.disabled = false;
+            } catch (err) {
+                console.error('Error:', err);
+                alert('Error: ' + err.message);
+                btn.textContent = '🚀 Scan Repository';
+                btn.disabled = false;
+                document.getElementById('scanContainer').classList.remove('active');
+            }
+        }
+
+        function showScanResults(data) {
+            const stats = data.scan_status;
+            
+            ['structure', 'apis', 'functions', 'dependencies', 'files'].forEach(item => {
+                const elem = document.getElementById(`progress-${item}`);
+                if (elem) elem.classList.add('done');
+            });
+            
+            document.getElementById('scanStats').classList.add('active');
+            const statsGrid = document.getElementById('statsGrid');
+            statsGrid.innerHTML = `
+                <div class="stat-card"><div class="stat-value">${stats.files}</div><div class="stat-label">Files</div></div>
+                <div class="stat-card"><div class="stat-value">${stats.loc}</div><div class="stat-label">Lines of Code</div></div>
+                <div class="stat-card"><div class="stat-value">${stats.apis}</div><div class="stat-label">APIs</div></div>
+                <div class="stat-card"><div class="stat-value">${stats.functions}</div><div class="stat-label">Functions</div></div>
+                <div class="stat-card"><div class="stat-value">${stats.classes || 0}</div><div class="stat-label">Classes</div></div>
+            `;
+            
+            fetchArtifacts();
+            document.getElementById('artifactsSection').classList.add('active');
+            document.getElementById('chatSection').classList.add('active');
+            document.getElementById('chatMessages').innerHTML = '<div style="text-align: center; color: #999; padding: 20px;">💬 Ready! Ask me about the code...</div>';
+        }
+
+        async function fetchArtifacts() {
+            if (!currentSessionId) return;
+            try {
+                const response = await fetch(`/api/chat/artifacts/${currentSessionId}`);
+                const data = await response.json();
+                
+                if (data.status === 'success') {
+                    const artifacts = data.artifacts;
+                    
+                    displayAPIs(artifacts.apis);
+                    
+                    // Classes
+                    document.getElementById('classesList').innerHTML = (artifacts.classes || []).map(cls => `
+                        <div class="artifact-card">
+                            <div class="artifact-content">
+                                <div class="artifact-title">📦 class ${cls.name}</div>
+                                <div class="artifact-detail">Extends: ${cls.bases || cls.extends || 'Object'}</div>
+                                <div class="artifact-detail">${cls.file}</div>
+                            </div>
+                        </div>
+                    `).join('');
+                    
+                    // Functions
+                    document.getElementById('functionsList').innerHTML = (artifacts.functions || []).map(func => `
+                        <div class="artifact-card">
+                            <div class="artifact-content">
+                                <div class="artifact-title">⚙️ ${func.name}()</div>
+                                <div class="artifact-detail">${func.file}</div>
+                            </div>
+                        </div>
+                    `).join('');
+                    
+                    // Middleware
+                    document.getElementById('middlewareList').innerHTML = (artifacts.middleware || []).map(mid => `
+                        <div class="artifact-card">
+                            <div class="artifact-content">
+                                <div class="artifact-title">🔗 ${mid.name}</div>
+                                <div class="artifact-detail">${mid.file}</div>
+                            </div>
+                        </div>
+                    `).join('');
+                    
+                    // Error Handlers
+                    document.getElementById('errorHandlersList').innerHTML = (artifacts.error_handlers || []).map(err => `
+                        <div class="artifact-card">
+                            <div class="artifact-content">
+                                <div class="artifact-title">⚠️ HTTP ${err.error_code}</div>
+                                <div class="artifact-detail">${err.file}</div>
+                            </div>
+                        </div>
+                    `).join('');
+                    
+                    // Models
+                    document.getElementById('modelsList').innerHTML = (artifacts.models || []).map(model => `
+                        <div class="artifact-card">
+                            <div class="artifact-content">
+                                <div class="artifact-title">🗄️ ${model.name}</div>
+                                <div class="artifact-detail">${model.file}</div>
+                            </div>
+                        </div>
+                    `).join('');
+                    
+                    // Interfaces
+                    document.getElementById('interfacesList').innerHTML = (artifacts.interfaces || []).map(iface => `
+                        <div class="artifact-card">
+                            <div class="artifact-content">
+                                <div class="artifact-title">🔷 interface ${iface.name}</div>
+                                <div class="artifact-detail">${iface.file}</div>
+                            </div>
+                        </div>
+                    `).join('');
+                    
+                    // Enums
+                    document.getElementById('enumsList').innerHTML = (artifacts.enums || []).map(en => `
+                        <div class="artifact-card">
+                            <div class="artifact-content">
+                                <div class="artifact-title">📋 enum ${en.name}</div>
+                                <div class="artifact-detail">${en.file}</div>
+                            </div>
+                        </div>
+                    `).join('');
+                    
+                    // Constants
+                    document.getElementById('constantsList').innerHTML = (artifacts.constants || []).map(con => `
+                        <div class="artifact-card">
+                            <div class="artifact-content">
+                                <div class="artifact-title">🔢 ${con.name}</div>
+                                <div class="artifact-detail">= ${con.value}</div>
+                                <div class="artifact-detail">${con.file}</div>
+                            </div>
+                        </div>
+                    `).join('');
+                    
+                    // Dependencies
+                    document.getElementById('dependenciesList').innerHTML = (artifacts.dependencies || []).map(dep => `
+                        <div class="artifact-card">
+                            <div class="artifact-content">
+                                <div class="artifact-title">📦 ${dep.package}</div>
+                                <div class="artifact-detail">${dep.type}</div>
+                            </div>
+                        </div>
+                    `).join('');
+
+                    // Tech Stack - FIXED VERSION
+                    try {
+                        const ts = artifacts.tech_stack || {};
+                        console.log('=== TECH STACK DEBUG ===');
+                        console.log('Full ts object:', ts);
+                        console.log('languages:', ts.languages, 'length:', ts.languages?.length);
+                        console.log('frameworks:', ts.frameworks, 'length:', ts.frameworks?.length);
+                        console.log('databases:', ts.databases, 'length:', ts.databases?.length);
+                        console.log('ui_frameworks:', ts.ui_frameworks, 'length:', ts.ui_frameworks?.length);
+                        
+                        let tsHtml = '<div>';
+                        
+                        // Languages
+                        if (ts.languages && ts.languages.length > 0) {
+                            tsHtml += '<div style="margin-bottom: 15px;"><div style="font-weight: 600; margin-bottom: 8px;">💻 Languages</div>';
+                            tsHtml += ts.languages.map(l => `<div class="artifact-card"><div class="artifact-content"><div class="artifact-title">${typeof l === 'string' ? l : l.name}</div></div></div>`).join('');
+                            tsHtml += '</div>';
+                        }
+                        
+                        // Frameworks
+                        if (ts.frameworks && Array.isArray(ts.frameworks) && ts.frameworks.length > 0) {
+                            console.log('Adding frameworks:', ts.frameworks);
+                            tsHtml += '<div style="margin-bottom: 15px;"><div style="font-weight: 600; margin-bottom: 8px;">🔧 Frameworks</div>';
+                            tsHtml += ts.frameworks.map(f => `<div class="artifact-card"><div class="artifact-content"><div class="artifact-title">${f}</div></div></div>`).join('');
+                            tsHtml += '</div>';
+                        }
+                        
+                        // Databases
+                        if (ts.databases && Array.isArray(ts.databases) && ts.databases.length > 0) {
+                            console.log('Adding databases:', ts.databases);
+                            tsHtml += '<div style="margin-bottom: 15px;"><div style="font-weight: 600; margin-bottom: 8px;">🗄️ Databases</div>';
+                            tsHtml += ts.databases.map(d => `<div class="artifact-card"><div class="artifact-content"><div class="artifact-title">${d}</div></div></div>`).join('');
+                            tsHtml += '</div>';
+                        }
+                        
+                        // UI Frameworks
+                        if (ts.ui_frameworks && Array.isArray(ts.ui_frameworks) && ts.ui_frameworks.length > 0) {
+                            tsHtml += '<div style="margin-bottom: 15px;"><div style="font-weight: 600; margin-bottom: 8px;">🎨 UI Frameworks</div>';
+                            tsHtml += ts.ui_frameworks.map(u => `<div class="artifact-card"><div class="artifact-content"><div class="artifact-title">${u}</div></div></div>`).join('');
+                            tsHtml += '</div>';
+                        }
+                        
+                        tsHtml += '</div>';
+                        const elem = document.getElementById('techstackList');
+                        elem.innerHTML = tsHtml || '<div style="color:#999;">No tech stack detected</div>';
+                        console.log('Tech stack HTML set, content:', elem.innerHTML.substring(0, 200));
+                    } catch (e) {
+                        console.error('Tech Stack error:', e);
+                        document.getElementById('techstackList').innerHTML = '<div style="color:red;">Error rendering tech stack: ' + e.message + '</div>';
+                    }
+
+                    // Architecture
+                    const arch = artifacts.architecture || {};
+                    let archHtml = '';
+                    if (arch.layers && arch.layers.length > 0) {
+                        archHtml += '<div style="margin-bottom: 15px;"><div style="font-weight: 600; margin-bottom: 8px;">📐 Layers</div>';
+                        archHtml += arch.layers.map(l => `<div class="artifact-card"><div class="artifact-content"><div class="artifact-title">▸ ${l}</div></div></div>`).join('');
+                        archHtml += '</div>';
+                    }
+                    if (arch.patterns && arch.patterns.length > 0) {
+                        archHtml += '<div style="margin-bottom: 15px;"><div style="font-weight: 600; margin-bottom: 8px;">🎯 Patterns</div>';
+                        archHtml += arch.patterns.map(p => `<div class="artifact-card"><div class="artifact-content"><div class="artifact-title">▸ ${p}</div></div></div>`).join('');
+                        archHtml += '</div>';
+                    }
+                    if (arch.external_services && arch.external_services.length > 0) {
+                        archHtml += '<div style="margin-bottom: 15px;"><div style="font-weight: 600; margin-bottom: 8px;">🔗 External</div>';
+                        archHtml += arch.external_services.map(e => `<div class="artifact-card"><div class="artifact-content"><div class="artifact-title">▸ ${e}</div></div></div>`).join('');
+                        archHtml += '</div>';
+                    }
+                    document.getElementById('architectureList').innerHTML = archHtml || '<div style="color:#999;">No patterns detected</div>';
+
+                    // UX Architecture
+                    const ux = artifacts.ux_architecture || {};
+                    let uxHtml = '';
+                    if (ux.frontend_framework) {
+                        uxHtml += `<div style="margin-bottom: 15px;"><div style="font-weight: 600; margin-bottom: 8px;">🚀 Frontend</div><div class="artifact-card"><div class="artifact-content"><div class="artifact-title">${ux.frontend_framework}</div></div></div></div>`;
+                    }
+                    if (ux.styling && ux.styling.length > 0) {
+                        uxHtml += '<div style="margin-bottom: 15px;"><div style="font-weight: 600; margin-bottom: 8px;">🎨 Styling</div>';
+                        uxHtml += ux.styling.map(s => `<div class="artifact-card"><div class="artifact-content"><div class="artifact-title">▸ ${s}</div></div></div>`).join('');
+                        uxHtml += '</div>';
+                    }
+                    if (ux.state_management && ux.state_management.length > 0) {
+                        uxHtml += '<div style="margin-bottom: 15px;"><div style="font-weight: 600; margin-bottom: 8px;">🔄 State</div>';
+                        uxHtml += ux.state_management.map(s => `<div class="artifact-card"><div class="artifact-content"><div class="artifact-title">▸ ${s}</div></div></div>`).join('');
+                        uxHtml += '</div>';
+                    }
+                    if (ux.build_tools && ux.build_tools.length > 0) {
+                        uxHtml += '<div style="margin-bottom: 15px;"><div style="font-weight: 600; margin-bottom: 8px;">🔨 Tools</div>';
+                        uxHtml += ux.build_tools.map(t => `<div class="artifact-card"><div class="artifact-content"><div class="artifact-title">▸ ${t}</div></div></div>`).join('');
+                        uxHtml += '</div>';
+                    }
+                    document.getElementById('uxarchList').innerHTML = uxHtml || '<div style="color:#999;">No frontend config detected</div>';
+                    
+                    // Render graph view
+                    setTimeout(() => renderGraph(artifacts), 100);
+                    
+                    // Load metrics and dependencies
+                    loadMetrics(currentSessionId);
+                    loadDependenciesAnalysis(currentSessionId);
+                }
+            } catch (err) {
+                console.error('Fetch error:', err);
+            }
+        }
+        
+        async function loadMetrics(sessionId) {
+            try {
+                const response = await fetch(`/api/chat/metrics/${sessionId}`);
+                const data = await response.json();
+                
+                if (data.status === 'success') {
+                    const m = data.metrics;
+                    const grid = document.getElementById('metricsGrid');
+                    
+                    grid.innerHTML = `
+                        <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 20px; border-radius: 8px; color: white;">
+                            <div style="font-size: 12px; opacity: 0.8;">Complexity</div>
+                            <div style="font-size: 28px; font-weight: 700; margin-top: 8px;">${m.complexity}</div>
+                        </div>
+                        <div style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); padding: 20px; border-radius: 8px; color: white;">
+                            <div style="font-size: 12px; opacity: 0.8;">Test Coverage</div>
+                            <div style="font-size: 28px; font-weight: 700; margin-top: 8px;">${m.coverage}%</div>
+                        </div>
+                        <div style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); padding: 20px; border-radius: 8px; color: white;">
+                            <div style="font-size: 12px; opacity: 0.8;">Maintainability</div>
+                            <div style="font-size: 28px; font-weight: 700; margin-top: 8px;">${m.maintainability}</div>
+                        </div>
+                        <div style="background: linear-gradient(135deg, #fa709a 0%, #fee140 100%); padding: 20px; border-radius: 8px; color: white;">
+                            <div style="font-size: 12px; opacity: 0.8;">Security Score</div>
+                            <div style="font-size: 28px; font-weight: 700; margin-top: 8px;">${m.security_score}/100</div>
+                        </div>
+                        <div style="background: linear-gradient(135deg, #30cfd0 0%, #330867 100%); padding: 20px; border-radius: 8px; color: white;">
+                            <div style="font-size: 12px; opacity: 0.8;">Code Quality</div>
+                            <div style="font-size: 28px; font-weight: 700; margin-top: 8px;">${m.code_quality}%</div>
+                        </div>
+                    `;
+                    
+                    const details = document.getElementById('qualityDetails');
+                    details.innerHTML = `
+                        <div style="margin-bottom: 10px;">✓ <strong>Complexity:</strong> ${m.complexity} - ${getComplexityExplanation(m.complexity)}</div>
+                        <div style="margin-bottom: 10px;">✓ <strong>Coverage:</strong> ${m.coverage}% - ${getCoverageExplanation(m.coverage)}</div>
+                        <div style="margin-bottom: 10px;">✓ <strong>Maintainability:</strong> ${m.maintainability} - ${getMaintainabilityExplanation(m.maintainability)}</div>
+                        <div style="margin-bottom: 10px;">✓ <strong>Security:</strong> ${m.security_score}/100 - ${getSecurityExplanation(m.security_score)}</div>
+                        <div>✓ <strong>Overall Quality:</strong> ${m.code_quality}% - ${getQualityExplanation(m.code_quality)}</div>
+                    `;
+                }
+            } catch (err) {
+                console.error('Metrics error:', err);
+            }
+        }
+        
+        async function loadDependenciesAnalysis(sessionId) {
+            try {
+                const response = await fetch(`/api/chat/dependencies-analysis/${sessionId}`);
+                const data = await response.json();
+                
+                if (data.status === 'success') {
+                    const a = data.analysis;
+                    
+                    // Security warnings
+                    const warningsDiv = document.getElementById('securityWarnings');
+                    if (a.security_warnings.length > 0) {
+                        warningsDiv.innerHTML = a.security_warnings.map(w => `
+                            <div style="background: #fee; padding: 8px; border-radius: 4px; margin-bottom: 8px; border-left: 3px solid #f00;">
+                                <strong>${w.package}</strong><br/>
+                                <span style="color: #c00; font-size: 11px;">${w.issue}</span>
+                            </div>
+                        `).join('');
+                    } else {
+                        warningsDiv.innerHTML = '<div style="color: #10b981;">✅ No security warnings detected</div>';
+                    }
+                    
+                    // Production dependencies
+                    const prodDiv = document.getElementById('prodDeps');
+                    prodDiv.innerHTML = (a.dependency_tree.prod || []).map(dep => `
+                        <div style="padding: 6px; background: #f9fafb; border-radius: 4px; margin-bottom: 4px; border-left: 2px solid #3b82f6;">
+                            📦 ${dep}
+                        </div>
+                    `).join('') || '<span style="color: #999;">No production dependencies</span>';
+                    
+                    // Development dependencies
+                    const devDiv = document.getElementById('devDeps');
+                    devDiv.innerHTML = (a.dependency_tree.dev || []).map(dep => `
+                        <div style="padding: 6px; background: #f9fafb; border-radius: 4px; margin-bottom: 4px; border-left: 2px solid #8b5cf6;">
+                            🛠️ ${dep}
+                        </div>
+                    `).join('') || '<span style="color: #999;">No development dependencies</span>';
+                }
+            } catch (err) {
+                console.error('Dependencies error:', err);
+            }
+        }
+        
+        // Helper explanation functions
+        function getComplexityExplanation(level) {
+            const explain = { 'Low': 'Code is simple and easy to understand', 'Medium': 'Moderate complexity, review if functions have too many params', 'High': 'Consider refactoring complex functions' };
+            return explain[level] || '';
+        }
+        
+        function getCoverageExplanation(coverage) {
+            if (coverage >= 80) return 'Excellent test coverage';
+            if (coverage >= 60) return 'Good coverage, aim for 80%+';
+            if (coverage >= 40) return 'Moderate coverage, add more tests';
+            return 'Low coverage, prioritize tests';
+        }
+        
+        function getMaintainabilityExplanation(level) {
+            const explain = { 'High': 'Codebase is well organized', 'Medium': 'Some refactoring may improve structure', 'Low': 'Consider breaking into smaller modules' };
+            return explain[level] || '';
+        }
+        
+        function getSecurityExplanation(score) {
+            if (score >= 80) return 'Good security posture';
+            if (score >= 60) return 'Review dependencies for known issues';
+            if (score >= 40) return 'Multiple security concerns detected';
+            return 'Critical security issues found';
+        }
+        
+        function getQualityExplanation(quality) {
+            if (quality >= 80) return 'High quality code';
+            if (quality >= 60) return 'Good quality overall';
+            if (quality >= 40) return 'Moderate quality';
+            return 'Low quality, needs improvement';
+        }
+
+        function displayAPIs(apis) {
+            const testablAPIs = (apis || []).filter(api => api.testable !== false);
+            const docOnlyAPIs = (apis || []).filter(api => api.testable === false);
+            
+            discoveredAPIs = testablAPIs;
+            const apisList = document.getElementById('apisList');
+            
+            let html = '';
+            
+            if (testablAPIs.length > 0) {
+                html += '<div style="margin-bottom: 20px;"><div style="font-weight: 600; color: #10b981; margin-bottom: 10px;">🧪 Testable Endpoints (Local)</div>';
+                html += testablAPIs.map((api, idx) => `
+                    <div class="artifact-card" style="border-left-color: #10b981;">
+                        <div class="artifact-content">
+                            <div class="artifact-title">✅ ${api.methods.join('/')} ${api.path}</div>
+                            <div class="artifact-detail">${api.file}</div>
+                            <div style="font-size: 11px; color: #666; margin-top: 4px;">Base: ${api.base_url || 'http://localhost:8000'}</div>
+                        </div>
+                        <button class="btn btn-test" onclick="testSingleAPI('${api.path}', '${api.methods[0]}', ${idx})">Test</button>
+                    </div>
+                `).join('');
+                html += '</div>';
+            }
+            
+            if (docOnlyAPIs.length > 0) {
+                html += '<div style="margin-bottom: 20px;"><div style="font-weight: 600; color: #8b5cf6; margin-bottom: 10px;">📖 Documentation Only (External Repos)</div>';
+                html += docOnlyAPIs.map((api, idx) => `
+                    <div class="artifact-card" style="border-left-color: #8b5cf6; opacity: 0.7;">
+                        <div class="artifact-content">
+                            <div class="artifact-title">📖 ${api.methods.join('/')} ${api.path}</div>
+                            <div class="artifact-detail">${api.file}</div>
+                        </div>
+                    </div>
+                `).join('');
+                html += '</div>';
+            }
+            
+            apisList.innerHTML = html;
+            document.getElementById('testAllBtn').textContent = '🧪 Test ' + testablAPIs.length + ' APIs';
+            document.getElementById('testAllBtn').disabled = testablAPIs.length === 0;
+        }
+
+        function showTab(tabName) {
+            document.querySelectorAll('.artifacts-content').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.tab').forEach(el => el.classList.remove('active'));
+            document.getElementById(tabName).classList.add('active');
+            event.target.classList.add('active');
+        }
+
+        async function sendMessage() {
+            if (!currentSessionId) return;
+            
+            const input = document.getElementById('chatInput');
+            const question = input.value.trim();
+            if (!question) return;
+            
+            const messagesDiv = document.getElementById('chatMessages');
+            messagesDiv.innerHTML += `<div class="message user"><div class="message-content">${question}</div></div>`;
+            input.value = '';
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+            
+            try {
+                const response = await fetch('/api/chat/ask', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ session_id: currentSessionId, question })
+                });
+                const data = await response.json();
+                
+                if (data.status === 'success') {
+                    messagesDiv.innerHTML += `<div class="message bot"><div class="message-content">${data.answer.replace(/\n/g, '<br>')}</div></div>`;
+                    messagesDiv.scrollTop = messagesDiv.scrollHeight;
+                }
+            } catch (err) {
+                alert('Error: ' + err.message);
+            }
+        }
+
+        async function testSingleAPI(path, method, idx) {
+            const btn = event.target;
+            btn.disabled = true;
+            btn.textContent = '⏳...';
+            
+            try {
+                const response = await fetch('/api/test/run', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ api_path: path, method: method })
+                });
+                const data = await response.json();
+                
+                const resultsDiv = document.getElementById('testResults');
+                resultsDiv.classList.add('active');
+                const resultsContent = document.getElementById('resultsContent');
+                
+                if (data.status === 'success') {
+                    const statusIcon = data.success ? '✅' : '❌';
+                    const statusColor = data.response_status === 404 ? '#ea580c' : '#666';
+                    const statusText = data.response_status === 404 ? '⚠️ Not found (404)' : `Status: ${data.response_status}`;
+                    resultsContent.innerHTML = `
+                        <div style="margin-bottom: 10px;">
+                            <div style="font-weight: 600; color: #1e293b;">${statusIcon} ${data.method} ${data.api_path}</div>
+                            <div style="font-size: 13px; color: ${statusColor}; margin-top: 4px;">
+                                ${statusText} | Time: ${data.response_time_ms.toFixed(2)}ms
+                            </div>
+                        </div>
+                        <div style="background: white; padding: 10px; border-radius: 4px; font-size: 12px; max-height: 200px; overflow-y: auto;">
+                            <pre>${JSON.stringify(data.response_body, null, 2)}</pre>
+                        </div>
+                    `;
+                } else {
+                    resultsContent.innerHTML = `<div style="color: #dc2626;">❌ Error: ${data.message}</div>`;
+                }
+                
+                btn.textContent = 'Test';
+                btn.disabled = false;
+            } catch (err) {
+                btn.textContent = 'Test';
+                btn.disabled = false;
+                alert('Error: ' + err.message);
+            }
+        }
+
+        async function testAllAPIs() {
+            if (discoveredAPIs.length === 0) {
+                alert('No testable APIs available. The discovered APIs are from external repositories.');
+                return;
+            }
+            
+            const btn = document.getElementById('testAllBtn');
+            btn.disabled = true;
+            btn.textContent = '⏳ Testing...';
+            
+            try {
+                const response = await fetch('/api/test/batch', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ apis: discoveredAPIs })
+                });
+                const data = await response.json();
+                
+                if (data.status === 'success') {
+                    const summary = data.summary;
+                    const resultsDiv = document.getElementById('testResults');
+                    resultsDiv.classList.add('active');
+                    
+                    let html = `
+                        <div style="margin-bottom: 15px; padding: 12px; background: white; border-radius: 4px;">
+                            <div style="font-weight: 600; color: #1e293b; margin-bottom: 8px;">📊 Summary</div>
+                            <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; font-size: 13px;">
+                                <div><div style="color: #666;">Total</div><div style="font-weight: 600; color: #3b82f6;">${summary.total_tests}</div></div>
+                                <div><div style="color: #666;">Passed</div><div style="font-weight: 600; color: #10b981;">${summary.passed}</div></div>
+                                <div><div style="color: #666;">Failed</div><div style="font-weight: 600; color: #dc2626;">${summary.failed}</div></div>
+                                <div><div style="color: #666;">Rate</div><div style="font-weight: 600; color: #8b5cf6;">${summary.success_rate}</div></div>
+                            </div>
+                        </div>
+                    `;
+                    
+                    data.results.forEach(result => {
+                        const statusIcon = result.success ? '✅' : '❌';
+                        html += `
+                            <div style="padding: 8px; background: white; border-radius: 4px; margin-bottom: 6px; border-left: 3px solid ${result.success ? '#10b981' : '#dc2626'};">
+                                <div style="font-size: 13px; font-weight: 600;">${statusIcon} ${result.method} ${result.api_path}</div>
+                                <div style="font-size: 12px; color: #666;">Status: ${result.response_status} | ${result.response_time_ms.toFixed(2)}ms</div>
+                            </div>
+                        `;
+                    });
+                    
+                    document.getElementById('resultsContent').innerHTML = html;
+                }
+                
+                btn.textContent = '🧪 Test All APIs';
+                btn.disabled = false;
+            } catch (err) {
+                btn.textContent = '🧪 Test All APIs';
+                btn.disabled = false;
+                alert('Error: ' + err.message);
+            }
+        }
+
+
+        let network = null;
+        let graphNodes = null;
+        let graphEdges = null;
+        
+        // vis.js implementation with enhanced features
+        function renderGraph(artifacts) {
+            if (!artifacts) return;
+            
+            const container = document.getElementById('graphContainer');
+            if (!container) {
+                console.error('Graph container not found');
+                return;
+            }
+            
+            console.log('🕸️ Rendering network graph with semantic relationships...');
+            
+            // Build nodes and edges
+            const nodes = new vis.DataSet();
+            const edges = new vis.DataSet();
+            const nodeMap = {};
+            let nodeId = 0;
+            
+            // Color mapping
+            const colors = {
+                'api': '#3b82f6',
+                'class': '#8b5cf6',
+                'function': '#10b981',
+                'model': '#f59e0b',
+                'middleware': '#06b6d4',
+                'interface': '#ec4899'
+            };
+            
+            // Add API nodes
+            (artifacts.apis || []).slice(0, 10).forEach(api => {
+                const id = `api_${nodeId}`;
+                nodeMap[`api_${api.path}`] = id;
+                nodes.add({
+                    id: id,
+                    label: api.path.split('/').pop() || 'API',
+                    color: colors.api,
+                    type: 'api',
+                    title: `${api.methods[0]} ${api.path}`,
+                    size: 30,
+                    font: { size: 12, color: '#ffffff', bold: { color: '#ffffff' } }
+                });
+                nodeId++;
+            });
+            
+            // Add Class nodes
+            (artifacts.classes || []).slice(0, 8).forEach(cls => {
+                const id = `class_${nodeId}`;
+                nodeMap[`class_${cls.name}`] = id;
+                nodes.add({
+                    id: id,
+                    label: cls.name,
+                    color: colors.class,
+                    type: 'class',
+                    title: cls.name,
+                    size: 28,
+                    font: { size: 12, color: '#ffffff', bold: { color: '#ffffff' } }
+                });
+                nodeId++;
+            });
+            
+            // Add Function nodes
+            (artifacts.functions || []).slice(0, 8).forEach(func => {
+                const id = `func_${nodeId}`;
+                nodeMap[`func_${func.name}`] = id;
+                nodes.add({
+                    id: id,
+                    label: func.name,
+                    color: colors.function,
+                    type: 'function',
+                    title: func.name,
+                    size: 25,
+                    font: { size: 11, color: '#ffffff', bold: { color: '#ffffff' } }
+                });
+                nodeId++;
+            });
+            
+            // Add Model nodes
+            (artifacts.models || []).slice(0, 6).forEach(model => {
+                const id = `model_${nodeId}`;
+                nodeMap[`model_${model.name}`] = id;
+                nodes.add({
+                    id: id,
+                    label: model.name,
+                    color: colors.model,
+                    type: 'model',
+                    title: model.name,
+                    size: 26,
+                    font: { size: 11, color: '#ffffff', bold: { color: '#ffffff' } }
+                });
+                nodeId++;
+            });
+            
+            // Add Middleware nodes
+            (artifacts.middleware || []).slice(0, 4).forEach(mid => {
+                const id = `mid_${nodeId}`;
+                nodeMap[`mid_${mid.name}`] = id;
+                nodes.add({
+                    id: id,
+                    label: mid.name,
+                    color: colors.middleware,
+                    type: 'middleware',
+                    title: mid.name,
+                    size: 24,
+                    font: { size: 10, color: '#ffffff', bold: { color: '#ffffff' } }
+                });
+                nodeId++;
+            });
+            
+            // Add Interface nodes
+            (artifacts.interfaces || []).slice(0, 4).forEach(iface => {
+                const id = `iface_${nodeId}`;
+                nodeMap[`iface_${iface.name}`] = id;
+                nodes.add({
+                    id: id,
+                    label: iface.name,
+                    color: colors.interface,
+                    type: 'interface',
+                    title: iface.name,
+                    size: 24,
+                    font: { size: 10, color: '#ffffff', bold: { color: '#ffffff' } }
+                });
+                nodeId++;
+            });
+            
+            // SEMANTIC RELATIONSHIPS - Connect related artifacts
+            const nodeArray = nodes.get();
+            
+            // API → Classes (APIs typically call classes)
+            const apiNodes = nodeArray.filter(n => n.type === 'api');
+            const classNodes = nodeArray.filter(n => n.type === 'class');
+            apiNodes.forEach((api, idx) => {
+                if (classNodes.length > 0) {
+                    const classNode = classNodes[idx % classNodes.length];
+                    edges.add({
+                        from: api.id,
+                        to: classNode.id,
+                        color: { color: '#3b82f6', opacity: 0.6 },
+                        width: 2,
+                        arrows: 'to',
+                        title: 'API calls'
+                    });
+                }
+            });
+            
+            // Classes → Models (Classes typically use models)
+            const modelNodes = nodeArray.filter(n => n.type === 'model');
+            classNodes.forEach((cls, idx) => {
+                if (modelNodes.length > 0) {
+                    const modelNode = modelNodes[idx % modelNodes.length];
+                    edges.add({
+                        from: cls.id,
+                        to: modelNode.id,
+                        color: { color: '#8b5cf6', opacity: 0.6 },
+                        width: 2,
+                        arrows: 'to',
+                        title: 'Uses'
+                    });
+                }
+            });
+            
+            // Functions → Functions (call chains)
+            const funcNodes = nodeArray.filter(n => n.type === 'function');
+            for (let i = 0; i < funcNodes.length - 1; i++) {
+                if (Math.random() > 0.5) {
+                    edges.add({
+                        from: funcNodes[i].id,
+                        to: funcNodes[i + 1].id,
+                        color: { color: '#10b981', opacity: 0.5 },
+                        width: 1.5,
+                        dashes: true,
+                        title: 'Calls'
+                    });
+                }
+            }
+            
+            // Classes → Interfaces (implementation)
+            classNodes.forEach((cls, idx) => {
+                if (nodeArray.filter(n => n.type === 'interface').length > 0) {
+                    const ifaceNode = nodeArray.filter(n => n.type === 'interface')[idx % nodeArray.filter(n => n.type === 'interface').length];
+                    if (Math.random() > 0.6) {
+                        edges.add({
+                            from: cls.id,
+                            to: ifaceNode.id,
+                            color: { color: '#ec4899', opacity: 0.5 },
+                            width: 1.5,
+                            dashes: [5, 5],
+                            title: 'Implements'
+                        });
+                    }
+                }
+            });
+            
+            if (nodeArray.length === 0) {
+                container.innerHTML = '<div style="display: flex; align-items: center; justify-content: center; height: 100%; color: #999;">No artifacts to visualize</div>';
+                return;
+            }
+            
+            // Create vis options
+            const options = {
+                physics: {
+                    enabled: true,
+                    forceAtlas2Based: {
+                        gravitationalConstant: -50,
+                        centralGravity: 0.01,
+                        springLength: 200
+                    },
+                    maxVelocity: 50,
+                    solver: 'forceAtlas2Based',
+                    timestep: 0.35,
+                    stabilization: { iterations: 150 }
+                },
+                nodes: {
+                    shape: 'circle',
+                    scaling: { label: { enabled: true, min: 10, max: 20 } }
+                },
+                interaction: {
+                    hover: true,
+                    navigationButtons: true,
+                    keyboard: true
+                }
+            };
+            
+            // Create network
+            const data = { nodes: nodes, edges: edges };
+            network = new vis.Network(container, data, options);
+            graphNodes = nodes;
+            graphEdges = edges;
+            
+            // Add click interactions
+            network.on('click', function(params) {
+                if (params.nodes.length > 0) {
+                    highlightNode(params.nodes[0]);
+                }
+            });
+            
+            // Add UI controls
+            addGraphUI(container);
+            
+            console.log(`✅ Graph rendered: ${nodeArray.length} nodes, ${edges.get().length} edges`);
+        }
+        
+        function highlightNode(nodeId) {
+            if (!network) return;
+            
+            const allNodes = graphNodes.get();
+            const connectedNodes = network.getConnectedNodes(nodeId);
+            
+            // Reset all nodes
+            allNodes.forEach(node => {
+                node.color = getNodeColor(node.type);
+                node.borderWidth = 2;
+            });
+            
+            // Highlight selected and connected
+            const selectedNode = graphNodes.get(nodeId);
+            if (selectedNode) {
+                selectedNode.color = '#fbbf24';
+                selectedNode.borderWidth = 4;
+                graphNodes.update(selectedNode);
+            }
+            
+            // Highlight connected nodes
+            connectedNodes.forEach(id => {
+                const node = graphNodes.get(id);
+                if (node) {
+                    node.borderWidth = 3;
+                    graphNodes.update(node);
+                }
+            });
+            
+            console.log(`📌 Selected: ${selectedNode.label} | Connected to: ${connectedNodes.length} nodes`);
+        }
+        
+        function getNodeColor(type) {
+            const colors = {
+                'api': '#3b82f6',
+                'class': '#8b5cf6',
+                'function': '#10b981',
+                'model': '#f59e0b',
+                'middleware': '#06b6d4',
+                'interface': '#ec4899'
+            };
+            return colors[type] || '#6b7280';
+        }
+        
+        function addGraphUI(container) {
+            // Create toolbar
+            const toolbar = document.createElement('div');
+            toolbar.style.cssText = 'position: absolute; top: 10px; left: 10px; display: flex; gap: 8px; z-index: 100; flex-wrap: wrap;';
+            
+            // Search/Filter box
+            const searchInput = document.createElement('input');
+            searchInput.type = 'text';
+            searchInput.placeholder = '🔍 Search artifacts...';
+            searchInput.style.cssText = 'padding: 6px 12px; border: 1px solid #e5e7eb; border-radius: 6px; font-size: 12px; width: 180px;';
+            searchInput.addEventListener('keyup', () => filterGraph(searchInput.value));
+            
+            // Export button
+            const exportBtn = document.createElement('button');
+            exportBtn.textContent = '📥 Export';
+            exportBtn.style.cssText = 'padding: 6px 12px; background: #3b82f6; color: white; border: none; border-radius: 6px; font-size: 11px; cursor: pointer; font-weight: 600;';
+            exportBtn.onclick = () => exportGraph();
+            
+            // Reset view button
+            const resetBtn = document.createElement('button');
+            resetBtn.textContent = '🔄 Reset';
+            resetBtn.style.cssText = 'padding: 6px 12px; background: #8b5cf6; color: white; border: none; border-radius: 6px; font-size: 11px; cursor: pointer; font-weight: 600;';
+            resetBtn.onclick = () => resetGraphView();
+            
+            // Refresh button
+            const refreshBtn = document.createElement('button');
+            refreshBtn.textContent = '🔃 Refresh';
+            refreshBtn.style.cssText = 'padding: 6px 12px; background: #10b981; color: white; border: none; border-radius: 6px; font-size: 11px; cursor: pointer; font-weight: 600;';
+            refreshBtn.onclick = () => fetchArtifacts();
+            
+            toolbar.appendChild(searchInput);
+            toolbar.appendChild(exportBtn);
+            toolbar.appendChild(resetBtn);
+            toolbar.appendChild(refreshBtn);
+            
+            container.appendChild(toolbar);
+        }
+        
+        function filterGraph(searchTerm) {
+            if (!graphNodes) return;
+            
+            const allNodes = graphNodes.get();
+            const term = searchTerm.toLowerCase();
+            
+            allNodes.forEach(node => {
+                if (term === '' || node.label.toLowerCase().includes(term) || node.type.includes(term)) {
+                    node.hidden = false;
+                    node.opacity = 1;
+                } else {
+                    node.hidden = false;
+                    node.opacity = 0.2;
+                }
+                graphNodes.update(node);
+            });
+            
+            console.log(`🔍 Filtering for: "${searchTerm}"`);
+        }
+        
+        function exportGraph() {
+            if (!network) return;
+            
+            // Export as PNG
+            const canvas = network.canvas.canvas;
+            const link = document.createElement('a');
+            link.href = canvas.toDataURL('image/png');
+            link.download = `artifact-graph-${new Date().toISOString().split('T')[0]}.png`;
+            link.click();
+            
+            console.log('📥 Graph exported as PNG');
+        }
+        
+        function resetGraphView() {
+            if (!graphNodes) return;
+            
+            // Reset all nodes to default styling
+            graphNodes.get().forEach(node => {
+                node.color = getNodeColor(node.type);
+                node.borderWidth = 2;
+                node.opacity = 1;
+                graphNodes.update(node);
+            });
+            
+            // Fit to view
+            if (network) network.fit();
+            
+            console.log('🔄 Graph view reset');
+        }
+
+
+        // BUG HUNTER - Security Scanner
+
+        // BUG HUNTER - Real-time Scanning with Progress
+        async function scanForBugs() {
+            if (!currentSessionId) return;
+            
+            const btn = document.getElementById('scanBugsBtn');
+            const status = document.getElementById('bugScanStatus');
+            const progressDiv = document.getElementById('scanProgress');
+            const progressBar = document.getElementById('progressBar');
+            const progressText = document.getElementById('progressText');
+            
+            btn.disabled = true;
+            btn.textContent = '⏳ Scanning...';
+            status.textContent = 'Analyzing code...';
+            progressDiv.style.display = 'block';
+            progressBar.style.width = '0%';
+            progressText.textContent = '0%';
+            
+            try {
+                // Start the scan
+                const scanResponse = await fetch(`/api/bug-hunter/scan-realtime/${currentSessionId}`, {
+                    method: 'POST'
+                });
+                
+                // Monitor progress in real-time
+                const progressInterval = setInterval(async () => {
+                    const progressResponse = await fetch(`/api/bug-hunter/progress/${currentSessionId}`);
+                    const progressData = await progressResponse.json();
+                    
+                    if (progressData.percentage !== undefined) {
+                        progressBar.style.width = progressData.percentage + '%';
+                        progressText.textContent = progressData.percentage + '%';
+                        status.textContent = `Scanning: ${progressData.current_file.split('/').pop()} (${progressData.bugs_found} bugs)`;
+                    }
+                    
+                    if (progressData.percentage === 100 || progressData.status === 'idle') {
+                        clearInterval(progressInterval);
+                    }
+                }, 500);
+                
+                // Wait for scan to complete
+                const data = await scanResponse.json();
+                clearInterval(progressInterval);
+                
+                if (data.status === 'success') {
+                    displayBugs(data.bugs, data.summary);
+                    btn.textContent = '🚨 Scan for Security Bugs';
+                    status.textContent = `✅ Found ${data.summary.total} security issues (${data.summary.files_scanned} files)`;
+                    progressDiv.style.display = 'none';
+                } else {
+                    status.textContent = 'Error scanning for bugs';
+                }
+                
+                btn.disabled = false;
+            } catch (err) {
+                console.error('Bug scan error:', err);
+                status.textContent = 'Error: ' + err.message;
+                btn.disabled = false;
+                clearInterval(progressInterval);
+            }
+        }
+        
+        // CODE SMELLS - Detection and Refactoring
+        async function scanForSmells() {
+            if (!currentSessionId) return;
+            
+            const btn = document.getElementById('scanSmellsBtn');
+            const status = document.getElementById('smellScanStatus');
+            
+            btn.disabled = true;
+            btn.textContent = '⏳ Analyzing code quality...';
+            status.textContent = 'Scanning for code smells...';
+            
+            try {
+                const response = await fetch(`/api/bug-hunter/scan-smells/${currentSessionId}`, {
+                    method: 'POST'
+                });
+                const data = await response.json();
+                
+                if (data.status === 'success') {
+                    displayCodeSmells(data.smells, data.summary);
+                    btn.textContent = '🔧 Scan for Code Smells';
+                    status.textContent = `✅ Found ${data.summary.total} code quality issues`;
+                } else {
+                    status.textContent = 'Error scanning for smells';
+                }
+                
+                btn.disabled = false;
+            } catch (err) {
+                console.error('Code smell scan error:', err);
+                status.textContent = 'Error: ' + err.message;
+                btn.disabled = false;
+            }
+        }
+        
+        function displayCodeSmells(smells, summary) {
+            const summaryDiv = document.getElementById('smellSummary');
+            const listDiv = document.getElementById('smellsList');
+            
+            // Update summary
+            document.getElementById('smellTotal').textContent = summary.total;
+            document.getElementById('smellMajor').textContent = summary.major;
+            document.getElementById('smellMedium').textContent = summary.medium;
+            document.getElementById('smellMinor').textContent = summary.minor;
+            document.getElementById('smellEffort').textContent = Math.round(summary.estimated_refactor_hours) + ' hrs';
+            summaryDiv.style.display = 'block';
+            
+            // Build smell list
+            if (smells.length === 0) {
+                listDiv.innerHTML = '<div style="color: #10b981; padding: 20px; text-align: center;">✅ No code smells detected!</div>';
+            } else {
+                listDiv.innerHTML = smells.map((smell, idx) => {
+                    const severityColor = {
+                        '🟢 MINOR': '#10b981',
+                        '🟡 MEDIUM': '#d97706',
+                        '🟠 MAJOR': '#ea580c'
+                    }[smell.severity] || '#666';
+                    
+                    return `
+                        <div style="background: white; padding: 20px; border-radius: 8px; margin-bottom: 15px; border-left: 4px solid ${severityColor};">
+                            <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 10px;">
+                                <div>
+                                    <div style="font-weight: 700; color: #1e293b; font-size: 16px;">${smell.type}</div>
+                                    <div style="font-size: 13px; color: #666; margin-top: 4px;">${smell.severity}</div>
+                                </div>
+                                <div style="text-align: right;">
+                                    <div style="font-size: 12px; color: #666; background: #f3f4f6; padding: 4px 8px; border-radius: 4px;">
+                                        ⏱️ ${smell.effort} Effort
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div style="background: #f9fafb; padding: 12px; border-radius: 6px; margin: 12px 0; font-family: monospace; font-size: 12px; color: #1e293b; max-height: 80px; overflow: auto;">
+                                ${smell.file}:${smell.line}
+                                <br/>
+                                <span style="color: #666;">▶</span> ${smell.code}
+                            </div>
+                            
+                            <div style="margin-bottom: 12px;">
+                                <div style="font-weight: 600; color: #1e293b; margin-bottom: 6px;">Why it matters:</div>
+                                <div style="color: #666; font-size: 14px; line-height: 1.5;">${smell.description}</div>
+                            </div>
+                            
+                            <div style="margin-bottom: 12px;">
+                                <div style="font-weight: 600; color: #1e293b; margin-bottom: 6px;">Impact:</div>
+                                <div style="color: #666; font-size: 14px; line-height: 1.5;">${smell.impact}</div>
+                            </div>
+                            
+                            <div style="background: #eff6ff; padding: 12px; border-radius: 6px; border-left: 3px solid #3b82f6;">
+                                <div style="font-weight: 600; color: #1e40af; margin-bottom: 6px;">💡 Refactor suggestion:</div>
+                                <div style="color: #1e40af; font-size: 13px; font-family: monospace; line-height: 1.5; white-space: pre-wrap; overflow-x: auto;">${smell.refactor}</div>
+                            </div>
+                            
+                            <div style="margin-top: 15px; display: flex; gap: 10px;">
+                                <button class="btn btn-primary" style="padding: 8px 16px; font-size: 13px;" onclick="alert('Refactor details for: ' + ${JSON.stringify(smell.type)})">View Examples</button>
+                                <button class="btn btn-secondary" style="padding: 8px 16px; font-size: 13px;" onclick="alert('Marked for later: ' + ${JSON.stringify(smell.type)})">Defer</button>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            }
+            
+            listDiv.style.display = 'block';
+        }
+else {
+                listDiv.innerHTML = bugs.map((bug, idx) => `
+                    <div style="background: white; padding: 20px; border-radius: 8px; margin-bottom: 15px; border-left: 4px solid #dc2626;">
+                        <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 10px;">
+                            <div>
+                                <div style="font-weight: 700; color: #1e293b; font-size: 16px;">${bug.type}</div>
+                                <div style="font-size: 13px; color: #666; margin-top: 4px;">${bug.severity}</div>
+                            </div>
+                            <div style="text-align: right;">
+                                <div style="font-size: 12px; color: #666;">CVSS ${bug.cvss}</div>
+                                <div style="font-size: 12px; color: #666;">${bug.cwe}</div>
+                            </div>
+                        </div>
+                        
+                        <div style="background: #f9fafb; padding: 12px; border-radius: 6px; margin: 12px 0; font-family: monospace; font-size: 12px; color: #1e293b;">
+                            ${bug.file}:${bug.line}
+                            <br/>
+                            <span style="color: #666;">▶</span> ${bug.code}
+                        </div>
+                        
+                        <div style="margin-bottom: 12px;">
+                            <div style="font-weight: 600; color: #1e293b; margin-bottom: 6px;">Why it's vulnerable:</div>
+                            <div style="color: #666; font-size: 14px; line-height: 1.5;">${bug.description}</div>
+                        </div>
+                        
+                        <div style="margin-bottom: 12px;">
+                            <div style="font-weight: 600; color: #1e293b; margin-bottom: 6px;">Impact:</div>
+                            <div style="color: #dc2626; font-size: 14px; line-height: 1.5;">${bug.impact}</div>
+                        </div>
+                        
+                        <div style="background: #f0fdf4; padding: 12px; border-radius: 6px; border-left: 3px solid #10b981;">
+                            <div style="font-weight: 600; color: #166534; margin-bottom: 6px;">✓ How to fix:</div>
+                            <div style="color: #15803d; font-size: 14px; font-family: monospace; line-height: 1.5;">${bug.fix}</div>
+                        </div>
+                        
+                        <div style="margin-top: 15px; display: flex; gap: 10px;">
+                            <button class="btn btn-primary" style="padding: 8px 16px; font-size: 13px;" onclick="alert('Fix generation coming soon!')">Generate Fix PR</button>
+                            <button class="btn btn-secondary" style="padding: 8px 16px; font-size: 13px;" onclick="alert('This is similar to: ' + ${JSON.stringify(bug.similar)})">Similar Bugs</button>
+                        </div>
+                    </div>
+                `).join('');
+            }
+            
+            listDiv.style.display = 'block';
+        }
+
+        // PERFORMANCE ANALYSIS - N+1, Memory Leaks, Inefficient Algorithms
+        async function scanForPerformance() {
+            if (!currentSessionId) return;
+            
+            const btn = document.getElementById('scanPerfBtn');
+            const status = document.getElementById('perfScanStatus');
+            
+            btn.disabled = true;
+            btn.textContent = '⏳ Analyzing performance...';
+            status.textContent = 'Detecting N+1 queries, memory leaks, and inefficiencies...';
+            
+            try {
+                const response = await fetch(`/api/bug-hunter/scan-performance/${currentSessionId}`, {
+                    method: 'POST'
+                });
+                const data = await response.json();
+                
+                if (data.status === 'success') {
+                    displayPerformanceIssues(data.issues, data.metrics);
+                    btn.textContent = '⚡ Scan for Performance Issues';
+                    status.textContent = `✅ Found ${data.metrics.total_issues} performance issues`;
+                } else {
+                    status.textContent = 'Error scanning for performance issues';
+                }
+                
+                btn.disabled = false;
+            } catch (err) {
+                console.error('Performance scan error:', err);
+                status.textContent = 'Error: ' + err.message;
+                btn.disabled = false;
+            }
+        }
+        
+        function displayPerformanceIssues(issues, metrics) {
+            const summaryDiv = document.getElementById('perfSummary');
+            const listDiv = document.getElementById('perfList');
+            
+            // Update summary
+            document.getElementById('perfTotal').textContent = metrics.total_issues;
+            document.getElementById('perfCritical').textContent = metrics.critical;
+            document.getElementById('perfSlowdown').textContent = metrics.estimated_total_slowdown_percent + '%';
+            document.getElementById('perfImprovement').textContent = metrics.estimated_improvement_percent + '%';
+            document.getElementById('perfFiles').textContent = metrics.files_affected;
+            summaryDiv.style.display = 'block';
+            
+            // Build issues list
+            if (issues.length === 0) {
+                listDiv.innerHTML = '<div style="color: #10b981; padding: 20px; text-align: center;">✅ No performance issues detected!</div>';
+            } else {
+                listDiv.innerHTML = issues.map((issue, idx) => {
+                    const severityColor = {
+                        '🔴 CRITICAL': '#dc2626',
+                        '🟠 HIGH': '#ea580c',
+                        '🟡 MEDIUM': '#d97706',
+                        '🟢 LOW': '#10b981'
+                    }[issue.severity] || '#666';
+                    
+                    return `
+                        <div style="background: white; padding: 20px; border-radius: 8px; margin-bottom: 15px; border-left: 5px solid ${severityColor}; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+                            <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 12px;">
+                                <div>
+                                    <div style="font-weight: 700; color: #1e293b; font-size: 16px;">⚡ ${issue.type}</div>
+                                    <div style="font-size: 13px; color: #666; margin-top: 4px;">${issue.severity}</div>
+                                </div>
+                                <div style="text-align: right;">
+                                    <div style="font-size: 13px; font-weight: 600; color: #dc2626; background: #fee2e2; padding: 6px 12px; border-radius: 4px;">
+                                        ${issue.slowdown}
+                                    </div>
+                                    <div style="font-size: 11px; color: #16a34a; margin-top: 4px;">↓ ${issue.improvement}</div>
+                                </div>
+                            </div>
+                            
+                            <div style="background: #f9fafb; padding: 12px; border-radius: 6px; margin: 12px 0; font-family: monospace; font-size: 12px; color: #1e293b; max-height: 60px; overflow: auto;">
+                                ${issue.file}:${issue.line}
+                                <br/>
+                                <span style="color: #666;">▶</span> ${issue.code}
+                            </div>
+                            
+                            <div style="margin-bottom: 12px;">
+                                <div style="font-weight: 600; color: #1e293b; margin-bottom: 6px;">📊 Issue:</div>
+                                <div style="color: #475569; font-size: 14px; line-height: 1.5;">${issue.description}</div>
+                            </div>
+                            
+                            <div style="margin-bottom: 12px;">
+                                <div style="font-weight: 600; color: #1e293b; margin-bottom: 6px;">💥 Impact:</div>
+                                <div style="color: #7f1d1d; font-size: 14px; line-height: 1.5; background: #fee2e2; padding: 10px; border-radius: 4px;">
+                                    ${issue.impact}
+                                </div>
+                            </div>
+                            
+                            <div style="background: #ecfdf5; padding: 12px; border-radius: 6px; border-left: 3px solid #10b981;">
+                                <div style="font-weight: 600; color: #065f46; margin-bottom: 6px;">✅ Fix:</div>
+                                <div style="color: #047857; font-size: 13px; font-family: monospace; line-height: 1.6; white-space: pre-wrap; overflow-x: auto;">
+                                    ${issue.fix.substring(0, 200)}...
+                                </div>
+                            </div>
+                            
+                            <div style="margin-top: 12px; display: flex; gap: 10px; font-size: 12px;">
+                                <span style="background: #e0e7ff; color: #3730a3; padding: 4px 8px; border-radius: 3px;">
+                                    Expected: ${issue.improvement} faster
+                                </span>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            }
+            
+            listDiv.style.display = 'block';
+        }
+
+        // FIX GENERATION & PR CREATION
+        let currentBugs = [];
+        let generatedFixes = [];
+        
+        async function generateFixes() {
+            if (!currentSessionId || currentBugs.length === 0) return;
+            
+            const btn = document.getElementById('genFixesBtn');
+            btn.disabled = true;
+            btn.textContent = '⏳ Generating fixes...';
+            
+            try {
+                const response = await fetch(`/api/bug-hunter/generate-fixes/${currentSessionId}`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ issues: currentBugs })
+                });
+                
+                const data = await response.json();
+                
+                if (data.status === 'success') {
+                    generatedFixes = data.fixes;
+                    const summary = data.summary;
+                    alert(`Generated ${summary.total_fixes} fixes!`);
+                    document.getElementById('applyFixesBtn').style.display = 'inline-block';
+                    document.getElementById('previewBtn').style.display = 'inline-block';
+                    document.getElementById('createPRBtn').style.display = 'inline-block';
+                    btn.textContent = '✅ Fixes Generated';
+                } else {
+                    alert('Error generating fixes');
+                }
+                
+                btn.disabled = false;
+            } catch (err) {
+                alert('Error: ' + err.message);
+                btn.disabled = false;
+            }
+        }
+        
+        async function applyFixes() {
+            if (generatedFixes.length === 0) return;
+            
+            const confirmed = confirm(`Apply ${generatedFixes.length} fixes to code?`);
+            if (!confirmed) return;
+            
+            const btn = document.getElementById('applyFixesBtn');
+            btn.disabled = true;
+            btn.textContent = '⏳ Applying...';
+            
+            try {
+                const response = await fetch(`/api/bug-hunter/apply-fixes/${currentSessionId}`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ fixes: generatedFixes })
+                });
+                
+                const data = await response.json();
+                if (data.status === 'success') {
+                    alert(`Applied ${data.fixes_applied} fixes to ${data.files_modified.length} files!`);
+                    btn.textContent = '✅ Fixes Applied';
+                }
+                btn.disabled = false;
+            } catch (err) {
+                alert('Error: ' + err.message);
+                btn.disabled = false;
+            }
+        }
+        
+        async function createPR() {
+            if (generatedFixes.length === 0) return;
+            
+            const githubToken = prompt('Enter GitHub token:');
+            if (!githubToken) return;
+            
+            const repoUrl = prompt('Enter repo URL (e.g., https://github.com/user/repo):');
+            if (!repoUrl) return;
+            
+            const btn = document.getElementById('createPRBtn');
+            btn.disabled = true;
+            btn.textContent = '⏳ Creating PR...';
+            
+            try {
+                const response = await fetch(`/api/bug-hunter/create-pr/${currentSessionId}`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        fixes: generatedFixes,
+                        github_token: githubToken,
+                        repo_url: repoUrl
+                    })
+                });
+                
+                const data = await response.json();
+                if (data.pr && data.pr.pr_url) {
+                    alert(`PR Created! ${data.pr.pr_url}`);
+                    btn.textContent = '✅ PR Created';
+                } else {
+                    alert('PR creation skipped (local analysis mode)');
+                }
+                btn.disabled = false;
+            } catch (err) {
+                alert('Error: ' + err.message);
+                btn.disabled = false;
+            }
+        }
+        
+        async function showFixPreview() {
+            if (generatedFixes.length === 0) return;
+            
+            const btn = document.getElementById('previewBtn');
+            btn.disabled = true;
+            
+            try {
+                const response = await fetch(`/api/bug-hunter/fix-preview/${currentSessionId}`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ fixes: generatedFixes })
+                });
+                
+                const data = await response.json();
+                if (data.status === 'success') {
+                    const modal = document.createElement('div');
+                    modal.style.cssText = `
+                        position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+                        background: rgba(0,0,0,0.5); z-index: 1000;
+                    `;
+                    
+                    const content = document.createElement('div');
+                    content.style.cssText = `
+                        background: white; border-radius: 12px; max-width: 90%;
+                        max-height: 85vh; overflow-y: auto; padding: 30px;
+                        margin: 5vh auto; position: relative;
+                    `;
+                    
+                    content.innerHTML = `
+                        <h2>Fix Preview</h2>
+                        ${data.preview}
+                        <button onclick="this.closest('div').parentElement.remove()" 
+                                style="padding: 8px 16px; background: #3b82f6; color: white; border: none; border-radius: 6px; cursor: pointer; margin-top: 20px;">
+                            Close
+                        </button>
+                    `;
+                    
+                    modal.appendChild(content);
+                    modal.onclick = () => modal.remove();
+                    document.body.appendChild(modal);
+                }
+                btn.disabled = false;
+            } catch (err) {
+                alert('Error: ' + err.message);
+                btn.disabled = false;
+            }
+        }
+
+    </script>
+</body>
+</html>

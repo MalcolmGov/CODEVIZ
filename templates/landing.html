@@ -1,0 +1,553 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Enterprise Security Platform - Codebase Analysis & Visualization</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: #0f172a;
+            color: #e2e8f0;
+            overflow-x: hidden;
+        }
+        
+        /* Navbar */
+        nav {
+            position: fixed;
+            top: 0;
+            width: 100%;
+            background: rgba(15, 23, 42, 0.95);
+            backdrop-filter: blur(10px);
+            z-index: 1000;
+            border-bottom: 1px solid rgba(148, 163, 184, 0.1);
+            padding: 0 20px;
+            height: 70px;
+        }
+        
+        .navbar-content {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            height: 100%;
+        }
+        
+        .logo {
+            font-size: 24px;
+            font-weight: 700;
+            background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .nav-links {
+            display: flex;
+            gap: 30px;
+            list-style: none;
+        }
+        
+        .nav-links a {
+            color: #cbd5e1;
+            text-decoration: none;
+            font-weight: 500;
+            transition: color 0.3s;
+        }
+        
+        .nav-links a:hover {
+            color: #3b82f6;
+        }
+        
+        .nav-cta {
+            background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
+            color: white;
+            padding: 10px 24px;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: 600;
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+        
+        .nav-cta:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(59, 130, 246, 0.4);
+        }
+        
+        /* Hero Section */
+        .hero {
+            padding-top: 100px;
+            padding-bottom: 80px;
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+            border-bottom: 1px solid rgba(148, 163, 184, 0.1);
+            text-align: center;
+        }
+        
+        .hero-content {
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+        
+        .hero h1 {
+            font-size: 56px;
+            font-weight: 800;
+            line-height: 1.1;
+            margin-bottom: 20px;
+            background: linear-gradient(135deg, #60a5fa 0%, #a78bfa 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            animation: slideUp 0.8s ease-out;
+        }
+        
+        .hero p {
+            font-size: 20px;
+            color: #cbd5e1;
+            margin-bottom: 40px;
+            line-height: 1.6;
+            animation: slideUp 0.8s ease-out 0.1s backwards;
+        }
+        
+        .hero-cta {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            margin-bottom: 60px;
+            animation: slideUp 0.8s ease-out 0.2s backwards;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+            color: white;
+            padding: 14px 40px;
+            border-radius: 10px;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 16px;
+            border: none;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 10px 25px rgba(59, 130, 246, 0.3);
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 15px 40px rgba(59, 130, 246, 0.5);
+        }
+        
+        .btn-secondary {
+            background: transparent;
+            color: #60a5fa;
+            padding: 14px 40px;
+            border-radius: 10px;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 16px;
+            border: 2px solid #3b82f6;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .btn-secondary:hover {
+            background: rgba(59, 130, 246, 0.1);
+            transform: translateY(-4px);
+        }
+        
+        .hero-image {
+            position: relative;
+            height: 500px;
+            background: radial-gradient(circle at 50% 50%, rgba(59, 130, 246, 0.1), transparent);
+            border-radius: 20px;
+            border: 1px solid rgba(148, 163, 184, 0.1);
+            overflow: hidden;
+            animation: slideUp 0.8s ease-out 0.3s backwards;
+        }
+        
+        .hero-image::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(135deg, rgba(59, 130, 246, 0.1) 0%, rgba(139, 92, 246, 0.1) 100%);
+            animation: pulse 3s ease-in-out infinite;
+        }
+        
+        .hero-image-content {
+            position: relative;
+            z-index: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            font-size: 100px;
+        }
+        
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 0.5; }
+            50% { opacity: 1; }
+        }
+        
+        /* Features Section */
+        .features {
+            padding: 100px 20px;
+            background: #0f172a;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        
+        .section-title {
+            font-size: 42px;
+            font-weight: 800;
+            text-align: center;
+            margin-bottom: 60px;
+            background: linear-gradient(135deg, #60a5fa 0%, #a78bfa 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 30px;
+            margin-bottom: 60px;
+        }
+        
+        .feature-card {
+            background: linear-gradient(135deg, rgba(30, 41, 59, 0.5) 0%, rgba(15, 23, 42, 0.3) 100%);
+            border: 1px solid rgba(148, 163, 184, 0.2);
+            padding: 40px;
+            border-radius: 16px;
+            transition: all 0.3s;
+        }
+        
+        .feature-card:hover {
+            transform: translateY(-5px);
+            border-color: rgba(59, 130, 246, 0.5);
+            box-shadow: 0 20px 50px rgba(59, 130, 246, 0.1);
+        }
+        
+        .feature-icon {
+            font-size: 48px;
+            margin-bottom: 20px;
+            display: inline-block;
+        }
+        
+        .feature-card h3 {
+            font-size: 22px;
+            margin-bottom: 15px;
+            color: #f1f5f9;
+        }
+        
+        .feature-card p {
+            color: #cbd5e1;
+            line-height: 1.6;
+            font-size: 15px;
+        }
+        
+        /* Tabs Showcase */
+        .tabs-showcase {
+            padding: 100px 20px;
+            background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        
+        .tabs-container {
+            background: linear-gradient(135deg, rgba(30, 41, 59, 0.6) 0%, rgba(15, 23, 42, 0.4) 100%);
+            border: 1px solid rgba(148, 163, 184, 0.2);
+            border-radius: 16px;
+            padding: 40px;
+            margin-bottom: 60px;
+        }
+        
+        .tabs-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+        
+        .tab-badge {
+            background: linear-gradient(135deg, rgba(59, 130, 246, 0.2) 0%, rgba(139, 92, 246, 0.2) 100%);
+            border: 1px solid rgba(59, 130, 246, 0.5);
+            padding: 12px 16px;
+            border-radius: 8px;
+            text-align: center;
+            font-weight: 600;
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .tab-badge:hover {
+            background: linear-gradient(135deg, rgba(59, 130, 246, 0.4) 0%, rgba(139, 92, 246, 0.4) 100%);
+            transform: scale(1.05);
+        }
+        
+        .tabs-description {
+            color: #cbd5e1;
+            line-height: 1.8;
+            font-size: 15px;
+        }
+        
+        /* Stats Section */
+        .stats {
+            padding: 80px 20px;
+            background: #0f172a;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 40px;
+        }
+        
+        .stat {
+            text-align: center;
+        }
+        
+        .stat-number {
+            font-size: 56px;
+            font-weight: 800;
+            background: linear-gradient(135deg, #60a5fa 0%, #a78bfa 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 10px;
+        }
+        
+        .stat-label {
+            color: #cbd5e1;
+            font-size: 16px;
+            font-weight: 600;
+        }
+        
+        /* CTA Section */
+        .cta-section {
+            padding: 80px 20px;
+            background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
+            text-align: center;
+            max-width: 1400px;
+            margin: 0 auto;
+            border-radius: 20px;
+            margin-bottom: 60px;
+        }
+        
+        .cta-section h2 {
+            font-size: 42px;
+            color: white;
+            margin-bottom: 20px;
+        }
+        
+        .cta-section p {
+            font-size: 18px;
+            color: rgba(255, 255, 255, 0.9);
+            margin-bottom: 40px;
+        }
+        
+        .cta-section .btn-primary {
+            background: white;
+            color: #3b82f6;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        }
+        
+        .cta-section .btn-primary:hover {
+            transform: translateY(-4px);
+        }
+        
+        /* Footer */
+        footer {
+            padding: 40px 20px;
+            background: #0f172a;
+            border-top: 1px solid rgba(148, 163, 184, 0.1);
+            text-align: center;
+            color: #64748b;
+            font-size: 14px;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        
+        /* Responsive */
+        @media (max-width: 768px) {
+            .hero h1 { font-size: 36px; }
+            .hero p { font-size: 16px; }
+            .hero-cta { flex-direction: column; }
+            .section-title { font-size: 32px; }
+            .nav-links { display: none; }
+            .hero-image { height: 300px; }
+            .hero-image-content { font-size: 60px; }
+        }
+    </style>
+</head>
+<body>
+    <!-- Navbar -->
+    <nav>
+        <div class="navbar-content">
+            <div class="logo">🔍 Enterprise Security Platform</div>
+            <ul class="nav-links">
+                <li><a href="#features">Features</a></li>
+                <li><a href="#tabs">Tabs</a></li>
+                <li><a href="#stats">Stats</a></li>
+            </ul>
+            <a href="/chat" class="nav-cta">Launch Platform →</a>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="hero">
+        <div class="hero-content">
+            <h1>Analyze Your Codebase Like Never Before</h1>
+            <p>Discover artifacts, visualize relationships, measure code quality, and understand your architecture—all in one premium platform with 16 interactive tabs.</p>
+            <div class="hero-cta">
+                <a href="/chat" class="btn-primary">Start Scanning Now 🚀</a>
+                <a href="#tabs" class="btn-secondary">Learn More</a>
+            </div>
+        </div>
+        
+        <div class="hero-image">
+            <div class="hero-image-content">🕸️📊🔌</div>
+        </div>
+    </section>
+
+    <!-- Features Section -->
+    <section class="features" id="features">
+        <h2 class="section-title">Powerful Features</h2>
+        
+        <div class="features-grid">
+            <div class="feature-card">
+                <div class="feature-icon">🕸️</div>
+                <h3>Interactive Graph Visualization</h3>
+                <p>See your entire codebase as a semantic network. Drag nodes, click to highlight connections, search artifacts, and export graphs as images.</p>
+            </div>
+            
+            <div class="feature-card">
+                <div class="feature-icon">📊</div>
+                <h3>Code Quality Metrics</h3>
+                <p>Complexity analysis, test coverage estimation, maintainability index, security scoring, and overall code quality in beautiful gradient cards.</p>
+            </div>
+            
+            <div class="feature-card">
+                <div class="feature-icon">🔗</div>
+                <h3>Dependency Analysis</h3>
+                <p>Detect security vulnerabilities, analyze prod/dev dependencies, identify risks, and get actionable security warnings.</p>
+            </div>
+            
+            <div class="feature-card">
+                <div class="feature-icon">⚙️</div>
+                <h3>10 Artifact Types</h3>
+                <p>Discover APIs, Classes, Functions, Middleware, Error Handlers, Models, Interfaces, Enums, Constants, and Dependencies automatically.</p>
+            </div>
+            
+            <div class="feature-card">
+                <div class="feature-icon">🏛️</div>
+                <h3>Architecture Intelligence</h3>
+                <p>Analyze tech stack, design patterns, layers, external services, frontend frameworks, and UI architecture in seconds.</p>
+            </div>
+            
+            <div class="feature-card">
+                <div class="feature-icon">🧪</div>
+                <h3>API Testing</h3>
+                <p>Test all discovered endpoints, run batch tests, view response times, and validate your API contracts with one click.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Tabs Showcase Section -->
+    <section class="tabs-showcase" id="tabs">
+        <h2 class="section-title">16 Interactive Tabs</h2>
+        
+        <div class="tabs-container">
+            <div style="margin-bottom: 30px;">
+                <h3 style="color: #f1f5f9; margin-bottom: 15px;">🎯 Artifact Discovery (10 tabs)</h3>
+                <div class="tabs-grid">
+                    <div class="tab-badge">🔌 APIs</div>
+                    <div class="tab-badge">📦 Classes</div>
+                    <div class="tab-badge">⚙️ Functions</div>
+                    <div class="tab-badge">🔗 Middleware</div>
+                    <div class="tab-badge">⚠️ Errors</div>
+                    <div class="tab-badge">🗄️ Models</div>
+                    <div class="tab-badge">🔷 Interfaces</div>
+                    <div class="tab-badge">📋 Enums</div>
+                    <div class="tab-badge">🔢 Constants</div>
+                    <div class="tab-badge">📦 Dependencies</div>
+                </div>
+            </div>
+            
+            <div style="margin-bottom: 30px;">
+                <h3 style="color: #f1f5f9; margin-bottom: 15px;">🏗️ Architecture Analysis (3 tabs)</h3>
+                <div class="tabs-grid">
+                    <div class="tab-badge">🛠️ Tech Stack</div>
+                    <div class="tab-badge">🏛️ Architecture</div>
+                    <div class="tab-badge">🎨 UX Architecture</div>
+                </div>
+            </div>
+            
+            <div>
+                <h3 style="color: #f1f5f9; margin-bottom: 15px;">🚀 Advanced Analytics (3 tabs)</h3>
+                <div class="tabs-grid">
+                    <div class="tab-badge">🕸️ Graph</div>
+                    <div class="tab-badge">📊 Metrics</div>
+                    <div class="tab-badge">🔗 Dependencies</div>
+                </div>
+            </div>
+            
+            <div class="tabs-description" style="margin-top: 40px; padding-top: 30px; border-top: 1px solid rgba(148, 163, 184, 0.2);">
+                <strong>Each tab provides deep insights into your codebase:</strong><br><br>
+                The <strong>Artifact Discovery tabs</strong> automatically extract and display 10 different types of code artifacts with detailed metadata. The <strong>Architecture tabs</strong> analyze your tech stack, design patterns, and frontend configuration. The <strong>Advanced Analytics tabs</strong> include a premium graph visualization with semantic relationships, comprehensive code metrics, and security analysis.
+            </div>
+        </div>
+    </section>
+
+    <!-- Stats Section -->
+    <section class="stats" id="stats">
+        <h2 class="section-title">By The Numbers</h2>
+        
+        <div class="stats-grid">
+            <div class="stat">
+                <div class="stat-number">16</div>
+                <div class="stat-label">Interactive Tabs</div>
+            </div>
+            <div class="stat">
+                <div class="stat-number">10</div>
+                <div class="stat-label">Artifact Types</div>
+            </div>
+            <div class="stat">
+                <div class="stat-number">∞</div>
+                <div class="stat-label">Codebases Supported</div>
+            </div>
+            <div class="stat">
+                <div class="stat-number">100%</div>
+                <div class="stat-label">Open Source</div>
+            </div>
+        </div>
+    </section>
+
+    <!-- CTA Section -->
+    <section class="cta-section">
+        <h2>Ready to Understand Your Codebase?</h2>
+        <p>Scan your repository now and get instant insights into architecture, code quality, and dependencies.</p>
+        <a href="/chat" class="btn-primary">Start Your First Scan 🚀</a>
+    </section>
+
+    <!-- Footer -->
+    <footer>
+        <p>Enterprise Security Platform © 2026 | Powered by Advanced Code Analysis</p>
+    </footer>
+</body>
+</html>
