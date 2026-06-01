@@ -24,6 +24,11 @@ html {
   --emerald-400: 5, 150, 105;
   --rose-400: 220, 38, 38;
   --amber-400: 217, 119, 6;
+
+  --gradient-from: 248, 250, 252;
+  --gradient-via: 241, 245, 249;
+  --gradient-to: 226, 232, 240;
+  --grid-color: rgba(99, 102, 241, 0.03);
 }
 
 html.dark {
@@ -48,6 +53,11 @@ html.dark {
   --emerald-400: 52, 211, 153;
   --rose-400: 248, 113, 113;
   --amber-400: 251, 191, 36;
+
+  --gradient-from: 15, 23, 42;
+  --gradient-via: 26, 31, 58;
+  --gradient-to: 22, 33, 62;
+  --grid-color: rgba(99, 102, 241, 0.06);
 }
 
 * {
@@ -62,15 +72,14 @@ body {
   padding: 0;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  background-color: #0a0e27;
 }
 
 #root {
   height: 100%;
   background: 
-    linear-gradient(rgba(99, 102, 241, 0.08) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(99, 102, 241, 0.08) 1px, transparent 1px),
-    linear-gradient(135deg, #0f172a 0%, #1a1f3a 50%, #16213e 100%);
+    linear-gradient(var(--grid-color) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid-color) 1px, transparent 1px),
+    linear-gradient(135deg, rgb(var(--gradient-from)) 0%, rgb(var(--gradient-via)) 50%, rgb(var(--gradient-to)) 100%);
   background-size: 60px 60px, 60px 60px, 100% 100%;
   background-attachment: fixed, fixed, fixed;
 }

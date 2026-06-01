@@ -22,40 +22,40 @@ export const DashboardPage: React.FC = () => {
       value: currentSessionId ? '1' : '0', 
       icon: Terminal, 
       desc: 'Active developer environments',
-      cardClass: 'border-indigo-500/40 hover:border-indigo-500/60 bg-gradient-to-br from-indigo-950/60 via-indigo-900/30 to-slate-950/40 shadow-lg shadow-indigo-500/20 hover:shadow-indigo-500/30',
-      iconClass: 'text-indigo-300 bg-indigo-500/30 border-indigo-400/40',
-      glowClass: 'bg-indigo-500/30 blur-3xl',
-      valClass: 'bg-gradient-to-r from-indigo-100 via-indigo-200 to-indigo-300 text-transparent bg-clip-text drop-shadow-[0_2px_8px_rgba(99,102,241,0.3)]'
+      cardClass: 'border-indigo-500/20 dark:border-indigo-500/40 hover:border-indigo-500/40 dark:hover:border-indigo-500/60 bg-gradient-to-br from-indigo-50/60 via-indigo-50/20 to-slate-surface dark:from-indigo-950/60 dark:via-indigo-900/30 dark:to-slate-950/40 shadow-md dark:shadow-lg shadow-indigo-500/5 dark:shadow-indigo-500/20 hover:shadow-lg dark:hover:shadow-indigo-500/30',
+      iconClass: 'text-indigo-600 dark:text-indigo-300 bg-indigo-500/10 dark:bg-indigo-500/30 border-indigo-500/20 dark:border-indigo-400/40',
+      glowClass: 'bg-indigo-500/10 dark:bg-indigo-500/30 blur-3xl',
+      valClass: 'bg-gradient-to-r from-indigo-600 via-indigo-500 to-indigo-700 dark:from-indigo-100 dark:via-indigo-200 dark:to-indigo-300 text-transparent bg-clip-text drop-shadow-[0_2px_8px_rgba(99,102,241,0.15)] dark:drop-shadow-[0_2px_8px_rgba(99,102,241,0.3)]'
     },
     { 
       label: 'Critical Threats', 
       value: currentSessionId ? String(criticalBugs) : '0', 
       icon: Shield, 
       desc: 'Requires immediate action',
-      cardClass: 'border-rose-500/40 hover:border-rose-500/60 bg-gradient-to-br from-rose-950/60 via-rose-900/30 to-slate-950/40 shadow-lg shadow-rose-500/20 hover:shadow-rose-500/30',
-      iconClass: 'text-rose-300 bg-rose-500/30 border-rose-400/40',
-      glowClass: 'bg-rose-500/30 blur-3xl',
-      valClass: 'bg-gradient-to-r from-rose-100 via-rose-200 to-rose-300 text-transparent bg-clip-text drop-shadow-[0_2px_8px_rgba(244,63,94,0.3)]'
+      cardClass: 'border-rose-500/20 dark:border-rose-500/40 hover:border-rose-500/40 dark:hover:border-rose-500/60 bg-gradient-to-br from-rose-50/60 via-rose-50/20 to-slate-surface dark:from-rose-950/60 dark:via-rose-900/30 dark:to-slate-950/40 shadow-md dark:shadow-lg shadow-rose-500/5 dark:shadow-rose-500/20 hover:shadow-lg dark:hover:shadow-rose-500/30',
+      iconClass: 'text-rose-600 dark:text-rose-300 bg-rose-500/10 dark:bg-rose-500/30 border-rose-500/20 dark:border-rose-400/40',
+      glowClass: 'bg-rose-500/10 dark:bg-rose-500/30 blur-3xl',
+      valClass: 'bg-gradient-to-r from-rose-600 via-rose-500 to-rose-700 dark:from-rose-100 dark:via-rose-200 dark:to-rose-300 text-transparent bg-clip-text drop-shadow-[0_2px_8px_rgba(244,63,94,0.15)] dark:drop-shadow-[0_2px_8px_rgba(244,63,94,0.3)]'
     },
     { 
       label: 'Refactor Opportunities', 
       value: currentSessionId ? '8' : '0', 
       icon: RefreshCw, 
       desc: 'Redundancies & quality issues',
-      cardClass: 'border-amber-500/40 hover:border-amber-500/60 bg-gradient-to-br from-amber-950/60 via-amber-900/30 to-slate-950/40 shadow-lg shadow-amber-500/20 hover:shadow-amber-500/30',
-      iconClass: 'text-amber-300 bg-amber-500/30 border-amber-400/40',
-      glowClass: 'bg-amber-500/30 blur-3xl',
-      valClass: 'bg-gradient-to-r from-amber-100 via-amber-200 to-amber-300 text-transparent bg-clip-text drop-shadow-[0_2px_8px_rgba(245,158,11,0.3)]'
+      cardClass: 'border-amber-500/20 dark:border-amber-500/40 hover:border-amber-500/40 dark:hover:border-amber-500/60 bg-gradient-to-br from-amber-50/60 via-amber-50/20 to-slate-surface dark:from-amber-950/60 dark:via-amber-900/30 dark:to-slate-950/40 shadow-md dark:shadow-lg shadow-amber-500/5 dark:shadow-amber-500/20 hover:shadow-lg dark:hover:shadow-amber-500/30',
+      iconClass: 'text-amber-600 dark:text-amber-300 bg-amber-500/10 dark:bg-amber-500/30 border-amber-500/20 dark:border-amber-400/40',
+      glowClass: 'bg-amber-500/10 dark:bg-amber-500/30 blur-3xl',
+      valClass: 'bg-gradient-to-r from-amber-600 via-amber-500 to-amber-700 dark:from-amber-100 dark:via-amber-200 dark:to-amber-300 text-transparent bg-clip-text drop-shadow-[0_2px_8px_rgba(245,158,11,0.15)] dark:drop-shadow-[0_2px_8px_rgba(245,158,11,0.3)]'
     },
     { 
       label: 'Global Security Score', 
       value: currentSessionId ? (totalBugs > 0 ? `${Math.max(40, 100 - totalBugs * 5)}%` : '98%') : '100%', 
       icon: CheckCircle2, 
       desc: 'Based on threat exposure',
-      cardClass: 'border-emerald-500/40 hover:border-emerald-500/60 bg-gradient-to-br from-emerald-950/60 via-emerald-900/30 to-slate-950/40 shadow-lg shadow-emerald-500/20 hover:shadow-emerald-500/30',
-      iconClass: 'text-emerald-300 bg-emerald-500/30 border-emerald-400/40',
-      glowClass: 'bg-emerald-500/30 blur-3xl',
-      valClass: 'bg-gradient-to-r from-emerald-100 via-emerald-200 to-emerald-300 text-transparent bg-clip-text drop-shadow-[0_2px_8px_rgba(16,185,129,0.3)]'
+      cardClass: 'border-emerald-500/20 dark:border-emerald-500/40 hover:border-emerald-500/40 dark:hover:border-emerald-500/60 bg-gradient-to-br from-emerald-50/60 via-emerald-50/20 to-slate-surface dark:from-emerald-950/60 dark:via-emerald-900/30 dark:to-slate-950/40 shadow-md dark:shadow-lg shadow-emerald-500/5 dark:shadow-emerald-500/20 hover:shadow-lg dark:hover:shadow-emerald-500/30',
+      iconClass: 'text-emerald-600 dark:text-emerald-300 bg-emerald-500/10 dark:bg-emerald-500/30 border-emerald-500/20 dark:border-emerald-400/40',
+      glowClass: 'bg-emerald-500/10 dark:bg-emerald-500/30 blur-3xl',
+      valClass: 'bg-gradient-to-r from-emerald-600 via-emerald-500 to-emerald-700 dark:from-emerald-100 dark:via-emerald-200 dark:to-emerald-300 text-transparent bg-clip-text drop-shadow-[0_2px_8px_rgba(16,185,129,0.15)] dark:drop-shadow-[0_2px_8px_rgba(16,185,129,0.3)]'
     },
   ]
 
