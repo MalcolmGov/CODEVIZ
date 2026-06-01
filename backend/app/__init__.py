@@ -66,7 +66,8 @@ def register_blueprints(app):
         auth_bp,
         repositories_bp,
         health_bp,
-        scoring_bp
+        scoring_bp,
+        compliance_bp,
     )
 
     app.register_blueprint(chat_bp, url_prefix='/api/chat')
@@ -76,6 +77,7 @@ def register_blueprints(app):
     app.register_blueprint(repositories_bp, url_prefix='/api/repositories')
     app.register_blueprint(health_bp, url_prefix='/api')
     app.register_blueprint(scoring_bp, url_prefix='/api/scoring')
+    app.register_blueprint(compliance_bp, url_prefix='/api/compliance')
 
     print("✅ Blueprints registered")
 

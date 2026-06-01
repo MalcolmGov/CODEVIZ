@@ -1278,6 +1278,27 @@ export const ScannerPage: React.FC = () => {
     }
   ]
 
+  // ── Grouped navigation ────────────────────────────────────────────────────
+  const tabGroups = [
+    { id: 'summary',  label: '📊 Summary',      tabIds: ['overview', 'risk_score'] },
+    { id: 'code',     label: '🔍 Code',          tabIds: ['structure', 'files', 'apis', 'classes', 'functions', 'error_handlers', 'middleware'] },
+    { id: 'data',     label: '🗄️ Data',          tabIds: ['models', 'enums', 'interfaces', 'constants', 'key_files'] },
+    { id: 'deps',     label: '📦 Dependencies',  tabIds: ['dependencies', 'tech_stack', 'architecture', 'ux_architecture'] },
+  ]
+
+  const activeGroup = tabGroups.find(g => g.tabIds.includes(currentTab))?.id ?? 'summary'
+
+  const handleGroupChange = (groupId: string) => {
+    const group = tabGroups.find(g => g.id === groupId)
+    if (group) setCurrentTab(group.tabIds[0])
+  }
+
+  const subTabs = dashboardTabs.filter(t =>
+    tabGroups.find(g => g.id === activeGroup)?.tabIds.includes(t.id)
+  )
+
+  const activeContent = dashboardTabs.find(t => t.id === currentTab)?.content
+
   return (
     <div className="space-y-6 select-none animate-fade-in">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
@@ -1301,11 +1322,46 @@ export const ScannerPage: React.FC = () => {
       </div>
       
       {dashboardTabs.length > 0 && (
-        <Tabs 
-          tabs={dashboardTabs} 
-          activeTab={currentTab} 
-          onChange={(tabId) => setCurrentTab(tabId)} 
-        />
+        <div className="space-y-0">
+          {/* Group pills */}
+          <div className="flex gap-2 mb-3 flex-wrap">
+            {tabGroups.map(group => (
+              <button
+                key={group.id}
+                onClick={() => handleGroupChange(group.id)}
+                className={clsx(
+                  'px-4 py-1.5 rounded-full text-xs font-semibold font-mono transition-all duration-200',
+                  activeGroup === group.id
+                    ? 'bg-indigo-500 text-white shadow-lg shadow-indigo-500/20'
+                    : 'bg-slate-900/40 border border-slate-border/40 text-slate-400 hover:text-slate-200 hover:border-slate-border/70'
+                )}
+              >
+                {group.label}
+              </button>
+            ))}
+          </div>
+
+          {/* Sub-tabs */}
+          <div className="flex gap-0 border-b border-slate-border/50 mb-4 overflow-x-auto scrollbar-none">
+            {subTabs.map(tab => (
+              <button
+                key={tab.id}
+                onClick={() => setCurrentTab(tab.id)}
+                className={clsx(
+                  'px-4 py-2 text-sm font-medium border-b-2 -mb-px transition-colors whitespace-nowrap shrink-0',
+                  currentTab === tab.id
+                    ? 'border-indigo-500 text-indigo-400'
+                    : 'border-transparent text-slate-400 hover:text-slate-200'
+                )}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </div>
+
+          {/* Active tab content */}
+          <div>{activeContent}</div>
+        </div>
       )}
     </div>
   )
