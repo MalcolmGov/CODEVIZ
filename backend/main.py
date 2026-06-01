@@ -9,6 +9,12 @@ Or with production WSGI server:
 """
 
 import os
+from dotenv import load_dotenv
+
+# Load environment variables from .env
+# Search in root folder
+load_dotenv(os.path.join(os.path.dirname(__file__), '..', '.env'))
+
 from app import create_app
 
 # Determine environment

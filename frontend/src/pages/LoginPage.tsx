@@ -1,16 +1,52 @@
-import React from 'react'
+import React, { useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Button } from '@/components/common/Button'
 import { Card } from '@/components/common/Card'
 import { useAuthStore } from '@/store/authStore'
 import { Github, ShieldAlert, Terminal } from 'lucide-react'
+import { authService } from '@/services/auth'
+import { api } from '@/services/api'
 
 export const LoginPage: React.FC = () => {
   const navigate = useNavigate()
   const { login } = useAuthStore()
 
-  const handleGitHubLogin = () => {
-    // Mock GitHub login - in production would redirect to GitHub OAuth
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    const token = params.get('token')
+    
+    if (token) {
+      const fetchProfileAndLogin = async () => {
+        try {
+          // Get user details from backend using the real/mock token
+          const response = await api.get('/auth/user', {
+            headers: { Authorization: `Bearer ${token}` }
+          })
+          const userProfile = response.data.data
+          login(userProfile, token)
+          navigate('/dashboard')
+        } catch (err) {
+          console.error('OAuth profile retrieval failed:', err)
+        }
+      }
+      
+      fetchProfileAndLogin()
+    }
+  }, [navigate, login])
+
+  const handleGitHubLogin = async () => {
+    try {
+      const response = await authService.getGitHubLoginUrl()
+      const authUrl = response.data.data?.auth_url
+      if (authUrl) {
+        window.location.href = authUrl
+        return
+      }
+    } catch (err) {
+      console.warn('GitHub OAuth not configured on backend, falling back to Sandbox development login...', err)
+    }
+
+    // Fallback Mock OAuth Login for Sandbox Dev environment
     const mockUser = { id: 1, email: 'malcolm@example.com', name: 'Malcolm Govender' }
     login(mockUser, 'mock_token_123')
     navigate('/dashboard')
