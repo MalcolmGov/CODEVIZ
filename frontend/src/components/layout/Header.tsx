@@ -36,27 +36,31 @@ export const Header: React.FC<{ onMenuClick: () => void }> = ({ onMenuClick }) =
   const [theme, setTheme] = useState<'light' | 'dark'>(() => {
     try {
       const savedTheme = localStorage.getItem('theme')
+      console.log('Header theme initializer - savedTheme:', savedTheme)
       if (savedTheme === 'light' || savedTheme === 'dark') {
         return savedTheme
       }
     } catch (e) {
-      console.warn('localStorage not available', e)
+      console.warn('localStorage not available in initializer', e)
     }
     return 'dark' // default to dark
   })
 
   useEffect(() => {
+    console.log('Header theme effect triggered - theme state:', theme)
     if (theme === 'light') {
       document.documentElement.classList.remove('dark')
       document.documentElement.classList.add('light')
+      console.log('Applied light class. html className:', document.documentElement.className)
     } else {
       document.documentElement.classList.remove('light')
       document.documentElement.classList.add('dark')
+      console.log('Applied dark class. html className:', document.documentElement.className)
     }
     try {
       localStorage.setItem('theme', theme)
     } catch (e) {
-      console.warn('localStorage not available', e)
+      console.warn('localStorage not available in effect', e)
     }
   }, [theme])
 
