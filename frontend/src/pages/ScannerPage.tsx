@@ -33,13 +33,13 @@ export const ScannerPage: React.FC = () => {
   const [pingProgress, setPingProgress] = useState(0)
   const [isPingingAll, setIsPingingAll] = useState(false)
 
-  const handleTestEndpoint = async (path: string, method: string) => {
+  const handleTestEndpoint = async (path: string, method: string, baseUrl?: string) => {
     setApiHealth(prev => ({
       ...prev,
       [path]: { loading: true, status: 'Testing...' }
     }))
     try {
-      const response = await api.post('/health/ping-endpoint', { path, method })
+      const response = await api.post('/health/ping-endpoint', { path, method, base_url: baseUrl })
       const resData = response.data.data || response.data
       setApiHealth(prev => ({
         ...prev,
@@ -73,6 +73,7 @@ export const ScannerPage: React.FC = () => {
     const pingPromises = apisList.map(async (apiItem: any) => {
       const path = apiItem.path
       const method = apiItem.methods?.[0] || 'GET'
+      const baseUrl = apiItem.base_url
       
       setApiHealth(prev => ({
         ...prev,
@@ -80,7 +81,7 @@ export const ScannerPage: React.FC = () => {
       }))
       
       try {
-        const response = await api.post('/health/ping-endpoint', { path, method })
+        const response = await api.post('/health/ping-endpoint', { path, method, base_url: baseUrl })
         const resData = response.data.data || response.data
         setApiHealth(prev => ({
           ...prev,
@@ -498,7 +499,7 @@ export const ScannerPage: React.FC = () => {
             <button
               onClick={(e) => {
                 e.stopPropagation()
-                handleTestEndpoint(row.path, row.methods?.[0] || 'GET')
+                handleTestEndpoint(row.path, row.methods?.[0] || 'GET', row.base_url)
               }}
               className="ml-auto text-[10px] bg-slate-950/50 border border-slate-border/50 hover:bg-indigo-500/10 hover:border-indigo-500/20 text-slate-450 hover:text-indigo-400 px-2 py-0.5 rounded-md transition-all font-mono"
             >

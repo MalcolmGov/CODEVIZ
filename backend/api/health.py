@@ -140,17 +140,25 @@ def ping_endpoint():
         data = request.get_json() or {}
         path = data.get('path', '')
         method = data.get('method', 'GET').upper()
+        base_url = data.get('base_url', '').strip()
+        
+        if not base_url:
+            base_url = 'http://localhost:8000'
         
         if not path:
             return jsonify({'status': 'error', 'message': 'Path required'}), 400
             
         import requests
         
+        # Ensure base_url does not end with / and clean_path starts with /
+        if base_url.endswith('/'):
+            base_url = base_url.rstrip('/')
+            
         clean_path = path.strip()
         if not clean_path.startswith('/'):
             clean_path = '/' + clean_path
             
-        target_url = f"http://localhost:8000{clean_path}"
+        target_url = f"{base_url}{clean_path}"
         
         try:
             if method == 'GET':

@@ -109,9 +109,67 @@ class RepositoryContextBuilder:
                 except:
                     pass
     
+    def _detect_port(self) -> int:
+        """Detect the application port from config files, package.json, or .env"""
+        # 1. Try to read from .env
+        env_path = self.repo_path / '.env'
+        if env_path.exists():
+            try:
+                with open(env_path, 'r', errors='ignore') as f:
+                    for line in f:
+                        line = line.strip()
+                        if not line or line.startswith('#'):
+                            continue
+                        if '=' in line:
+                            parts = line.split('=', 1)
+                            key = parts[0].strip()
+                            val = parts[1].strip().strip('\'"')
+                            if key in ('PORT', 'APP_PORT', 'SERVER_PORT', 'BACKEND_PORT'):
+                                try:
+                                    return int(val)
+                                except ValueError:
+                                    pass
+            except Exception:
+                pass
+
+        # 2. Try to read from package.json
+        package_json_path = self.repo_path / 'package.json'
+        if package_json_path.exists():
+            try:
+                with open(package_json_path, 'r', errors='ignore') as f:
+                    data = json.load(f)
+                    # Check scripts for port definitions
+                    scripts = data.get('scripts', {})
+                    for script_val in scripts.values():
+                        port_match = re.search(r'(?:--port|-p)\s+(\d+)', script_val)
+                        if port_match:
+                            return int(port_match.group(1))
+            except Exception:
+                pass
+
+        # 3. Default fallbacks based on project type
+        if (self.repo_path / 'package.json').exists():
+            # For express/node, look at index.ts/js files for listen port
+            for p in list(self.repo_path.glob('**/server.ts')) + list(self.repo_path.glob('**/server.js')) + list(self.repo_path.glob('**/index.ts')) + list(self.repo_path.glob('**/index.js')):
+                try:
+                    with open(p, 'r', errors='ignore') as f:
+                        content = f.read()
+                        listen_match = re.search(r'\.listen\(\s*(?:process\.env\.PORT\s*\|\|\s*)?(\d+)', content)
+                        if listen_match:
+                            return int(listen_match.group(1))
+                except Exception:
+                    pass
+            # Default node port
+            return 3000
+            
+        return 8000
+
     def _extract_comprehensive_artifacts(self):
         """Extract all code artifacts: APIs, classes, middleware, models, interfaces, enums, constants, error handlers"""
         print("  - Extracting comprehensive code artifacts...")
+        
+        detected_port = self._detect_port()
+        base_url = f"http://localhost:{detected_port}"
         
         apis = []
         functions = []
@@ -142,7 +200,7 @@ class RepositoryContextBuilder:
                             "methods": methods_list,
                             "type": "flask_route",
                             "testable": True,
-                            "base_url": "http://localhost:8000",
+                            "base_url": base_url,
                             "source": "local",
                             "environment": "development"
                         })
@@ -216,7 +274,7 @@ class RepositoryContextBuilder:
                                 "methods": [method.upper()],
                                 "type": "express_route",
                                 "testable": True,
-                                "base_url": "http://localhost:8000",
+                                "base_url": base_url,
                                 "source": "local",
                                 "environment": "development"
                             })
