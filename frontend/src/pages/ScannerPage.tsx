@@ -7,11 +7,12 @@ import { Badge } from '@/components/common/Badge'
 import { Button } from '@/components/common/Button'
 import { useSessionStore } from '@/store/sessionStore'
 import { chatService } from '@/services/chat'
-import { 
-  Terminal, ShieldCheck, Cpu, Code2, Server, Globe, 
+import { scoringService, RiskProfile } from '@/services/scoring'
+import {
+  Terminal, ShieldCheck, Cpu, Code2, Server, Globe,
   Layers, Package, Settings, Activity, FolderGit2, Search, ArrowRight,
   FileCode2, ShieldAlert, Split, Database, ListPlus, Link, Hash, Key, Palette,
-  RefreshCw, ChevronRight, ArrowUpRight, BarChart3
+  RefreshCw, ChevronRight, ArrowUpRight, BarChart3, Trophy, AlertTriangle, CheckCircle2, Info
 } from 'lucide-react'
 import { Network, DataSet } from 'vis-network/standalone'
 import 'vis-network/styles/vis-network.css'
@@ -29,7 +30,9 @@ export const ScannerPage: React.FC = () => {
   const [currentPages, setCurrentPages] = useState<Record<string, number>>({})
   const [apiHealth, setApiHealth] = useState<Record<string, { loading: boolean; status: string; code?: number; message?: string }>>({})
   const [customBaseUrl, setCustomBaseUrl] = useState<string>('')
-  
+  const [riskProfile, setRiskProfile] = useState<RiskProfile | null>(null)
+  const [riskLoading, setRiskLoading] = useState(false)
+
   const [currentTab, setCurrentTab] = useState<string>('overview')
   const [pingProgress, setPingProgress] = useState(0)
   const [isPingingAll, setIsPingingAll] = useState(false)
@@ -241,11 +244,19 @@ export const ScannerPage: React.FC = () => {
       console.error('Failed to get artifacts:', error)
     } finally {
       // Allow the loading animation to reach final steps for premium aesthetic
-      setTimeout(() => {
-        setLoading(false)
-      }, 1000)
+      setTimeout(() => setLoading(false), 1000)
     }
   }
+
+  // Fetch risk score after scan completes
+  useEffect(() => {
+    if (!sessionId || loading) return
+    setRiskLoading(true)
+    scoringService.getScore(sessionId)
+      .then(res => setRiskProfile((res.data as any).data))
+      .catch(err => console.error('Risk score fetch failed:', err))
+      .finally(() => setRiskLoading(false))
+  }, [sessionId, loading])
 
   // vis.js Network Graph Integration
   useEffect(() => {
@@ -1104,6 +1115,164 @@ export const ScannerPage: React.FC = () => {
               ) : <span className="text-slate-500 italic text-xs">None detected</span>}
             </div>
           </Card>
+        </div>
+      )
+    },
+    // ── Tier 2: Multi-Dimensional Risk Score ──────────────────────────────────
+    {
+      id: 'risk_score',
+      label: '🏆 Risk Score',
+      content: (
+        <div className="space-y-6">
+          {riskLoading ? (
+            <div className="flex items-center justify-center py-24 text-slate-400 text-sm font-mono gap-3">
+              <RefreshCw size={16} className="animate-spin text-indigo-400" />
+              Computing multi-dimensional risk profile...
+            </div>
+          ) : !riskProfile ? (
+            <div className="flex items-center justify-center py-24 text-slate-500 text-sm italic">
+              Risk score unavailable — rescan to compute.
+            </div>
+          ) : (() => {
+            const colorMap: Record<string, string> = {
+              emerald: 'text-emerald-400', green: 'text-emerald-400',
+              amber: 'text-amber-400', orange: 'text-orange-400', rose: 'text-rose-400'
+            }
+            const bgMap: Record<string, string> = {
+              emerald: 'bg-emerald-500/10 border-emerald-500/20', green: 'bg-emerald-500/10 border-emerald-500/20',
+              amber: 'bg-amber-500/10 border-amber-500/20', orange: 'bg-orange-500/10 border-orange-500/20',
+              rose: 'bg-rose-500/10 border-rose-500/20'
+            }
+            const barMap: Record<string, string> = {
+              emerald: 'from-emerald-500 to-emerald-400', green: 'from-emerald-500 to-emerald-400',
+              amber: 'from-amber-500 to-amber-400', orange: 'from-orange-500 to-orange-400',
+              rose: 'from-rose-500 to-rose-400'
+            }
+
+            // Radar chart (pure SVG)
+            const cx = 140, cy = 140, r = 105
+            const dims = riskProfile.dimensions
+            const angles = dims.map((_, i) => (i / dims.length) * 2 * Math.PI - Math.PI / 2)
+            const toXY = (angle: number, val: number) => ({
+              x: cx + (val / 100) * r * Math.cos(angle),
+              y: cy + (val / 100) * r * Math.sin(angle)
+            })
+            const gridPts = (frac: number) =>
+              angles.map(a => `${cx + frac * r * Math.cos(a)},${cy + frac * r * Math.sin(a)}`).join(' ')
+            const scorePts = dims.map((d, i) => {
+              const p = toXY(angles[i], d.score)
+              return `${p.x},${p.y}`
+            }).join(' ')
+            const labelPts = dims.map((d, i) => {
+              const dist = r + 22
+              return { x: cx + dist * Math.cos(angles[i]), y: cy + dist * Math.sin(angles[i]), name: d.name }
+            })
+
+            return (
+              <>
+                {/* Composite Score Hero */}
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                  <Card className={clsx('lg:col-span-1 flex flex-col items-center justify-center py-10 border', bgMap[riskProfile.composite.color] || 'bg-slate-surface/30 border-slate-border/40')}>
+                    <div className="text-7xl font-black font-display tracking-tight">
+                      <span className={colorMap[riskProfile.composite.color] || 'text-slate-100'}>
+                        {riskProfile.composite.score.toFixed(0)}
+                      </span>
+                    </div>
+                    <div className={clsx('text-4xl font-black mt-1', colorMap[riskProfile.composite.color])}>
+                      {riskProfile.composite.grade}
+                    </div>
+                    <div className="text-slate-300 font-bold mt-2 text-lg">{riskProfile.composite.label}</div>
+                    <div className="text-slate-500 text-xs mt-1 font-mono">Composite Risk Score</div>
+
+                    {/* Summary pills */}
+                    <div className="flex gap-3 mt-6 flex-wrap justify-center">
+                      <span className="flex items-center gap-1.5 text-xs bg-rose-500/10 border border-rose-500/20 text-rose-400 px-2.5 py-1 rounded-full font-mono">
+                        <AlertTriangle size={10} /> {riskProfile.summary.critical_flags} critical
+                      </span>
+                      <span className="flex items-center gap-1.5 text-xs bg-amber-500/10 border border-amber-500/20 text-amber-400 px-2.5 py-1 rounded-full font-mono">
+                        <Info size={10} /> {riskProfile.summary.warnings} warnings
+                      </span>
+                      <span className="flex items-center gap-1.5 text-xs bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 px-2.5 py-1 rounded-full font-mono">
+                        <CheckCircle2 size={10} /> {riskProfile.summary.positives} passing
+                      </span>
+                    </div>
+                  </Card>
+
+                  {/* Radar Chart */}
+                  <Card className="lg:col-span-2 bg-slate-surface/30 border-slate-border/40 flex items-center justify-center">
+                    <svg viewBox="0 0 280 280" width="280" height="280">
+                      {/* Grid rings */}
+                      {[0.25, 0.5, 0.75, 1].map(frac => (
+                        <polygon key={frac} points={gridPts(frac)}
+                          fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth="1" />
+                      ))}
+                      {/* Axis lines */}
+                      {angles.map((angle, i) => (
+                        <line key={i}
+                          x1={cx} y1={cy}
+                          x2={cx + r * Math.cos(angle)} y2={cy + r * Math.sin(angle)}
+                          stroke="rgba(255,255,255,0.08)" strokeWidth="1" />
+                      ))}
+                      {/* Score polygon */}
+                      <polygon points={scorePts}
+                        fill="rgba(99,102,241,0.15)" stroke="rgba(99,102,241,0.7)"
+                        strokeWidth="2" strokeLinejoin="round" />
+                      {/* Score dots */}
+                      {dims.map((d, i) => {
+                        const p = toXY(angles[i], d.score)
+                        return <circle key={i} cx={p.x} cy={p.y} r="4"
+                          fill="#6366f1" stroke="rgba(255,255,255,0.5)" strokeWidth="1.5" />
+                      })}
+                      {/* Labels */}
+                      {labelPts.map((lp, i) => (
+                        <text key={i} x={lp.x} y={lp.y} textAnchor="middle" dominantBaseline="middle"
+                          fontSize="9" fontFamily="Inter,sans-serif" fill="#94a3b8" fontWeight="600">
+                          {lp.name}
+                        </text>
+                      ))}
+                    </svg>
+                  </Card>
+                </div>
+
+                {/* Dimension Breakdown */}
+                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+                  {riskProfile.dimensions.map(dim => (
+                    <Card key={dim.name} className="bg-slate-surface/30 border-slate-border/40 space-y-4">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <h4 className="font-bold text-slate-100 font-display text-sm">{dim.name}</h4>
+                          <p className="text-slate-500 text-[10px] font-mono mt-0.5">Weight: {dim.weight}%</p>
+                        </div>
+                        <div className="text-right">
+                          <span className={clsx('text-2xl font-black font-display', colorMap[dim.color] || 'text-slate-100')}>
+                            {dim.score.toFixed(0)}
+                          </span>
+                          <span className={clsx('ml-1.5 text-sm font-bold', colorMap[dim.color])}>
+                            {dim.grade}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Score bar */}
+                      <div className="w-full bg-slate-950/60 rounded-full h-1.5 overflow-hidden">
+                        <div
+                          className={clsx('h-full rounded-full bg-gradient-to-r transition-all duration-500', barMap[dim.color] || 'from-indigo-500 to-indigo-400')}
+                          style={{ width: `${dim.score}%` }}
+                        />
+                      </div>
+
+                      {/* Findings */}
+                      <ul className="space-y-1.5 max-h-36 overflow-y-auto pr-1">
+                        {dim.findings.map((f, i) => (
+                          <li key={i} className="text-[11px] text-slate-400 leading-snug">{f}</li>
+                        ))}
+                      </ul>
+                    </Card>
+                  ))}
+                </div>
+              </>
+            )
+          })()}
         </div>
       )
     }

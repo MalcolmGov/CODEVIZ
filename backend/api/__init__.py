@@ -14,15 +14,17 @@ refactoring_bp = Blueprint('refactoring', __name__)
 auth_bp = Blueprint('auth', __name__)
 repositories_bp = Blueprint('repositories', __name__)
 health_bp = Blueprint('health', __name__)
+scoring_bp = Blueprint('scoring', __name__)
 
 # Import route handlers (at bottom to avoid circular imports)
-from . import chat, security, refactoring, auth, repositories, health
+from . import chat, security, refactoring, auth, repositories, health, scoring
 
 __all__ = [
     'chat_bp',
-    'security_bp', 
+    'security_bp',
     'refactoring_bp',
     'auth_bp',
     'repositories_bp',
-    'health_bp'
+    'health_bp',
+    'scoring_bp'
 ]

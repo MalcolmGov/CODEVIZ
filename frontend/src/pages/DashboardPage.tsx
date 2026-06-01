@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Card } from '@/components/common/Card'
 import { Button } from '@/components/common/Button'
@@ -6,15 +6,28 @@ import { Table } from '@/components/common/Table'
 import { Badge } from '@/components/common/Badge'
 import { useSessionStore } from '@/store/sessionStore'
 import { useBugsStore } from '@/store/bugsStore'
-import { Shield, BarChart3, RefreshCw, Terminal, CheckCircle2, ChevronRight, Activity } from 'lucide-react'
+import { scoringService, RiskProfile } from '@/services/scoring'
+import { Shield, BarChart3, RefreshCw, Terminal, CheckCircle2, ChevronRight, Activity, Trophy } from 'lucide-react'
 
 export const DashboardPage: React.FC = () => {
   const navigate = useNavigate()
   const { currentSessionId, sessionData } = useSessionStore()
   const { bugs } = useBugsStore()
+  const [riskProfile, setRiskProfile] = useState<RiskProfile | null>(null)
+
+  useEffect(() => {
+    if (!currentSessionId) return
+    scoringService.getScore(currentSessionId)
+      .then(res => setRiskProfile((res.data as any).data))
+      .catch(() => {})
+  }, [currentSessionId])
 
   const criticalBugs = bugs.filter(b => b.severity === 'critical' || b.severity === 'high').length
   const totalBugs = bugs.length
+
+  const compositeScore = riskProfile
+    ? `${riskProfile.composite.score.toFixed(0)}% ${riskProfile.composite.grade}`
+    : currentSessionId ? '—' : '100%'
 
   const stats = [
     { 
@@ -47,11 +60,11 @@ export const DashboardPage: React.FC = () => {
       glowClass: 'bg-amber-500/10 dark:bg-amber-500/30 blur-3xl',
       valClass: 'bg-gradient-to-r from-amber-600 via-amber-500 to-amber-700 dark:from-amber-100 dark:via-amber-200 dark:to-amber-300 text-transparent bg-clip-text drop-shadow-[0_2px_8px_rgba(245,158,11,0.15)] dark:drop-shadow-[0_2px_8px_rgba(245,158,11,0.3)]'
     },
-    { 
-      label: 'Global Security Score', 
-      value: currentSessionId ? (totalBugs > 0 ? `${Math.max(40, 100 - totalBugs * 5)}%` : '98%') : '100%', 
-      icon: CheckCircle2, 
-      desc: 'Based on threat exposure',
+    {
+      label: 'Global Security Score',
+      value: compositeScore,
+      icon: Trophy,
+      desc: riskProfile ? `${riskProfile.summary.positives} passing · ${riskProfile.summary.warnings} warnings` : 'Based on threat exposure',
       cardClass: 'border-emerald-500/20 dark:border-emerald-500/40 hover:border-emerald-500/40 dark:hover:border-emerald-500/60 bg-gradient-to-br from-emerald-50/60 via-emerald-50/20 to-slate-surface dark:from-emerald-950/60 dark:via-emerald-900/30 dark:to-slate-950/40 shadow-md dark:shadow-lg shadow-emerald-500/5 dark:shadow-emerald-500/20 hover:shadow-lg dark:hover:shadow-emerald-500/30',
       iconClass: 'text-emerald-600 dark:text-emerald-300 bg-emerald-500/10 dark:bg-emerald-500/30 border-emerald-500/20 dark:border-emerald-400/40',
       glowClass: 'bg-emerald-500/10 dark:bg-emerald-500/30 blur-3xl',

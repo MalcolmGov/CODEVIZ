@@ -65,16 +65,18 @@ def register_blueprints(app):
         refactoring_bp,
         auth_bp,
         repositories_bp,
-        health_bp
+        health_bp,
+        scoring_bp
     )
-    
+
     app.register_blueprint(chat_bp, url_prefix='/api/chat')
     app.register_blueprint(security_bp, url_prefix='/api/security')
     app.register_blueprint(refactoring_bp, url_prefix='/api/refactoring')
     app.register_blueprint(auth_bp, url_prefix='/api/auth')
     app.register_blueprint(repositories_bp, url_prefix='/api/repositories')
     app.register_blueprint(health_bp, url_prefix='/api')
-    
+    app.register_blueprint(scoring_bp, url_prefix='/api/scoring')
+
     print("✅ Blueprints registered")
 
 
