@@ -3,52 +3,52 @@
 @tailwind utilities;
 
 :root {
-  --slate-canvas: #f8fafc;
-  --slate-surface: #ffffff;
-  --slate-elevated: #f1f5f9;
-  --slate-border: rgba(15, 23, 42, 0.08);
+  --slate-canvas: 241, 245, 249;
+  --slate-surface: 255, 255, 255;
+  --slate-elevated: 226, 232, 240;
+  --slate-border: 226, 232, 240;
   
-  --slate-50: #f8fafc;
-  --slate-100: #0f172a;
-  --slate-200: #1e293b;
-  --slate-300: #334155;
-  --slate-400: #475569;
-  --slate-500: #64748b;
-  --slate-600: #94a3b8;
-  --slate-700: #cbd5e1;
-  --slate-800: #e2e8f0;
-  --slate-900: #f1f5f9;
-  --slate-950: #f8fafc;
+  --slate-50: 248, 250, 252;
+  --slate-100: 15, 23, 42;
+  --slate-200: 30, 41, 59;
+  --slate-300: 51, 65, 85;
+  --slate-400: 71, 85, 105;
+  --slate-500: 100, 116, 139;
+  --slate-600: 148, 163, 184;
+  --slate-700: 203, 213, 225;
+  --slate-800: 226, 232, 240;
+  --slate-900: 241, 245, 249;
+  --slate-950: 248, 250, 252;
   
-  --indigo-400: #4f46e5;
-  --emerald-400: #059669;
-  --rose-400: #dc2626;
-  --amber-400: #d97706;
+  --indigo-400: 79, 70, 229;
+  --emerald-400: 5, 150, 105;
+  --rose-400: 220, 38, 38;
+  --amber-400: 217, 119, 6;
 }
 
 html.dark,
 .dark {
-  --slate-canvas: #030712;
-  --slate-surface: #090d16;
-  --slate-elevated: #0f172a;
-  --slate-border: #1f2937;
+  --slate-canvas: 3, 7, 18;
+  --slate-surface: 9, 13, 22;
+  --slate-elevated: 15, 23, 42;
+  --slate-border: 31, 41, 55;
   
-  --slate-50: #0f172a;
-  --slate-100: #f8fafc;
-  --slate-200: #e2e8f0;
-  --slate-300: #cbd5e1;
-  --slate-400: #94a3b8;
-  --slate-500: #64748b;
-  --slate-600: #475569;
-  --slate-700: #334155;
-  --slate-800: #1e293b;
-  --slate-900: #0f172a;
-  --slate-950: #090d16;
+  --slate-50: 15, 23, 42;
+  --slate-100: 248, 250, 252;
+  --slate-200: 226, 232, 240;
+  --slate-300: 203, 213, 225;
+  --slate-400: 148, 163, 184;
+  --slate-500: 100, 116, 139;
+  --slate-600: 71, 85, 105;
+  --slate-700: 51, 65, 85;
+  --slate-800: 30, 41, 59;
+  --slate-900: 15, 23, 42;
+  --slate-950: 9, 13, 22;
   
-  --indigo-400: #818cf8;
-  --emerald-400: #34d399;
-  --rose-400: #f87171;
-  --amber-400: #fbbf24;
+  --indigo-400: 129, 140, 248;
+  --emerald-400: 52, 211, 153;
+  --rose-400: 248, 113, 113;
+  --amber-400: 251, 191, 36;
 }
 
 * {
