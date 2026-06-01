@@ -1,0 +1,32 @@
+# Python virtual environment and cache
+backend/venv/
+backend/__pycache__/
+backend/api/__pycache__/
+backend/app/__pycache__/
+backend/core/__pycache__/
+backend/models/__pycache__/
+backend/services/__pycache__/
+backend/tests/__pycache__/
+*.pyc
+
+# Node dependencies and build outputs
+frontend/node_modules/
+frontend/dist/
+
+# Local environment variables
+.env
+*.env
+backend/.env
+frontend/.env.local
+frontend/.env.development.local
+frontend/.env.test.local
+frontend/.env.production.local
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
