@@ -27,11 +27,16 @@ export const reportsService = {
     api.get<{ data: { schedules: Schedule[] } }>('/reports/schedules'),
 
   createSchedule: (payload: {
-    repo_path: string
-    email: string
-    cron: string
+    repo_paths?: string[]
+    recipients?: string[]
+    frequency?: string
+    hour?: number
     label?: string
     timezone?: string
+    cron?: string
+    // legacy
+    repo_path?: string
+    email?: string
   }) => api.post('/reports/schedules', payload),
 
   deleteSchedule: (id: string) =>

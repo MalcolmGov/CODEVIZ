@@ -156,23 +156,29 @@ def list_schedules():
 def create_schedule():
     """Create a recurring report schedule."""
     body = request.get_json() or {}
-    repo_path = body.get('repo_path', '').strip()
-    email = body.get('email', '').strip()
-    cron = body.get('cron', '0 6 * * *').strip()   # default: 6am daily
+
+    # Support both legacy single and new multi-repo payloads
+    repo_paths = body.get('repo_paths') or ([body['repo_path']] if body.get('repo_path') else [])
+    recipients = body.get('recipients') or ([body['email']] if body.get('email') else [])
+    frequency = body.get('frequency', 'daily').strip()
+    hour = int(body.get('hour', 6))
     label = body.get('label', '').strip()
     timezone = body.get('timezone', 'UTC').strip()
+    cron = body.get('cron', '').strip()
 
-    if not repo_path or not email:
-        return format_error_response('repo_path and email are required')[0], 400
+    if not repo_paths or not recipients:
+        return format_error_response('repo_paths and recipients are required')[0], 400
 
     try:
         from services.scheduler_service import add_schedule
         schedule = add_schedule(
-            repo_path=repo_path,
-            email=email,
-            cron_expression=cron,
+            repo_paths=repo_paths,
+            recipients=recipients,
+            frequency=frequency,
+            hour=hour,
             label=label,
             timezone=timezone,
+            cron_expression=cron,
         )
         return format_success_response(schedule, 'Schedule created')[0], 201
     except Exception as e:
