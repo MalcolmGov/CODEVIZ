@@ -170,6 +170,22 @@ class RepositoryContextBuilder:
     def _detect_prod_url(self) -> Optional[str]:
         """Detect the production / deployment URL from config or source files"""
         repo_name_lower = self.repo_path.name.lower()
+        
+        # Try to extract the real repository name from .git/config if it is a cloned repo
+        git_config_path = self.repo_path / '.git' / 'config'
+        if git_config_path.exists():
+            try:
+                with open(git_config_path, 'r', errors='ignore') as f:
+                    config_content = f.read()
+                    url_match = re.search(r'url\s*=\s*(.+)', config_content)
+                    if url_match:
+                        git_url = url_match.group(1).strip()
+                        repo_name = git_url.split('/')[-1]
+                        if repo_name.endswith('.git'):
+                            repo_name = repo_name[:-4]
+                        repo_name_lower = repo_name.lower()
+            except Exception:
+                pass
         candidate_urls = {}
         
         exclude_keywords = (
