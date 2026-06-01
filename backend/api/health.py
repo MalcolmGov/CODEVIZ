@@ -129,3 +129,57 @@ def info():
             'health': '/api/health'
         }
     }), 200
+
+
+@health_bp.route('/health/ping-endpoint', methods=['POST'])
+def ping_endpoint():
+    """Test a specific endpoint's reachability and return its HTTP status"""
+    try:
+        from flask import request
+        data = request.get_json() or {}
+        path = data.get('path', '')
+        method = data.get('method', 'GET').upper()
+        
+        if not path:
+            return jsonify({'status': 'error', 'message': 'Path required'}), 400
+            
+        import requests
+        
+        clean_path = path.strip()
+        if not clean_path.startswith('/'):
+            clean_path = '/' + clean_path
+            
+        target_url = f"http://localhost:8000{clean_path}"
+        
+        try:
+            if method == 'GET':
+                response = requests.get(target_url, timeout=3)
+            elif method == 'POST':
+                response = requests.post(target_url, json={}, timeout=3)
+            elif method == 'PUT':
+                response = requests.put(target_url, json={}, timeout=3)
+            elif method == 'DELETE':
+                response = requests.delete(target_url, timeout=3)
+            else:
+                response = requests.request(method, target_url, timeout=3)
+                
+            status_code = response.status_code
+            is_active = status_code != 404
+            
+            return jsonify({
+                'status': 'success',
+                'status_code': status_code,
+                'is_active': is_active,
+                'message': f"Returned HTTP {status_code}"
+            }), 200
+            
+        except requests.exceptions.RequestException as req_err:
+            return jsonify({
+                'status': 'success',
+                'status_code': None,
+                'is_active': False,
+                'message': f"Offline: Connection refused"
+            }), 200
+            
+    except Exception as e:
+        return jsonify({'status': 'error', 'message': str(e)}), 500

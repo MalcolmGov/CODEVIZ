@@ -10,10 +10,13 @@ import { chatService } from '@/services/chat'
 import { 
   Terminal, ShieldCheck, Cpu, Code2, Server, Globe, 
   Layers, Package, Settings, Activity, FolderGit2, Search, ArrowRight,
-  FileCode2, ShieldAlert, Split, Database, ListPlus, Link, Hash, Key, Palette
+  FileCode2, ShieldAlert, Split, Database, ListPlus, Link, Hash, Key, Palette,
+  RefreshCw, ChevronRight, ArrowUpRight, BarChart3
 } from 'lucide-react'
 import { Network, DataSet } from 'vis-network/standalone'
 import 'vis-network/styles/vis-network.css'
+import { api } from '@/services/api'
+import clsx from 'clsx'
 
 export const ScannerPage: React.FC = () => {
   const [sessionId, setSessionId] = useState<string | null>(null)
@@ -22,6 +25,171 @@ export const ScannerPage: React.FC = () => {
   const [activeStep, setActiveStep] = useState(0)
   const [selectedKeyFile, setSelectedKeyFile] = useState<any>(null)
   const networkRef = useRef<HTMLDivElement>(null)
+  const [searchQueries, setSearchQueries] = useState<Record<string, string>>({})
+  const [currentPages, setCurrentPages] = useState<Record<string, number>>({})
+  const [apiHealth, setApiHealth] = useState<Record<string, { loading: boolean; status: string; code?: number; message?: string }>>({})
+  
+  const [currentTab, setCurrentTab] = useState<string>('overview')
+  const [pingProgress, setPingProgress] = useState(0)
+  const [isPingingAll, setIsPingingAll] = useState(false)
+
+  const handleTestEndpoint = async (path: string, method: string) => {
+    setApiHealth(prev => ({
+      ...prev,
+      [path]: { loading: true, status: 'Testing...' }
+    }))
+    try {
+      const response = await api.post('/health/ping-endpoint', { path, method })
+      const resData = response.data.data || response.data
+      setApiHealth(prev => ({
+        ...prev,
+        [path]: {
+          loading: false,
+          status: resData.is_active ? 'Online' : 'Offline',
+          code: resData.status_code,
+          message: resData.message
+        }
+      }))
+    } catch (err) {
+      setApiHealth(prev => ({
+        ...prev,
+        [path]: {
+          loading: false,
+          status: 'Offline',
+          message: 'Connection failed'
+        }
+      }))
+    }
+  }
+
+  const handlePingAll = async () => {
+    const apisList = artifacts?.apis || []
+    if (isPingingAll || apisList.length === 0) return
+    setIsPingingAll(true)
+    setPingProgress(0)
+    
+    let completedCount = 0
+    
+    const pingPromises = apisList.map(async (apiItem: any) => {
+      const path = apiItem.path
+      const method = apiItem.methods?.[0] || 'GET'
+      
+      setApiHealth(prev => ({
+        ...prev,
+        [path]: { loading: true, status: 'Testing...' }
+      }))
+      
+      try {
+        const response = await api.post('/health/ping-endpoint', { path, method })
+        const resData = response.data.data || response.data
+        setApiHealth(prev => ({
+          ...prev,
+          [path]: {
+            loading: false,
+            status: resData.is_active ? 'Online' : 'Offline',
+            code: resData.status_code,
+            message: resData.message
+          }
+        }))
+      } catch (err) {
+        setApiHealth(prev => ({
+          ...prev,
+          [path]: {
+            loading: false,
+            status: 'Offline',
+            message: 'Connection failed'
+          }
+        }))
+      } finally {
+        completedCount++
+        setPingProgress(Math.round((completedCount / apisList.length) * 100))
+      }
+    })
+
+    await Promise.all(pingPromises)
+    setIsPingingAll(false)
+  }
+
+  const itemsPerPage = 10
+
+  const renderExplorer = (
+    tabId: string,
+    title: string,
+    description: string,
+    rawData: any[],
+    columns: any[],
+    searchKeys: string[]
+  ) => {
+    const query = (searchQueries[tabId] || '').toLowerCase()
+    const page = currentPages[tabId] || 0
+
+    // Filter
+    const filteredData = rawData.filter(row => 
+      searchKeys.some(key => String(row[key] || '').toLowerCase().includes(query))
+    )
+
+    // Paginate
+    const totalPages = Math.ceil(filteredData.length / itemsPerPage)
+    const paginatedData = filteredData.slice(page * itemsPerPage, (page + 1) * itemsPerPage)
+
+    return (
+      <Card className="bg-slate-surface/30 border-slate-border/40 space-y-4">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 pb-2">
+          <div>
+            <h3 className="text-base font-bold text-slate-100 font-display">{title}</h3>
+            <p className="text-slate-400 text-xs mt-0.5">{description}</p>
+          </div>
+          
+          <div className="relative w-full sm:w-64">
+            <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-500 pointer-events-none">
+              <Search size={14} />
+            </span>
+            <input
+              type="text"
+              placeholder="Search..."
+              value={searchQueries[tabId] || ''}
+              onChange={(e) => {
+                setSearchQueries(prev => ({ ...prev, [tabId]: e.target.value }))
+                setCurrentPages(prev => ({ ...prev, [tabId]: 0 }))
+              }}
+              className="w-full pl-9 pr-4 py-1.5 bg-slate-950/40 border border-slate-border/50 rounded-lg text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-indigo-500/30 focus:border-indigo-500/50 text-xs font-sans transition-all"
+            />
+          </div>
+        </div>
+
+        <Table columns={columns} data={paginatedData} />
+
+        {totalPages > 1 && (
+          <div className="flex justify-between items-center text-xs font-mono text-slate-500 pt-2">
+            <span>
+              Showing {page * itemsPerPage + 1}-{Math.min((page + 1) * itemsPerPage, filteredData.length)} of {filteredData.length} entries
+            </span>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => setCurrentPages(prev => ({ ...prev, [tabId]: Math.max(0, page - 1) }))}
+                disabled={page === 0}
+                className="py-1 px-2.5"
+              >
+                Previous
+              </Button>
+              <span>{page + 1} / {totalPages}</span>
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => setCurrentPages(prev => ({ ...prev, [tabId]: Math.min(totalPages - 1, page + 1) }))}
+                disabled={page >= totalPages - 1}
+                className="py-1 px-2.5"
+              >
+                Next
+              </Button>
+            </div>
+          </div>
+        )}
+      </Card>
+    )
+  }
 
   const scanSteps = [
     { title: 'Initializing workspace sandbox', icon: Terminal },
@@ -72,7 +240,7 @@ export const ScannerPage: React.FC = () => {
 
   // vis.js Network Graph Integration
   useEffect(() => {
-    if (!artifacts) return
+    if (currentTab !== 'overview' || !artifacts) return
 
     const apisList = artifacts.apis || []
     const classesList = artifacts.classes || []
@@ -199,7 +367,7 @@ export const ScannerPage: React.FC = () => {
         network.destroy()
       }
     }
-  }, [artifacts])
+  }, [artifacts, currentTab])
 
   if (loading) {
     return (
@@ -275,7 +443,375 @@ export const ScannerPage: React.FC = () => {
   const architecture = artifacts?.architecture || {}
   const uxArchitecture = artifacts?.ux_architecture || {}
 
+  const filesColumns = [
+    { key: 'path', label: 'File Path', render: (row: any) => <span className="font-mono text-xs text-slate-300">{row.path}</span> },
+    { 
+      key: 'ext', 
+      label: 'File Type', 
+      render: (row: any) => {
+        const ext = row.path.split('.').pop() || 'file';
+        return <Badge severity="low">{ext.toUpperCase()}</Badge>
+      }
+    }
+  ]
+
+  const apisColumns = [
+    { 
+      key: 'methods', 
+      label: 'Method',
+      render: (row: any) => (
+        <span className="px-2 py-0.5 rounded text-[10px] font-bold tracking-wider uppercase border border-indigo-500/20 bg-indigo-500/10 text-indigo-400">
+          {row.methods?.join(', ') || 'GET'}
+        </span>
+      )
+    },
+    { key: 'path', label: 'Route Path', render: (row: any) => <code className="text-xs text-indigo-300 bg-indigo-950/20 px-1.5 py-0.5 rounded font-mono">{row.path}</code> },
+    { key: 'file', label: 'Source Location', render: (row: any) => <span className="text-xs text-slate-400 font-mono">{row.file}</span> },
+    {
+      key: 'health',
+      label: 'Health Check',
+      render: (row: any) => {
+        const health = apiHealth[row.path]
+        return (
+          <div className="flex items-center gap-2">
+            {health ? (
+              <>
+                <span className={clsx(
+                  "w-2 h-2 rounded-full",
+                  health.loading ? "bg-amber-505 bg-amber-500 animate-pulse" :
+                  health.status === 'Online' ? "bg-emerald-500 animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.5)]" : "bg-rose-500 animate-pulse shadow-[0_0_8px_rgba(244,63,94,0.5)]"
+                )} />
+                <span className={clsx(
+                  "text-xs font-semibold font-mono",
+                  health.loading ? "text-amber-400" :
+                  health.status === 'Online' ? "text-emerald-450 text-emerald-400" : "text-rose-455 text-rose-450 text-rose-400"
+                )}>
+                  {health.status} {health.code ? `(${health.code})` : ''}
+                </span>
+              </>
+            ) : (
+              <>
+                <span className="w-2 h-2 rounded-full bg-slate-500" />
+                <span className="text-slate-500 text-xs font-semibold font-mono">Not tested</span>
+              </>
+            )}
+            <button
+              onClick={(e) => {
+                e.stopPropagation()
+                handleTestEndpoint(row.path, row.methods?.[0] || 'GET')
+              }}
+              className="ml-auto text-[10px] bg-slate-950/50 border border-slate-border/50 hover:bg-indigo-500/10 hover:border-indigo-500/20 text-slate-450 hover:text-indigo-400 px-2 py-0.5 rounded-md transition-all font-mono"
+            >
+              {health?.loading ? 'Testing...' : 'Test'}
+            </button>
+          </div>
+        )
+      }
+    }
+  ]
+
+  const classesColumns = [
+    { key: 'name', label: 'Class Name', render: (row: any) => <span className="font-bold text-slate-200">{row.name}</span> },
+    { key: 'bases', label: 'Extends / Base Class', render: (row: any) => row.bases ? <code className="text-xs font-mono text-indigo-400">{row.bases}</code> : <span className="text-slate-600">-</span> },
+    { key: 'file', label: 'Source Location', render: (row: any) => <span className="text-xs text-slate-400 font-mono">{row.file}</span> },
+    {
+      key: 'type',
+      label: 'Archetype',
+      render: (row: any) => (
+        <Badge severity="medium">
+          {row.type || 'Class'}
+        </Badge>
+      )
+    }
+  ]
+
+  const functionsColumns = [
+    { key: 'name', label: 'Function Name', render: (row: any) => <span className="font-mono text-indigo-300 font-semibold">{row.name}</span> },
+    { 
+      key: 'params', 
+      label: 'Parameters',
+      render: (row: any) => (
+        <span className="font-mono text-xs text-slate-500">
+          {row.params ? `(${row.params})` : '()'}
+        </span>
+      )
+    },
+    { key: 'file', label: 'Source Location', render: (row: any) => <span className="text-xs text-slate-400 font-mono">{row.file}</span> }
+  ]
+
+  const errorHandlersColumns = [
+    { 
+      key: 'error_code', 
+      label: 'HTTP Code', 
+      render: (row: any) => <Badge severity={parseInt(row.error_code) >= 500 ? 'critical' : 'medium'}>{row.error_code || 'Catch-all'}</Badge> 
+    },
+    { key: 'file', label: 'File Location', render: (row: any) => <span className="text-xs text-slate-400 font-mono">{row.file}</span> }
+  ]
+
+  const middlewareColumns = [
+    { key: 'name', label: 'Middleware Name', render: (row: any) => <span className="font-bold text-indigo-300 font-mono">{row.name}</span> },
+    { key: 'file', label: 'File Location', render: (row: any) => <span className="text-xs text-slate-400 font-mono">{row.file}</span> }
+  ]
+
+  const modelsColumns = [
+    { key: 'name', label: 'Model Name', render: (row: any) => <span className="font-bold text-slate-200">{row.name}</span> },
+    { key: 'file', label: 'Source Location', render: (row: any) => <span className="text-xs text-slate-400 font-mono">{row.file}</span> },
+    {
+      key: 'type',
+      label: 'Archetype',
+      render: (row: any) => (
+        <Badge severity="low">
+          {row.type || 'Model'}
+        </Badge>
+      )
+    }
+  ]
+
+  const enumsColumns = [
+    { key: 'name', label: 'Enum Name', render: (row: any) => <span className="font-bold text-indigo-300 font-mono">{row.name}</span> },
+    { key: 'file', label: 'Source Location', render: (row: any) => <span className="text-xs text-slate-400 font-mono">{row.file}</span> }
+  ]
+
+  const interfacesColumns = [
+    { key: 'name', label: 'Interface Name', render: (row: any) => <span className="font-bold text-slate-200">{row.name}</span> },
+    { key: 'extends', label: 'Extends', render: (row: any) => row.extends ? <code className="text-xs text-indigo-400 font-mono">{row.extends}</code> : <span className="text-slate-600">-</span> },
+    { key: 'file', label: 'Source Location', render: (row: any) => <span className="text-xs text-slate-400 font-mono">{row.file}</span> }
+  ]
+
+  const constantsColumns = [
+    { key: 'name', label: 'Constant Name', render: (row: any) => <span className="font-bold font-mono text-indigo-300">{row.name}</span> },
+    { 
+      key: 'value', 
+      label: 'Assigned Value',
+      render: (row: any) => (
+        <span className="font-mono text-xs text-indigo-400 bg-indigo-500/5 px-2 py-0.5 rounded border border-indigo-500/10">
+          {row.value || '-'}
+        </span>
+      )
+    },
+    { key: 'file', label: 'Source Location', render: (row: any) => <span className="text-xs text-slate-400 font-mono">{row.file}</span> }
+  ]
+
+  const dependenciesColumns = [
+    { key: 'package', label: 'Package Name & Constraints', render: (row: any) => <span className="font-mono text-xs text-slate-300">{row.package}</span> },
+    { 
+      key: 'type', 
+      label: 'Module Manager',
+      render: (row: any) => (
+        <span className="px-2 py-0.5 rounded text-[10px] font-bold tracking-wider uppercase bg-slate-900 border border-slate-border/40 text-slate-400">
+          {row.type || 'Dependency'}
+        </span>
+      )
+    }
+  ]
+
+  const metricCards = [
+    { id: 'files', label: 'Files', count: artifacts?.files?.length || 0, icon: FileCode2, color: 'text-indigo-400 border-indigo-500/20 bg-indigo-500/5' },
+    { id: 'apis', label: 'APIs', count: apis.length, icon: Server, color: 'text-emerald-400 border-emerald-500/20 bg-emerald-500/5' },
+    { id: 'classes', label: 'Classes', count: classes.length, icon: Cpu, color: 'text-purple-400 border-purple-500/20 bg-purple-500/5' },
+    { id: 'functions', label: 'Functions', count: functions.length, icon: Code2, color: 'text-pink-400 border-pink-500/20 bg-pink-500/5' },
+    { id: 'middleware', label: 'Middleware', count: middleware.length, icon: Split, color: 'text-cyan-400 border-cyan-500/20 bg-cyan-500/5' },
+    { id: 'models', label: 'Models', count: models.length, icon: Database, color: 'text-amber-400 border-amber-500/20 bg-amber-500/5' },
+    { id: 'enums', label: 'Enums', count: enums.length, icon: ListPlus, color: 'text-orange-400 border-orange-500/20 bg-orange-500/5' },
+    { id: 'error_handlers', label: 'Errors', count: error_handlers.length, icon: ShieldAlert, color: 'text-rose-400 border-rose-500/20 bg-rose-500/5' },
+    { id: 'interfaces', label: 'Interfaces', count: interfaces.length, icon: Link, color: 'text-blue-400 border-blue-500/20 bg-blue-500/5' },
+    { id: 'dependencies', label: 'Dependencies', count: dependencies.length, icon: Package, color: 'text-violet-400 border-violet-500/20 bg-violet-500/5' },
+  ]
+
   const dashboardTabs = [
+    {
+      id: 'overview',
+      label: '📊 Overview',
+      content: (
+        <div className="space-y-6">
+          {/* Metrics Grid */}
+          <div className="grid grid-cols-2 sm:grid-cols-5 gap-4">
+            {metricCards.map((card) => (
+              <div 
+                key={card.id}
+                onClick={() => setCurrentTab(card.id)}
+                className="bg-slate-950/40 border border-slate-border/50 hover:border-indigo-500/40 rounded-xl p-4 transition-all duration-205 cursor-pointer hover:-translate-y-0.5 group flex flex-col justify-between h-[110px]"
+              >
+                <div className="flex justify-between items-start">
+                  <span className="text-slate-400 text-[10px] font-bold uppercase tracking-wider font-display truncate">
+                    {card.label}
+                  </span>
+                  <div className={clsx("p-1.5 rounded-lg border", card.color.split(' ')[1], card.color.split(' ')[2])}>
+                    <card.icon size={12} className={card.color.split(' ')[0]} />
+                  </div>
+                </div>
+                <div className="mt-2 flex justify-between items-baseline">
+                  <span className="text-xl font-black text-slate-100 font-display tracking-tight group-hover:text-indigo-400 transition-colors">
+                    {card.count}
+                  </span>
+                  <span className="text-[10px] text-slate-500 group-hover:text-indigo-400/80 transition-colors font-mono">
+                    View →
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Diagnostics and Highlights */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* API Diagnostics */}
+            <Card className="lg:col-span-2 space-y-4 bg-slate-surface/30 border-slate-border/40 flex flex-col justify-between">
+              <div className="space-y-4">
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+                  <div>
+                    <h3 className="text-base font-bold text-slate-100 font-display flex items-center gap-2">
+                      <Server size={16} className="text-indigo-400" />
+                      API Diagnostics Check
+                    </h3>
+                    <p className="text-slate-400 text-xs mt-0.5">Test reachability and status of discovered endpoints.</p>
+                  </div>
+                  
+                  <button
+                    onClick={handlePingAll}
+                    disabled={isPingingAll || apis.length === 0}
+                    className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold font-mono bg-indigo-500 hover:bg-indigo-600 disabled:bg-indigo-800/40 text-white disabled:text-slate-400 border border-indigo-500/20 disabled:border-transparent transition-all shrink-0"
+                  >
+                    <RefreshCw size={12} className={clsx(isPingingAll && 'animate-spin')} />
+                    {isPingingAll ? 'Pinging...' : 'Ping All Routes'}
+                  </button>
+                </div>
+
+                {isPingingAll && (
+                  <div className="space-y-1">
+                    <div className="flex justify-between text-[10px] font-mono text-slate-400">
+                      <span>Running diagnostics check...</span>
+                      <span>{pingProgress}%</span>
+                    </div>
+                    <div className="w-full bg-slate-950/50 rounded-full h-1 border border-slate-border/40 overflow-hidden">
+                      <div 
+                        className="bg-indigo-500 h-full rounded-full transition-all duration-200" 
+                        style={{ width: `${pingProgress}%` }}
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {apis.length > 0 ? (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-[220px] overflow-y-auto pr-1">
+                    {apis.map((apiItem: any, idx: number) => {
+                      const health = apiHealth[apiItem.path]
+                      const method = apiItem.methods?.[0] || 'GET'
+                      return (
+                        <div 
+                          key={idx}
+                          className="flex items-center justify-between p-2 rounded-lg bg-slate-950/30 border border-slate-border/30 hover:border-slate-border/60 transition-all text-xs"
+                        >
+                          <div className="flex items-center gap-2 font-mono overflow-hidden mr-2">
+                            <span className="px-1.5 py-0.5 rounded text-[8px] font-bold bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 uppercase">
+                              {method}
+                            </span>
+                            <span className="text-slate-300 font-semibold truncate text-[11px]" title={apiItem.path}>
+                              {apiItem.path}
+                            </span>
+                          </div>
+                          
+                          <div className="flex items-center gap-2 shrink-0">
+                            <span className={clsx(
+                              "w-1.5 h-1.5 rounded-full",
+                              health?.loading ? "bg-amber-500 animate-pulse" :
+                              health?.status === 'Online' ? "bg-emerald-500 animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.4)]" :
+                              health?.status === 'Offline' ? "bg-rose-500 animate-pulse shadow-[0_0_8px_rgba(244,63,94,0.4)]" : "bg-slate-500"
+                            )} />
+                            <span className={clsx(
+                              "text-[9px] font-bold font-mono",
+                              health?.loading ? "text-amber-400" :
+                              health?.status === 'Online' ? "text-emerald-400" :
+                              health?.status === 'Offline' ? "text-rose-400" : "text-slate-500"
+                            )}>
+                              {health?.loading ? 'Ping...' : health?.status === 'Online' ? `200` : health?.status === 'Offline' ? 'ERR' : 'Untested'}
+                            </span>
+                            
+                            <button
+                              onClick={() => handleTestEndpoint(apiItem.path, method)}
+                              disabled={isPingingAll}
+                              className="text-[9px] bg-slate-900 border border-slate-border/60 text-slate-400 hover:text-indigo-400 px-1.5 py-0.5 rounded transition-all font-mono"
+                            >
+                              Test
+                            </button>
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                ) : (
+                  <div className="text-slate-500 text-xs italic py-4 text-center">
+                    No REST endpoints found in this repository.
+                  </div>
+                )}
+              </div>
+            </Card>
+
+            {/* Code Highlights */}
+            <Card className="bg-slate-surface/30 border-slate-border/40 flex flex-col justify-between">
+              <div className="space-y-4">
+                <h3 className="text-base font-bold text-slate-100 font-display flex items-center gap-2">
+                  <FileCode2 size={16} className="text-indigo-400" />
+                  Key Code Highlights
+                </h3>
+                {keyFiles.length > 0 ? (
+                  <div className="space-y-2 max-h-[220px] overflow-y-auto pr-1">
+                    {keyFiles.slice(0, 4).map((file: any, idx: number) => {
+                      const maxLines = Math.max(...keyFiles.map((f: any) => f.lines || 1))
+                      const percentage = Math.min(100, Math.round((file.lines / maxLines) * 100))
+                      return (
+                        <div 
+                          key={idx} 
+                          onClick={() => {
+                            setSelectedKeyFile(file)
+                            setCurrentTab('key_files')
+                          }}
+                          className="bg-slate-950/40 border border-slate-border/50 hover:border-indigo-500/30 p-2.5 rounded-xl transition-all duration-200 cursor-pointer group space-y-1.5"
+                        >
+                          <div className="flex justify-between items-center text-xs">
+                            <span className="font-mono text-slate-300 font-bold group-hover:text-indigo-400 transition-colors truncate max-w-[170px]" title={file.name}>
+                              {file.name}
+                            </span>
+                            <span className="text-[10px] text-slate-500 font-mono">
+                              {file.lines} lines
+                            </span>
+                          </div>
+                          <div className="w-full bg-slate-900/60 h-1 rounded-full overflow-hidden">
+                            <div 
+                              className="bg-gradient-to-r from-indigo-500 to-indigo-400 h-full rounded-full transition-all"
+                              style={{ width: `${percentage}%` }}
+                            />
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                ) : (
+                  <div className="text-slate-500 text-xs italic py-4 text-center">
+                    No key files identified.
+                  </div>
+                )}
+              </div>
+            </Card>
+          </div>
+
+          {/* Network Graph */}
+          <Card className="border-slate-border/40 bg-slate-surface/30 backdrop-blur-md p-6 space-y-4">
+            <div className="flex justify-between items-center">
+              <div>
+                <h3 className="text-base font-bold text-slate-100 font-display">🌐 Interconnected Network Mesh</h3>
+                <p className="text-slate-400 text-xs mt-0.5">Obsidian-inspired interconnected view of APIs, classes, and functions.</p>
+              </div>
+              <Badge severity="medium">vis.js Network</Badge>
+            </div>
+            
+            <div 
+              ref={networkRef}
+              className="w-full h-[320px] bg-slate-950/60 rounded-xl border border-slate-border/30 overflow-hidden relative"
+            />
+          </Card>
+        </div>
+      )
+    },
     {
       id: 'structure',
       label: '🌳 Structure',
@@ -294,259 +830,52 @@ export const ScannerPage: React.FC = () => {
     {
       id: 'files',
       label: `📄 Files (${artifacts?.files?.length || 0})`,
-      content: (
-        <Card className="bg-slate-surface/30 border-slate-border/40">
-          <div className="mb-4">
-            <h3 className="text-base font-bold text-slate-100 font-display">Scanned Files</h3>
-            <p className="text-slate-400 text-xs mt-0.5">Files index compiled during AST scanning.</p>
-          </div>
-          <Table 
-            columns={[
-              { key: 'path', label: 'File Path', render: (row) => <span className="font-mono text-xs text-slate-300">{row.path}</span> },
-              { 
-                key: 'ext', 
-                label: 'File Type', 
-                render: (row) => {
-                  const ext = row.path.split('.').pop() || 'file';
-                  return <Badge severity="low">{ext.toUpperCase()}</Badge>
-                }
-              }
-            ]}
-            data={(artifacts?.files || []).map((f: string) => ({ path: f }))}
-          />
-        </Card>
-      )
+      content: renderExplorer('files', 'Scanned Files', 'Files index compiled during AST scanning.', (artifacts?.files || []).map((f: string) => ({ path: f })), filesColumns, ['path'])
     },
     {
       id: 'apis',
       label: `🔌 APIs (${apis.length})`,
-      content: (
-        <Card className="bg-slate-surface/30 border-slate-border/40">
-          <div className="mb-4">
-            <h3 className="text-base font-bold text-slate-100 font-display">Discovered REST Endpoints</h3>
-            <p className="text-slate-400 text-xs mt-0.5">Routes parsed from router annotations and HTTP middleware.</p>
-          </div>
-          <Table 
-            columns={[
-              { 
-                key: 'methods', 
-                label: 'Method',
-                render: (row) => (
-                  <span className="px-2 py-0.5 rounded text-[10px] font-bold tracking-wider uppercase border border-indigo-500/20 bg-indigo-500/10 text-indigo-400">
-                    {row.methods?.join(', ') || 'GET'}
-                  </span>
-                )
-              },
-              { key: 'path', label: 'Route Path', render: (row) => <code className="text-xs text-indigo-300 bg-indigo-950/20 px-1.5 py-0.5 rounded font-mono">{row.path}</code> },
-              { key: 'file', label: 'Source Location', render: (row) => <span className="text-xs text-slate-400 font-mono">{row.file}</span> },
-              {
-                key: 'type',
-                label: 'Framework',
-                render: (row) => (
-                  <span className="text-xs text-slate-500 font-mono">
-                    {row.type || 'Route'}
-                  </span>
-                )
-              }
-            ]}
-            data={apis}
-          />
-        </Card>
-      )
+      content: renderExplorer('apis', 'Discovered REST Endpoints', 'Routes parsed from router annotations and HTTP middleware.', apis, apisColumns, ['path', 'file', 'methods'])
     },
     {
       id: 'classes',
       label: `📦 Classes (${classes.length})`,
-      content: (
-        <Card className="bg-slate-surface/30 border-slate-border/40">
-          <div className="mb-4">
-            <h3 className="text-base font-bold text-slate-100 font-display">AST Class Models</h3>
-            <p className="text-slate-400 text-xs mt-0.5">Classes, structural hierarchies, and inheritance contexts.</p>
-          </div>
-          <Table 
-            columns={[
-              { key: 'name', label: 'Class Name', render: (row) => <span className="font-bold text-slate-200">{row.name}</span> },
-              { key: 'bases', label: 'Extends / Base Class', render: (row) => row.bases ? <code className="text-xs font-mono text-indigo-400">{row.bases}</code> : <span className="text-slate-600">-</span> },
-              { key: 'file', label: 'Source Location', render: (row) => <span className="text-xs text-slate-400 font-mono">{row.file}</span> },
-              {
-                key: 'type',
-                label: 'Archetype',
-                render: (row) => (
-                  <Badge severity="medium">
-                    {row.type || 'Class'}
-                  </Badge>
-                )
-              }
-            ]}
-            data={classes}
-          />
-        </Card>
-      )
+      content: renderExplorer('classes', 'AST Class Models', 'Classes, structural hierarchies, and inheritance contexts.', classes, classesColumns, ['name', 'file', 'bases'])
     },
     {
       id: 'functions',
       label: `⚙️ Functions (${functions.length})`,
-      content: (
-        <Card className="bg-slate-surface/30 border-slate-border/40">
-          <div className="mb-4">
-            <h3 className="text-base font-bold text-slate-100 font-display">Functions & Methods</h3>
-            <p className="text-slate-400 text-xs mt-0.5">Extracted functions, parameters, and callback actions.</p>
-          </div>
-          <Table 
-            columns={[
-              { key: 'name', label: 'Function Name', render: (row) => <span className="font-mono text-indigo-300 font-semibold">{row.name}</span> },
-              { 
-                key: 'params', 
-                label: 'Parameters',
-                render: (row) => (
-                  <span className="font-mono text-xs text-slate-400">
-                    {row.params ? `(${row.params})` : '()'}
-                  </span>
-                )
-              },
-              { key: 'file', label: 'Source Location', render: (row) => <span className="text-xs text-slate-400 font-mono">{row.file}</span> }
-            ]}
-            data={functions}
-          />
-        </Card>
-      )
+      content: renderExplorer('functions', 'Functions & Methods', 'Extracted functions, parameters, and callback actions.', functions, functionsColumns, ['name', 'file'])
     },
     {
       id: 'error_handlers',
       label: `❌ Errors (${error_handlers.length})`,
-      content: (
-        <Card className="bg-slate-surface/30 border-slate-border/40">
-          <div className="mb-4">
-            <h3 className="text-base font-bold text-slate-100 font-display">Error Handlers</h3>
-            <p className="text-slate-400 text-xs mt-0.5">Global REST exception handlers.</p>
-          </div>
-          <Table 
-            columns={[
-              { 
-                key: 'error_code', 
-                label: 'HTTP Code', 
-                render: (row) => <Badge severity={parseInt(row.error_code) >= 500 ? 'critical' : 'medium'}>{row.error_code || 'Catch-all'}</Badge> 
-              },
-              { key: 'file', label: 'File Location', render: (row) => <span className="text-xs text-slate-400 font-mono">{row.file}</span> }
-            ]}
-            data={error_handlers}
-          />
-        </Card>
-      )
+      content: renderExplorer('error_handlers', 'Error Handlers', 'Global REST exception handlers.', error_handlers, errorHandlersColumns, ['error_code', 'file'])
     },
     {
       id: 'middleware',
       label: `🛣️ Middleware (${middleware.length})`,
-      content: (
-        <Card className="bg-slate-surface/30 border-slate-border/40">
-          <div className="mb-4">
-            <h3 className="text-base font-bold text-slate-100 font-display">Middleware Interceptors</h3>
-            <p className="text-slate-400 text-xs mt-0.5">Custom middleware blocks executing on routes.</p>
-          </div>
-          <Table 
-            columns={[
-              { key: 'name', label: 'Middleware Name', render: (row) => <span className="font-bold text-indigo-300 font-mono">{row.name}</span> },
-              { key: 'file', label: 'File Location', render: (row) => <span className="text-xs text-slate-400 font-mono">{row.file}</span> }
-            ]}
-            data={middleware}
-          />
-        </Card>
-      )
+      content: renderExplorer('middleware', 'Middleware Interceptors', 'Custom middleware blocks executing on routes.', middleware, middlewareColumns, ['name', 'file'])
     },
     {
       id: 'models',
       label: `🗂️ Models (${models.length})`,
-      content: (
-        <Card className="bg-slate-surface/30 border-slate-border/40">
-          <div className="mb-4">
-            <h3 className="text-base font-bold text-slate-100 font-display">Database Models</h3>
-            <p className="text-slate-400 text-xs mt-0.5">Database entities mapped to backend tables.</p>
-          </div>
-          <Table 
-            columns={[
-              { key: 'name', label: 'Model Name', render: (row) => <span className="font-bold text-slate-200">{row.name}</span> },
-              { key: 'file', label: 'Source Location', render: (row) => <span className="text-xs text-slate-400 font-mono">{row.file}</span> },
-              {
-                key: 'type',
-                label: 'Archetype',
-                render: (row) => (
-                  <Badge severity="low">
-                    {row.type || 'Model'}
-                  </Badge>
-                )
-              }
-            ]}
-            data={models}
-          />
-        </Card>
-      )
+      content: renderExplorer('models', 'Database Models', 'Database entities mapped to backend tables.', models, modelsColumns, ['name', 'file'])
     },
     {
       id: 'enums',
       label: `📋 Enums (${enums.length})`,
-      content: (
-        <Card className="bg-slate-surface/30 border-slate-border/40">
-          <div className="mb-4">
-            <h3 className="text-base font-bold text-slate-100 font-display">Enums</h3>
-            <p className="text-slate-400 text-xs mt-0.5">Standardized developer enum categories.</p>
-          </div>
-          <Table 
-            columns={[
-              { key: 'name', label: 'Enum Name', render: (row) => <span className="font-bold text-indigo-300 font-mono">{row.name}</span> },
-              { key: 'file', label: 'Source Location', render: (row) => <span className="text-xs text-slate-400 font-mono">{row.file}</span> }
-            ]}
-            data={enums}
-          />
-        </Card>
-      )
+      content: renderExplorer('enums', 'Enums', 'Standardized developer enum categories.', enums, enumsColumns, ['name', 'file'])
     },
     {
       id: 'interfaces',
       label: `🔗 Interfaces (${interfaces.length})`,
-      content: (
-        <Card className="bg-slate-surface/30 border-slate-border/40">
-          <div className="mb-4">
-            <h3 className="text-base font-bold text-slate-100 font-display">Interfaces & Contracts</h3>
-            <p className="text-slate-400 text-xs mt-0.5">Type contracts, configurations, and API structures.</p>
-          </div>
-          <Table 
-            columns={[
-              { key: 'name', label: 'Interface Name', render: (row) => <span className="font-bold text-slate-200">{row.name}</span> },
-              { key: 'extends', label: 'Extends', render: (row) => row.extends ? <code className="text-xs text-indigo-400 font-mono">{row.extends}</code> : <span className="text-slate-600">-</span> },
-              { key: 'file', label: 'Source Location', render: (row) => <span className="text-xs text-slate-400 font-mono">{row.file}</span> }
-            ]}
-            data={interfaces}
-          />
-        </Card>
-      )
+      content: renderExplorer('interfaces', 'Interfaces & Contracts', 'Type contracts, configurations, and API structures.', interfaces, interfacesColumns, ['name', 'file', 'extends'])
     },
     {
       id: 'constants',
       label: `📌 Constants (${constants.length})`,
-      content: (
-        <Card className="bg-slate-surface/30 border-slate-border/40">
-          <div className="mb-4">
-            <h3 className="text-base font-bold text-slate-100 font-display">Global Constants</h3>
-            <p className="text-slate-400 text-xs mt-0.5">Constant parameters and config settings.</p>
-          </div>
-          <Table 
-            columns={[
-              { key: 'name', label: 'Constant Name', render: (row) => <span className="font-bold font-mono text-indigo-300">{row.name}</span> },
-              { 
-                key: 'value', 
-                label: 'Assigned Value',
-                render: (row) => (
-                  <span className="font-mono text-xs text-indigo-400 bg-indigo-500/5 px-2 py-0.5 rounded border border-indigo-500/10">
-                    {row.value || '-'}
-                  </span>
-                )
-              },
-              { key: 'file', label: 'Source Location' }
-            ]}
-            data={constants}
-          />
-        </Card>
-      )
+      content: renderExplorer('constants', 'Global Constants', 'Constant parameters and config settings.', constants, constantsColumns, ['name', 'file'])
     },
     {
       id: 'key_files',
@@ -605,29 +934,7 @@ export const ScannerPage: React.FC = () => {
     {
       id: 'dependencies',
       label: `📚 Deps (${dependencies.length})`,
-      content: (
-        <Card className="bg-slate-surface/30 border-slate-border/40">
-          <div className="mb-4">
-            <h3 className="text-base font-bold text-slate-100 font-display">Manifest Dependencies</h3>
-            <p className="text-slate-400 text-xs mt-0.5">Project modules parsed from lockfiles and requirements.</p>
-          </div>
-          <Table 
-            columns={[
-              { key: 'package', label: 'Package Name & Constraints', render: (row) => <span className="font-mono text-xs text-slate-300">{row.package}</span> },
-              { 
-                key: 'type', 
-                label: 'Module Manager',
-                render: (row) => (
-                  <span className="px-2 py-0.5 rounded text-[10px] font-bold tracking-wider uppercase bg-slate-900 border border-slate-border/40 text-slate-400">
-                    {row.type || 'Dependency'}
-                  </span>
-                )
-              }
-            ]}
-            data={dependencies}
-          />
-        </Card>
-      )
+      content: renderExplorer('dependencies', 'Manifest Dependencies', 'Project modules parsed from lockfiles and requirements.', dependencies, dependenciesColumns, ['package', 'type'])
     },
     {
       id: 'tech_stack',
@@ -761,6 +1068,7 @@ export const ScannerPage: React.FC = () => {
             setSessionId(null)
             setArtifacts(null)
             setSelectedKeyFile(null)
+            setCurrentTab('overview')
           }}
           variant="secondary"
           size="sm"
@@ -770,23 +1078,12 @@ export const ScannerPage: React.FC = () => {
         </Button>
       </div>
       
-      {dashboardTabs.length > 0 && <Tabs tabs={dashboardTabs} defaultTab="structure" />}
-
       {dashboardTabs.length > 0 && (
-        <Card className="border-slate-border/40 bg-slate-surface/30 backdrop-blur-md p-6 space-y-4">
-          <div className="flex justify-between items-center">
-            <div>
-              <h2 className="text-lg font-bold text-slate-100 font-display">🌐 Interactive Dependency Graph</h2>
-              <p className="text-slate-400 text-xs mt-0.5">Obsidian-inspired interconnected view of APIs, classes, and functions.</p>
-            </div>
-            <Badge severity="medium">vis.js Network</Badge>
-          </div>
-          
-          <div 
-            ref={networkRef}
-            className="w-full h-[450px] bg-slate-950/60 rounded-xl border border-slate-border/30 overflow-hidden relative"
-          />
-        </Card>
+        <Tabs 
+          tabs={dashboardTabs} 
+          activeTab={currentTab} 
+          onChange={(tabId) => setCurrentTab(tabId)} 
+        />
       )}
     </div>
   )
