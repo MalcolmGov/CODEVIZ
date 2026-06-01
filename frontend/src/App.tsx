@@ -10,6 +10,7 @@ import { SecurityPage } from '@/pages/SecurityPage'
 import { RefactoringPage } from '@/pages/RefactoringPage'
 import { SettingsPage } from '@/pages/SettingsPage'
 import { CompliancePage } from '@/pages/CompliancePage'
+import { ReportsPage } from '@/pages/ReportsPage'
 import { useAuthStore } from '@/store/authStore'
 import { initializeAuth } from '@/store/authStore'
 
@@ -42,6 +43,7 @@ export function App() {
                     <Route path="/scanner" element={<ScannerPage />} />
                     <Route path="/security" element={<SecurityPage />} />
                     <Route path="/compliance" element={<CompliancePage />} />
+                    <Route path="/reports" element={<ReportsPage />} />
                     <Route path="/refactoring" element={<RefactoringPage />} />
                     <Route path="/settings" element={<SettingsPage />} />
                   </Routes>
