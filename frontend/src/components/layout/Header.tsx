@@ -34,9 +34,13 @@ export const Header: React.FC<{ onMenuClick: () => void }> = ({ onMenuClick }) =
   const popoverRef = useRef<HTMLDivElement>(null)
 
   const [theme, setTheme] = useState<'light' | 'dark'>(() => {
-    const savedTheme = localStorage.getItem('theme')
-    if (savedTheme === 'light' || savedTheme === 'dark') {
-      return savedTheme
+    try {
+      const savedTheme = localStorage.getItem('theme')
+      if (savedTheme === 'light' || savedTheme === 'dark') {
+        return savedTheme
+      }
+    } catch (e) {
+      console.warn('localStorage not available', e)
     }
     return 'dark' // default to dark
   })
@@ -49,7 +53,11 @@ export const Header: React.FC<{ onMenuClick: () => void }> = ({ onMenuClick }) =
       document.documentElement.classList.remove('light')
       document.documentElement.classList.add('dark')
     }
-    localStorage.setItem('theme', theme)
+    try {
+      localStorage.setItem('theme', theme)
+    } catch (e) {
+      console.warn('localStorage not available', e)
+    }
   }, [theme])
 
   const checkHealth = async () => {

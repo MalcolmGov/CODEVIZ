@@ -2,7 +2,7 @@
 @tailwind components;
 @tailwind utilities;
 
-:root {
+html {
   --slate-canvas: 241, 245, 249;
   --slate-surface: 255, 255, 255;
   --slate-elevated: 226, 232, 240;
@@ -26,8 +26,7 @@
   --amber-400: 217, 119, 6;
 }
 
-html.dark,
-.dark {
+html.dark {
   --slate-canvas: 3, 7, 18;
   --slate-surface: 9, 13, 22;
   --slate-elevated: 15, 23, 42;
