@@ -389,7 +389,7 @@ class RemediationEngine:
                     for i, line in enumerate(lines):
                         if issue["package"].lower() in line.lower():
                             lines[i] = f"{issue['fix']}\n"
-                            fixes.append(f"Updated {issue['package']} to {issue['latest_version']}")
+Replace f-strings/concatenation with parameterized queries: db.execute('SELECT * FROM users WHERE email=?', [email])
                     
                     with open(req_file, 'w') as f:
                         f.writelines(lines)
