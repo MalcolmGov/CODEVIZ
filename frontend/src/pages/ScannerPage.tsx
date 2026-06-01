@@ -28,6 +28,7 @@ export const ScannerPage: React.FC = () => {
   const [searchQueries, setSearchQueries] = useState<Record<string, string>>({})
   const [currentPages, setCurrentPages] = useState<Record<string, number>>({})
   const [apiHealth, setApiHealth] = useState<Record<string, { loading: boolean; status: string; code?: number; message?: string }>>({})
+  const [customBaseUrl, setCustomBaseUrl] = useState<string>('')
   
   const [currentTab, setCurrentTab] = useState<string>('overview')
   const [pingProgress, setPingProgress] = useState(0)
@@ -39,7 +40,7 @@ export const ScannerPage: React.FC = () => {
       [path]: { loading: true, status: 'Testing...' }
     }))
     try {
-      const response = await api.post('/health/ping-endpoint', { path, method, base_url: baseUrl })
+      const response = await api.post('/health/ping-endpoint', { path, method, base_url: customBaseUrl || baseUrl })
       const resData = response.data.data || response.data
       setApiHealth(prev => ({
         ...prev,
@@ -81,7 +82,7 @@ export const ScannerPage: React.FC = () => {
       }))
       
       try {
-        const response = await api.post('/health/ping-endpoint', { path, method, base_url: baseUrl })
+        const response = await api.post('/health/ping-endpoint', { path, method, base_url: customBaseUrl || baseUrl })
         const resData = response.data.data || response.data
         setApiHealth(prev => ({
           ...prev,
@@ -228,6 +229,13 @@ export const ScannerPage: React.FC = () => {
       setArtifacts(data)
       if (data?.key_files?.length > 0) {
         setSelectedKeyFile(data.key_files[0])
+      }
+      if (data?.production_base_url) {
+        setCustomBaseUrl(data.production_base_url)
+      } else if (data?.apis?.length > 0 && data.apis[0].base_url) {
+        setCustomBaseUrl(data.apis[0].base_url)
+      } else {
+        setCustomBaseUrl('http://localhost:8000')
       }
     } catch (error) {
       console.error('Failed to get artifacts:', error)
@@ -664,7 +672,14 @@ export const ScannerPage: React.FC = () => {
                       <Server size={16} className="text-indigo-400" />
                       API Diagnostics Check
                     </h3>
-                    <p className="text-slate-400 text-xs mt-0.5">Test reachability and status of discovered endpoints.</p>
+                    <p className="text-slate-400 text-xs mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-1">
+                      <span>Test reachability and status of discovered endpoints.</span>
+                      {customBaseUrl && (
+                        <span className="inline-flex items-center gap-1 text-[10px] text-indigo-400 font-mono bg-indigo-950/30 px-2 py-0.5 rounded border border-indigo-500/10">
+                          <Globe size={8} /> Target: {customBaseUrl}
+                        </span>
+                      )}
+                    </p>
                   </div>
                   
                   <button
@@ -836,7 +851,44 @@ export const ScannerPage: React.FC = () => {
     {
       id: 'apis',
       label: `🔌 APIs (${apis.length})`,
-      content: renderExplorer('apis', 'Discovered REST Endpoints', 'Routes parsed from router annotations and HTTP middleware.', apis, apisColumns, ['path', 'file', 'methods'])
+      content: (
+        <div className="space-y-4">
+          <Card className="bg-slate-surface/30 border-slate-border/40 p-4">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+              <div className="space-y-1">
+                <h4 className="text-sm font-bold text-slate-200 flex items-center gap-2">
+                  <Globe className="w-4 h-4 text-indigo-400" />
+                  API Testing Host Target
+                </h4>
+                <p className="text-xs text-slate-400">
+                  Target host for pings. Set to localhost for dev, or a public host for production testing.
+                </p>
+              </div>
+              
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full md:w-auto">
+                <input
+                  type="text"
+                  placeholder="e.g., https://www.gaslite.co.za"
+                  value={customBaseUrl}
+                  onChange={(e) => setCustomBaseUrl(e.target.value)}
+                  className="px-3 py-1.5 bg-slate-950/60 border border-slate-border/50 rounded-lg text-xs font-mono text-slate-200 focus:outline-none focus:ring-1 focus:ring-indigo-500/30 focus:border-indigo-500/50 w-full sm:w-64"
+                />
+                
+                {artifacts?.production_base_url && artifacts.production_base_url !== customBaseUrl && (
+                  <button
+                    onClick={() => setCustomBaseUrl(artifacts.production_base_url)}
+                    className="text-[10px] whitespace-nowrap bg-indigo-500/10 border border-indigo-500/20 hover:bg-indigo-500/20 text-indigo-300 px-3 py-1.5 rounded-lg transition-all font-mono"
+                  >
+                    🌍 Use Prod: {artifacts.production_base_url.replace(/^https?:\/\//, '')}
+                  </button>
+                )}
+              </div>
+            </div>
+          </Card>
+          
+          {renderExplorer('apis', 'Discovered REST Endpoints', 'Routes parsed from router annotations and HTTP middleware.', apis, apisColumns, ['path', 'file', 'methods'])}
+        </div>
+      )
     },
     {
       id: 'classes',

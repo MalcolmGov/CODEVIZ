@@ -37,6 +37,7 @@ class RepositoryContextBuilder:
             "architecture": {},
             "ux_architecture": {},
             "statistics": {},
+            "production_base_url": None,
             "scanned_at": datetime.now().isoformat()
         }
     
@@ -52,6 +53,8 @@ class RepositoryContextBuilder:
         self._extract_architecture()
         self._extract_ux_architecture()
         self._extract_statistics()
+        
+        self.context["production_base_url"] = self._detect_prod_url()
         
         return self.context
     
@@ -163,6 +166,50 @@ class RepositoryContextBuilder:
             return 3000
             
         return 8000
+
+    def _detect_prod_url(self) -> Optional[str]:
+        """Detect the production / deployment URL from config or source files"""
+        repo_name_lower = self.repo_path.name.lower()
+        candidate_urls = {}
+        
+        exclude_keywords = (
+            'github.com', 'localhost', '127.0.0.1', 'schema.org', 'npmjs.com', 
+            'w3.org', 'auth0.com', 'google.com', 'googleapis.com', 'facebook.com', 
+            'replit.app', 'vitejs.dev', 'reactjs.org', 'react.dev', 'tailwindcss.com', 
+            'sentry.io', 'vercel.app', 'githubusercontent.com', 'unpkg.com', 
+            'skypack.dev', 'cloudflare.com', 'gravatar.com', 'wa.me', 'sendgrid.com', 
+            'twilio.com', 'twitter.com', 'linkedin.com', 'instagram.com', 'apple.com'
+        )
+
+        for p in list(self.repo_path.glob('**/server/*.ts')) + list(self.repo_path.glob('**/server/*.js')) + list(self.repo_path.glob('**/*.ts')) + list(self.repo_path.glob('**/*.js')):
+            try:
+                with open(p, 'r', errors='ignore') as f:
+                    content = f.read()
+                    url_matches = re.findall(r'https?://[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}', content)
+                    for url in url_matches:
+                        url_lower = url.lower()
+                        if not any(x in url_lower for x in exclude_keywords):
+                            # Clean it up to the root domain
+                            domain_match = re.match(r'https?://[a-zA-Z0-9.-]+', url)
+                            if domain_match:
+                                domain = domain_match.group(0)
+                                candidate_urls[domain] = candidate_urls.get(domain, 0) + 1
+            except Exception:
+                pass
+
+        if not candidate_urls:
+            return None
+
+        # Sort candidates: favor domains that contain the repo name, then by frequency
+        def score_candidate(item):
+            domain, count = item
+            score = count
+            if repo_name_lower in domain.lower():
+                score += 1000  # huge boost if repo name is in domain
+            return score
+
+        best_domain = max(candidate_urls.items(), key=score_candidate)[0]
+        return best_domain
 
     def _extract_comprehensive_artifacts(self):
         """Extract all code artifacts: APIs, classes, middleware, models, interfaces, enums, constants, error handlers"""
