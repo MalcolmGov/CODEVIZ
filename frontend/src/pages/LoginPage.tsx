@@ -13,7 +13,7 @@ export const LoginPage: React.FC = () => {
     // Mock GitHub login - in production would redirect to GitHub OAuth
     const mockUser = { id: 1, email: 'malcolm@example.com', name: 'Malcolm Govender' }
     login(mockUser, 'mock_token_123')
-    navigate('/')
+    navigate('/dashboard')
   }
 
   return (

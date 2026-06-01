@@ -9,7 +9,7 @@ interface SidebarProps {
 }
 
 const menuItems = [
-  { icon: Home, label: 'Dashboard', href: '/' },
+  { icon: Home, label: 'Dashboard', href: '/dashboard' },
   { icon: BarChart3, label: 'Scanner', href: '/scanner' },
   { icon: Shield, label: 'Security', href: '/security' },
   { icon: RefreshCw, label: 'Refactoring', href: '/refactoring' },
