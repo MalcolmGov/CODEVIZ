@@ -9,7 +9,7 @@ import json
 import re
 from typing import Optional, Dict
 from dataclasses import dataclass
-from refactoring_detector import RefactoringOpportunity, RefactoringType
+from core.refactoring_detector_legacy import RefactoringOpportunity, RefactoringType
 
 try:
     from agents import create_llm_agent
