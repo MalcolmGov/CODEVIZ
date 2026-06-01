@@ -45,12 +45,48 @@ def create_session():
         repo_input = data.get('repo_path', '/app/src')
         session_id = generate_session_id()
         
+        actual_path = repo_input
+        temp_path = None
+        
+        if repo_input.startswith('http') or 'github.com' in repo_input:
+            mock_repos = {
+                'MalcolmGov/CODEVIZ': '/Users/malcolmgovender/.gemini/antigravity-ide/scratch/codeviz',
+                'MalcolmGov/coastal-clean': '/Users/malcolmgovender/.gemini/antigravity-ide/scratch/coastal-clean',
+                'MalcolmGov/SwifterWallet': '/Users/malcolmgovender/.gemini/antigravity-ide/scratch/SwifterWallet',
+                'MalcolmGov/intelligencehub': '/Users/malcolmgovender/.gemini/antigravity-ide/scratch/intelligencehub'
+            }
+            
+            matched_local = None
+            for key, val in mock_repos.items():
+                if key.lower() in repo_input.lower():
+                    import os
+                    if os.path.exists(val):
+                        matched_local = val
+                        break
+            
+            if matched_local:
+                actual_path = matched_local
+            else:
+                from services.github_legacy import GitHubScanner
+                auth_header = request.headers.get('Authorization')
+                token = None
+                if auth_header and auth_header.startswith('Bearer '):
+                    token = auth_header.split(' ')[1]
+                if token and token.startswith('mock_'):
+                    token = None
+                    
+                scanner = GitHubScanner(token=token)
+                branch = data.get('branch', 'main')
+                temp_path = scanner.clone_repo(repo_input, branch)
+                actual_path = temp_path
+        
         if SCANNER_AVAILABLE:
-            # Use preserved scanner logic
-            chat = RepositoryChat(repo_input)
+            chat = RepositoryChat(actual_path)
+            if temp_path:
+                chat._temp_path = temp_path
+                chat._original_url = repo_input
             repo_chats[session_id] = chat
         else:
-            # Fallback mock
             repo_chats[session_id] = {
                 'repo_path': repo_input,
                 'is_scanned': False,
@@ -188,6 +224,13 @@ def clear_session(session_id):
     """Clear a session"""
     try:
         if session_id in repo_chats:
+            chat = repo_chats[session_id]
+            if hasattr(chat, '_temp_path') and chat._temp_path:
+                import shutil
+                try:
+                    shutil.rmtree(chat._temp_path)
+                except:
+                    pass
             del repo_chats[session_id]
             return format_success_response(None, 'Session cleared')[0], 200
         
