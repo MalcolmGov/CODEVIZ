@@ -143,6 +143,22 @@ def ping_endpoint():
         base_url = data.get('base_url', '').strip()
         
         if not base_url:
+            try:
+                from api.chat import repo_chats
+                if repo_chats:
+                    latest_chat = list(repo_chats.values())[-1]
+                    if hasattr(latest_chat, 'context') and latest_chat.context:
+                        prod_url = latest_chat.context.get('production_base_url')
+                        if prod_url:
+                            base_url = prod_url
+                        else:
+                            apis = latest_chat.context.get('apis', [])
+                            if apis and apis[0].get('base_url'):
+                                base_url = apis[0]['base_url']
+            except Exception:
+                pass
+                
+        if not base_url:
             base_url = 'http://localhost:8000'
         
         if not path:
