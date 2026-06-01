@@ -12,6 +12,23 @@ from typing import Dict, Any, Optional
 import io
 
 
+def _safe(text: str) -> str:
+    """Replace non-Latin-1 characters so fpdf2 Helvetica font doesn't crash."""
+    return (str(text)
+        .replace('—', '--')   # em dash
+        .replace('–', '-')    # en dash
+        .replace('‘', "'")    # left single quote
+        .replace('’', "'")    # right single quote
+        .replace('“', '"')    # left double quote
+        .replace('”', '"')    # right double quote
+        .replace('…', '...')  # ellipsis
+        .replace('é', 'e')    # é
+        .replace('à', 'a')    # à
+        .replace('ü', 'u')    # ü
+        .encode('latin-1', errors='replace').decode('latin-1')
+    )
+
+
 # ─── HTML Email Template ──────────────────────────────────────────────────────
 
 def _score_color(score: float) -> str:
@@ -300,7 +317,7 @@ def build_pdf_report(
         pdf.set_x(10)
         pdf.set_font('Helvetica', '', 10)
         pdf.set_text_color(100, 116, 139)
-        pdf.cell(0, 6, f'Repository: {repo_name}   |   Generated: {now}', ln=True)
+        pdf.cell(0, 6, _safe(f'Repository: {repo_name}   |   Generated: {now}'), ln=True)
 
         pdf.set_y(48)
 
@@ -309,7 +326,7 @@ def build_pdf_report(
             pdf.set_text_color(99, 102, 241)
             pdf.set_font('Helvetica', 'B', 12)
             pdf.set_x(10)
-            pdf.cell(0, 8, title, ln=True)
+            pdf.cell(0, 8, _safe(title), ln=True)
             pdf.set_draw_color(51, 65, 85)
             pdf.line(10, pdf.get_y(), 200, pdf.get_y())
             pdf.ln(4)
@@ -318,10 +335,10 @@ def build_pdf_report(
             pdf.set_x(indent)
             pdf.set_font('Helvetica', '', 10)
             pdf.set_text_color(148, 163, 184)
-            pdf.cell(60, 6, label)
+            pdf.cell(60, 6, _safe(label))
             pdf.set_text_color(226, 232, 240)
             pdf.set_font('Helvetica', 'B', 10)
-            pdf.cell(0, 6, str(value), ln=True)
+            pdf.cell(0, 6, _safe(str(value)), ln=True)
 
         # ── Scan Summary ──────────────────────────────────────────────────────
         section_title('Scan Summary')
@@ -353,7 +370,7 @@ def build_pdf_report(
             section_title('Compliance Status')
             for fw_id, fw in compliance_report.get('frameworks', {}).items():
                 s = fw.get('summary', {})
-                row(f"{fw.get('icon','')} {fw['name']} {fw.get('version','')}",
+                row(f"{fw['name']} {fw.get('version','')}",
                     f"{fw['score']}%  Grade: {fw.get('grade','?')}  "
                     f"({s.get('passed',0)} passed / {s.get('failed',0)} failed / {s.get('warned',0)} warned)")
             pdf.ln(4)
@@ -373,11 +390,11 @@ def build_pdf_report(
                     pdf.set_x(18)
                     pdf.set_font('Helvetica', '', 9)
                     pdf.set_text_color(226, 232, 240)
-                    pdf.cell(20, 5, c['id'])
+                    pdf.cell(20, 5, _safe(c['id']))
                     pdf.set_text_color(148, 163, 184)
-                    pdf.cell(80, 5, c['name'][:40])
+                    pdf.cell(80, 5, _safe(c['name'][:40]))
                     pdf.set_text_color(100, 116, 139)
-                    pdf.cell(0, 5, f'[{fw_name}]  Severity: {c["severity"]}', ln=True)
+                    pdf.cell(0, 5, _safe(f'[{fw_name}]  Severity: {c["severity"]}'), ln=True)
             pdf.ln(6)
 
         # ── Security Bugs ─────────────────────────────────────────────────────
@@ -394,7 +411,7 @@ def build_pdf_report(
         pdf.set_y(-20)
         pdf.set_font('Helvetica', '', 8)
         pdf.set_text_color(51, 65, 85)
-        pdf.cell(0, 6, f'CodeViz Report  |  Session: {session_id}  |  {now}', align='C')
+        pdf.cell(0, 6, _safe(f'CodeViz Report  |  Session: {session_id}  |  {now}'), align='C')
 
         return pdf.output()
 

@@ -5,8 +5,8 @@ import { Button } from '@/components/common/Button'
 import { useSessionStore } from '@/store/sessionStore'
 import { reportsService, Schedule } from '@/services/reports'
 import {
-  FileDown, Mail, Clock, Trash2, Play, Terminal, RefreshCw,
-  CheckCircle2, XCircle, AlertTriangle, Plus
+  FileDown, Mail, Clock, Trash2, Play, Terminal,
+  CheckCircle2, XCircle, Plus
 } from 'lucide-react'
 import clsx from 'clsx'
 
@@ -204,8 +204,10 @@ export const ReportsPage: React.FC = () => {
       const a = document.createElement('a')
       a.href = url
       a.download = `codeviz-report-${currentSessionId}.pdf`
+      document.body.appendChild(a)
       a.click()
-      URL.revokeObjectURL(url)
+      document.body.removeChild(a)
+      setTimeout(() => URL.revokeObjectURL(url), 1000)
     } catch (e) {
       console.error('Download failed:', e)
     } finally {
@@ -432,20 +434,6 @@ export const ReportsPage: React.FC = () => {
         )}
       </Card>
 
-      {/* Gmail setup note */}
-      <Card className="bg-amber-500/5 border-amber-500/20 space-y-2">
-        <div className="flex items-start gap-3">
-          <AlertTriangle size={15} className="text-amber-400 mt-0.5 shrink-0" />
-          <div>
-            <p className="text-xs font-semibold text-amber-400">Gmail App Password Required</p>
-            <p className="text-xs text-slate-400 mt-1">
-              Email delivery uses <span className="font-mono text-slate-300">GMAIL_ADDRESS</span> and <span className="font-mono text-slate-300">GMAIL_PASSWORD</span> from your <span className="font-mono text-slate-300">.env</span>.
-              Gmail requires an <strong className="text-slate-200">App Password</strong> (not your account password).
-              Generate one at: Gmail → Settings → Security → 2-Step Verification → App Passwords.
-            </p>
-          </div>
-        </div>
-      </Card>
     </div>
   )
 }
