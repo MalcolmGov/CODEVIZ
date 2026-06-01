@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react'
-import { Menu, LogOut, Shield, RefreshCw } from 'lucide-react'
+import { Menu, LogOut, Shield, RefreshCw, Sun, Moon } from 'lucide-react'
 import { useAuthStore } from '@/store/authStore'
 import { authService } from '@/services/auth'
 import { Link, useNavigate } from 'react-router-dom'
@@ -32,6 +32,33 @@ export const Header: React.FC<{ onMenuClick: () => void }> = ({ onMenuClick }) =
   })
   const [popoverOpen, setPopoverOpen] = useState(false)
   const popoverRef = useRef<HTMLDivElement>(null)
+
+  const [theme, setTheme] = useState<'light' | 'dark'>(() => {
+    try {
+      const savedTheme = localStorage.getItem('theme')
+      if (savedTheme === 'light' || savedTheme === 'dark') {
+        return savedTheme
+      }
+    } catch (e) {
+      console.warn('localStorage not available', e)
+    }
+    return 'dark' // default to dark
+  })
+
+  useEffect(() => {
+    if (theme === 'light') {
+      document.documentElement.classList.remove('dark')
+      document.documentElement.classList.add('light')
+    } else {
+      document.documentElement.classList.remove('light')
+      document.documentElement.classList.add('dark')
+    }
+    try {
+      localStorage.setItem('theme', theme)
+    } catch (e) {
+      console.warn('localStorage not available', e)
+    }
+  }, [theme])
 
   const checkHealth = async () => {
     try {
@@ -211,6 +238,15 @@ export const Header: React.FC<{ onMenuClick: () => void }> = ({ onMenuClick }) =
                 </div>
               )}
             </div>
+
+            {/* Theme Switcher Button */}
+            <button
+              onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')}
+              className="text-slate-450 hover:text-indigo-400 p-2 hover:bg-slate-800/30 border border-transparent rounded-lg transition-all duration-200"
+              title={theme === 'light' ? 'Switch to Dark Mode' : 'Switch to Light Mode'}
+            >
+              {theme === 'light' ? <Moon size={18} /> : <Sun size={18} />}
+            </button>
 
             <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-slate-900/40 border border-slate-border/20 text-xs text-slate-300 font-medium">
               <span className="w-2 h-2 rounded-full bg-indigo-500 animate-pulse" />

@@ -2,6 +2,54 @@
 @tailwind components;
 @tailwind utilities;
 
+html {
+  --slate-canvas: 241, 245, 249;
+  --slate-surface: 255, 255, 255;
+  --slate-elevated: 226, 232, 240;
+  --slate-border: 226, 232, 240;
+  
+  --slate-50: 248, 250, 252;
+  --slate-100: 15, 23, 42;
+  --slate-200: 30, 41, 59;
+  --slate-300: 51, 65, 85;
+  --slate-400: 71, 85, 105;
+  --slate-500: 100, 116, 139;
+  --slate-600: 148, 163, 184;
+  --slate-700: 203, 213, 225;
+  --slate-800: 226, 232, 240;
+  --slate-900: 241, 245, 249;
+  --slate-950: 248, 250, 252;
+  
+  --indigo-400: 79, 70, 229;
+  --emerald-400: 5, 150, 105;
+  --rose-400: 220, 38, 38;
+  --amber-400: 217, 119, 6;
+}
+
+html.dark {
+  --slate-canvas: 3, 7, 18;
+  --slate-surface: 9, 13, 22;
+  --slate-elevated: 15, 23, 42;
+  --slate-border: 31, 41, 55;
+  
+  --slate-50: 15, 23, 42;
+  --slate-100: 248, 250, 252;
+  --slate-200: 226, 232, 240;
+  --slate-300: 203, 213, 225;
+  --slate-400: 148, 163, 184;
+  --slate-500: 100, 116, 139;
+  --slate-600: 71, 85, 105;
+  --slate-700: 51, 65, 85;
+  --slate-800: 30, 41, 59;
+  --slate-900: 15, 23, 42;
+  --slate-950: 9, 13, 22;
+  
+  --indigo-400: 129, 140, 248;
+  --emerald-400: 52, 211, 153;
+  --rose-400: 248, 113, 113;
+  --amber-400: 251, 191, 36;
+}
+
 * {
   @apply antialiased;
 }
@@ -36,11 +84,11 @@ body {
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: #1f2937;
+  background: var(--slate-border);
   border-radius: 99px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #374151;
+  background: var(--slate-500);
 }
 
 /* Animations */
