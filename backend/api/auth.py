@@ -43,6 +43,12 @@ def github_callback():
     """Handle GitHub OAuth callback"""
     try:
         code = request.args.get('code')
+        error = request.args.get('error')
+        
+        # Handle user denial
+        if error:
+            return redirect('http://localhost:5173/login?error=' + error)
+        
         if not code:
             return redirect('http://localhost:5173/login?error=no_code')
         
@@ -50,34 +56,47 @@ def github_callback():
         client_secret = os.getenv("GITHUB_CLIENT_SECRET", "")
         token = None
         
+        print(f"[AUTH] GitHub callback received with code: {code[:8]}...")
+        print(f"[AUTH] Client ID configured: {bool(client_id)}")
+        print(f"[AUTH] Client Secret configured: {bool(client_secret)}")
+        
         if client_id and client_secret:
-            import requests
-            token_response = requests.post(
-                'https://github.com/login/oauth/access_token',
-                headers={'Accept': 'application/json'},
-                data={
-                    'client_id': client_id,
-                    'client_secret': client_secret,
-                    'code': code
-                },
-                timeout=15
-            )
-            if token_response.status_code == 200:
-                token_data = token_response.json()
-                token = token_data.get('access_token')
+            try:
+                import requests
+                token_response = requests.post(
+                    'https://github.com/login/oauth/access_token',
+                    headers={'Accept': 'application/json'},
+                    data={
+                        'client_id': client_id,
+                        'client_secret': client_secret,
+                        'code': code
+                    },
+                    timeout=15
+                )
+                print(f"[AUTH] Token exchange response status: {token_response.status_code}")
+                if token_response.status_code == 200:
+                    token_data = token_response.json()
+                    token = token_data.get('access_token')
+                    print(f"[AUTH] Token obtained: {bool(token)}")
+            except Exception as e:
+                print(f"[AUTH] Token exchange error: {e}")
         
         if not token:
             # Fallback mock token if OAuth credentials are not configured
             token = 'mock_github_token_' + code[:8]
+            print(f"[AUTH] Using mock token: {token}")
         
         session['github_token'] = token
         
         frontend_url = os.getenv("FRONTEND_URL", "http://localhost:5173")
-        return redirect(f"{frontend_url}/login?token={token}")
+        redirect_url = f"{frontend_url}/login?token={token}"
+        print(f"[AUTH] Redirecting to: {redirect_url}")
+        return redirect(redirect_url)
         
     except Exception as e:
+        print(f"[AUTH] Callback error: {e}")
         frontend_url = os.getenv("FRONTEND_URL", "http://localhost:5173")
-        return redirect(f'{frontend_url}/login?error={str(e)}')
+        return redirect(f'{frontend_url}/login?error={str(e)[:50]}')
 
 
 @auth_bp.route('/status', methods=['GET'])

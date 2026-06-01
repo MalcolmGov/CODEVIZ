@@ -39,7 +39,8 @@ def health_check():
     # Check database
     try:
         # Simple query to verify DB connection
-        db.session.execute('SELECT 1')
+        from sqlalchemy import text
+        db.session.execute(text('SELECT 1'))
         health_status['services']['database'] = {
             'status': 'healthy',
             'type': 'PostgreSQL'

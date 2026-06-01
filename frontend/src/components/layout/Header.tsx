@@ -105,7 +105,7 @@ export const Header: React.FC<{ onMenuClick: () => void }> = ({ onMenuClick }) =
         </div>
         
         {user && (
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3">
             {/* Global API Health Monitor */}
             <div className="relative" ref={popoverRef}>
               <button

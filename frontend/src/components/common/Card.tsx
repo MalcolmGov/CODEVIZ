@@ -12,8 +12,9 @@ export const Card: React.FC<CardProps> = ({ children, className, hover = false, 
   <div 
     onClick={onClick}
     className={clsx(
-      'bg-slate-surface rounded-xl border border-slate-border/50 p-6 shadow-xl relative overflow-hidden transition-all duration-300',
-      hover && 'hover:-translate-y-0.5 hover:border-slate-border hover:shadow-indigo-500/5 hover:shadow-2xl',
+      'bg-slate-surface rounded-xl border border-slate-border/50 p-6 shadow-2xl relative overflow-hidden transition-all duration-300',
+      'bg-gradient-to-br from-slate-800/40 to-slate-900/60',
+      hover && 'hover:-translate-y-1 hover:border-slate-border hover:shadow-indigo-500/10 hover:shadow-2xl cursor-pointer',
       className
     )}
   >

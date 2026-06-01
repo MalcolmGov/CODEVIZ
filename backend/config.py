@@ -15,10 +15,10 @@ class Config:
     SECRET_KEY = os.getenv("SECRET_KEY", "dev-secret-key-change-in-production")
     DEBUG = False
     
-    # Database
+    # Database - Use SQLite for development (works without setup)
     SQLALCHEMY_DATABASE_URI = os.getenv(
         "DATABASE_URL",
-        "postgresql://codeviz:codeviz@localhost:5432/codeviz"
+        "sqlite:///./codeviz.db"
     )
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     
@@ -28,7 +28,7 @@ class Config:
     PERMANENT_SESSION_LIFETIME = timedelta(days=7)
     
     # GitHub
-    GITHUB_CLIENT_ID = os.getenv("GITHUB_CLIENT_ID", "")
+    GITHUB_CLIENT_ID = os.getenv("GITHUB_CLIENT_ID", "Ov23liX6VwJSsUFJRQbY")
     GITHUB_CLIENT_SECRET = os.getenv("GITHUB_CLIENT_SECRET", "")
     GITHUB_TOKEN = os.getenv("GITHUB_TOKEN", "")
     GITHUB_REDIRECT_URI = os.getenv(
@@ -77,7 +77,11 @@ class ProductionConfig(Config):
     """Production configuration"""
     DEBUG = False
     TESTING = False
-    # Add production-specific settings
+    # For production, use PostgreSQL via DATABASE_URL env var
+    SQLALCHEMY_DATABASE_URI = os.getenv(
+        "DATABASE_URL",
+        "postgresql://codeviz:password@localhost:5432/codeviz"
+    )
 
 
 config = {

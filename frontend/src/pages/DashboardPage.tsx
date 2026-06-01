@@ -22,40 +22,40 @@ export const DashboardPage: React.FC = () => {
       value: currentSessionId ? '1' : '0', 
       icon: Terminal, 
       desc: 'Active developer environments',
-      cardClass: 'border-indigo-500/20 hover:border-indigo-500/40 bg-gradient-to-br from-indigo-950/20 via-slate-900/40 to-slate-950/60 shadow-indigo-500/5 hover:shadow-indigo-500/10',
-      iconClass: 'text-indigo-400 bg-indigo-500/10 border-indigo-500/20',
-      glowClass: 'bg-indigo-500/10',
-      valClass: 'bg-gradient-to-r from-indigo-200 via-indigo-100 to-indigo-300 text-transparent bg-clip-text drop-shadow-[0_2px_8px_rgba(99,102,241,0.15)]'
+      cardClass: 'border-indigo-500/40 hover:border-indigo-500/60 bg-gradient-to-br from-indigo-950/60 via-indigo-900/30 to-slate-950/40 shadow-lg shadow-indigo-500/20 hover:shadow-indigo-500/30',
+      iconClass: 'text-indigo-300 bg-indigo-500/30 border-indigo-400/40',
+      glowClass: 'bg-indigo-500/30 blur-3xl',
+      valClass: 'bg-gradient-to-r from-indigo-100 via-indigo-200 to-indigo-300 text-transparent bg-clip-text drop-shadow-[0_2px_8px_rgba(99,102,241,0.3)]'
     },
     { 
       label: 'Critical Threats', 
       value: currentSessionId ? String(criticalBugs) : '0', 
       icon: Shield, 
       desc: 'Requires immediate action',
-      cardClass: 'border-rose-500/20 hover:border-rose-500/40 bg-gradient-to-br from-rose-950/20 via-slate-900/40 to-slate-950/60 shadow-rose-500/5 hover:shadow-rose-500/10',
-      iconClass: 'text-rose-400 bg-rose-500/10 border-rose-500/20',
-      glowClass: 'bg-rose-500/10',
-      valClass: 'bg-gradient-to-r from-rose-200 via-rose-100 to-rose-300 text-transparent bg-clip-text drop-shadow-[0_2px_8px_rgba(244,63,94,0.15)]'
+      cardClass: 'border-rose-500/40 hover:border-rose-500/60 bg-gradient-to-br from-rose-950/60 via-rose-900/30 to-slate-950/40 shadow-lg shadow-rose-500/20 hover:shadow-rose-500/30',
+      iconClass: 'text-rose-300 bg-rose-500/30 border-rose-400/40',
+      glowClass: 'bg-rose-500/30 blur-3xl',
+      valClass: 'bg-gradient-to-r from-rose-100 via-rose-200 to-rose-300 text-transparent bg-clip-text drop-shadow-[0_2px_8px_rgba(244,63,94,0.3)]'
     },
     { 
       label: 'Refactor Opportunities', 
       value: currentSessionId ? '8' : '0', 
       icon: RefreshCw, 
       desc: 'Redundancies & quality issues',
-      cardClass: 'border-amber-500/20 hover:border-amber-500/40 bg-gradient-to-br from-amber-950/20 via-slate-900/40 to-slate-950/60 shadow-amber-500/5 hover:shadow-amber-500/10',
-      iconClass: 'text-amber-400 bg-amber-500/10 border-amber-500/20',
-      glowClass: 'bg-amber-500/10',
-      valClass: 'bg-gradient-to-r from-amber-200 via-amber-100 to-amber-300 text-transparent bg-clip-text drop-shadow-[0_2px_8px_rgba(245,158,11,0.15)]'
+      cardClass: 'border-amber-500/40 hover:border-amber-500/60 bg-gradient-to-br from-amber-950/60 via-amber-900/30 to-slate-950/40 shadow-lg shadow-amber-500/20 hover:shadow-amber-500/30',
+      iconClass: 'text-amber-300 bg-amber-500/30 border-amber-400/40',
+      glowClass: 'bg-amber-500/30 blur-3xl',
+      valClass: 'bg-gradient-to-r from-amber-100 via-amber-200 to-amber-300 text-transparent bg-clip-text drop-shadow-[0_2px_8px_rgba(245,158,11,0.3)]'
     },
     { 
       label: 'Global Security Score', 
       value: currentSessionId ? (totalBugs > 0 ? `${Math.max(40, 100 - totalBugs * 5)}%` : '98%') : '100%', 
       icon: CheckCircle2, 
       desc: 'Based on threat exposure',
-      cardClass: 'border-emerald-500/20 hover:border-emerald-500/40 bg-gradient-to-br from-emerald-950/20 via-slate-900/40 to-slate-950/60 shadow-emerald-500/5 hover:shadow-emerald-500/10',
-      iconClass: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20',
-      glowClass: 'bg-emerald-500/10',
-      valClass: 'bg-gradient-to-r from-emerald-200 via-emerald-100 to-emerald-300 text-transparent bg-clip-text drop-shadow-[0_2px_8px_rgba(16,185,129,0.15)]'
+      cardClass: 'border-emerald-500/40 hover:border-emerald-500/60 bg-gradient-to-br from-emerald-950/60 via-emerald-900/30 to-slate-950/40 shadow-lg shadow-emerald-500/20 hover:shadow-emerald-500/30',
+      iconClass: 'text-emerald-300 bg-emerald-500/30 border-emerald-400/40',
+      glowClass: 'bg-emerald-500/30 blur-3xl',
+      valClass: 'bg-gradient-to-r from-emerald-100 via-emerald-200 to-emerald-300 text-transparent bg-clip-text drop-shadow-[0_2px_8px_rgba(16,185,129,0.3)]'
     },
   ]
 
@@ -113,7 +113,7 @@ export const DashboardPage: React.FC = () => {
       {/* Main split sections */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Scans table */}
-        <Card className="lg:col-span-2 border-slate-border/40 bg-slate-surface/30 backdrop-blur-md flex flex-col justify-between">
+        <Card className="lg:col-span-2 border-slate-500/30 bg-gradient-to-br from-slate-800/50 via-slate-850/40 to-slate-900/50 backdrop-blur-md flex flex-col justify-between shadow-lg">
           <div>
             <h2 className="text-lg font-bold text-slate-100 mb-2 font-display">Active Repository Scans</h2>
             <p className="text-slate-400 text-xs mb-6 font-medium">Verify recent scanning logs and active session threats.</p>
@@ -158,7 +158,7 @@ export const DashboardPage: React.FC = () => {
         </Card>
 
         {/* Quick actions panel */}
-        <Card className="border-slate-border/40 bg-slate-surface/30 backdrop-blur-md flex flex-col justify-between">
+        <Card className="border-slate-500/30 bg-gradient-to-br from-slate-800/50 via-slate-850/40 to-slate-900/50 backdrop-blur-md flex flex-col justify-between shadow-lg">
           <div className="space-y-4">
             <h2 className="text-lg font-bold text-slate-100 font-display">Engine Controls</h2>
             <p className="text-slate-400 text-xs font-medium">Quick navigation links to perform scan commands.</p>
