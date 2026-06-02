@@ -53,8 +53,18 @@ export const ScanForm: React.FC<{ onScanComplete: (sessionId: string) => void }>
   const { createSession } = useSessionStore()
 
   // Shared state
-  const [repos, setRepos] = useState<GitHubRepository[]>([])
+  const REPO_CACHE_KEY = 'codeviz_cached_repos'
+
+  const saveRepoCache = (list: GitHubRepository[]) => {
+    try { localStorage.setItem(REPO_CACHE_KEY, JSON.stringify(list)) } catch {}
+  }
+  const loadRepoCache = (): GitHubRepository[] => {
+    try { return JSON.parse(localStorage.getItem(REPO_CACHE_KEY) || '[]') } catch { return [] }
+  }
+
+  const [repos, setRepos] = useState<GitHubRepository[]>(() => loadRepoCache())
   const [loadingRepos, setLoadingRepos] = useState(true)
+  const [usingCache, setUsingCache] = useState(false)
   const [mode, setMode] = useState<'scan' | 'schedule'>('scan')
   const [error, setError] = useState<string>()
 
@@ -79,17 +89,32 @@ export const ScanForm: React.FC<{ onScanComplete: (sessionId: string) => void }>
 
   // Load repos + schedules on mount
   useEffect(() => {
+    // Pre-populate from cache immediately so the dropdown is never blank
+    const cached = loadRepoCache()
+    if (cached.length > 0) {
+      setRepos(cached)
+      setSelectedScanRepo(prev => prev || cached[0].id)
+    }
+
     repositoriesService.listGitHubRepos()
       .then(res => {
         const list = res.data.data?.repositories || []
-        setRepos(list)
         if (list.length > 0) {
-          setSelectedScanRepo(list[0].id)
+          setRepos(list)
+          saveRepoCache(list)
+          setSelectedScanRepo(prev => prev || list[0].id)
+          setUsingCache(false)
+        } else if (cached.length > 0) {
+          setUsingCache(true)
         }
       })
-      .catch((err) => {
-        const msg = err?.response?.data?.message || err?.message || 'Failed to load repositories'
-        setError(`Repos: ${msg}`)
+      .catch(() => {
+        // Backend offline — silently use cache if available
+        if (cached.length > 0) {
+          setUsingCache(true)
+        } else {
+          setError('Backend offline and no cached repos found. Start the backend and retry.')
+        }
       })
       .finally(() => setLoadingRepos(false))
     fetchSchedules()
@@ -265,18 +290,25 @@ export const ScanForm: React.FC<{ onScanComplete: (sessionId: string) => void }>
                 </button>
               </div>
             ) : (
-              <select
-                value={selectedScanRepo}
-                onChange={e => setSelectedScanRepo(e.target.value)}
-                className={inputCls}
-              >
-                {repos.map(r => (
-                  <option key={r.id} value={r.id}>
-                    {r.full_name} ({r.private ? '🔒 Private' : '🌐 Public'})
-                  </option>
-                ))}
-                <option value="custom">📁 Custom path / URL…</option>
-              </select>
+              <div className="space-y-1.5">
+                <select
+                  value={selectedScanRepo}
+                  onChange={e => setSelectedScanRepo(e.target.value)}
+                  className={inputCls}
+                >
+                  {repos.map(r => (
+                    <option key={r.id} value={r.id}>
+                      {r.full_name} ({r.private ? '🔒 Private' : '🌐 Public'})
+                    </option>
+                  ))}
+                  <option value="custom">📁 Custom path / URL…</option>
+                </select>
+                {usingCache && (
+                  <p className="text-[10px] text-amber-500/80 font-mono flex items-center gap-1">
+                    ⚡ Showing cached repos — backend offline
+                  </p>
+                )}
+              </div>
             )}
           </div>
 

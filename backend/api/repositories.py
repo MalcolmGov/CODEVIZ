@@ -161,101 +161,149 @@ def get_scan_history(repo_id):
         return format_error_response(str(e))[0], 500
 
 
+def _get_db_path():
+    """Return path to the SQLite DB used for repo caching."""
+    import os
+    base = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    return os.path.join(base, 'instance', 'codeviz.db')
+
+
+def _load_cached_repos() -> list:
+    """Load previously-fetched repos from SQLite (table: cached_repos)."""
+    import sqlite3, json
+    try:
+        conn = sqlite3.connect(_get_db_path())
+        cur = conn.execute(
+            "SELECT data FROM cached_repos ORDER BY fetched_at DESC LIMIT 1"
+        )
+        row = cur.fetchone()
+        conn.close()
+        return json.loads(row[0]) if row else []
+    except Exception:
+        return []
+
+
+def _save_cached_repos(repos: list) -> None:
+    """Persist repos to SQLite so they survive backend restarts."""
+    import sqlite3, json
+    try:
+        conn = sqlite3.connect(_get_db_path())
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS cached_repos (
+                id         INTEGER PRIMARY KEY AUTOINCREMENT,
+                data       TEXT    NOT NULL,
+                fetched_at DATETIME DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+        conn.execute("DELETE FROM cached_repos")          # keep only latest
+        conn.execute("INSERT INTO cached_repos (data) VALUES (?)", (json.dumps(repos),))
+        conn.commit()
+        conn.close()
+    except Exception as e:
+        print(f"[repos] Cache write failed: {e}")
+
+
+_DEFAULT_REPOS = [
+    {
+        'id': '101', 'name': 'CODEVIZ',
+        'full_name': 'MalcolmGov/CODEVIZ',
+        'url': 'https://github.com/MalcolmGov/CODEVIZ',
+        'clone_url': 'https://github.com/MalcolmGov/CODEVIZ.git',
+        'description': 'AI-Powered Code Analysis & Refactoring Platform',
+        'private': False, 'branch': 'main',
+        'local_path': '/Users/malcolmgovender/codeviz-proper',
+    },
+    {
+        'id': '102', 'name': 'coastal-clean',
+        'full_name': 'MalcolmGov/coastal-clean',
+        'url': 'https://github.com/MalcolmGov/coastal-clean',
+        'clone_url': 'https://github.com/MalcolmGov/coastal-clean.git',
+        'description': 'Coastal environmental data monitor dashboard',
+        'private': True, 'branch': 'main',
+    },
+    {
+        'id': '103', 'name': 'SwifterWallet',
+        'full_name': 'MalcolmGov/SwifterWallet',
+        'url': 'https://github.com/MalcolmGov/SwifterWallet',
+        'clone_url': 'https://github.com/MalcolmGov/SwifterWallet.git',
+        'description': 'iOS Swift finance wallet application',
+        'private': False, 'branch': 'main',
+    },
+    {
+        'id': '104', 'name': 'intelligencehub',
+        'full_name': 'MalcolmGov/intelligencehub',
+        'url': 'https://github.com/MalcolmGov/intelligencehub',
+        'clone_url': 'https://github.com/MalcolmGov/intelligencehub.git',
+        'description': 'AI models hosting aggregator',
+        'private': True, 'branch': 'main',
+    },
+]
+
+
 @repositories_bp.route('/github', methods=['GET'])
 def list_github_repositories():
-    """List user's GitHub repositories using their token"""
+    """
+    List GitHub repos for the authenticated user.
+    Priority: GitHub API → SQLite cache → hardcoded defaults.
+    Always returns something — never a blank list.
+    """
     try:
-        import requests
-        
-        # Check authorization header
+        import requests as req
+
         auth_header = request.headers.get('Authorization')
         token = None
         if auth_header and auth_header.startswith('Bearer '):
             token = auth_header.split(' ')[1]
-        
-        # Fallback to session token
         if not token:
             from flask import session
             token = session.get('github_token')
-            
+
         repos = []
-        
-        # If token is a real GitHub token, call API
+
+        # 1️⃣ Try GitHub API with a real token
         if token and not token.startswith('mock_'):
-            headers = {
-                'Authorization': f'token {token}',
-                'Accept': 'application/vnd.github.v3+json'
-            }
             try:
-                response = requests.get('https://api.github.com/user/repos?per_page=100&sort=updated', headers=headers, timeout=10)
-                if response.status_code == 200:
-                    for repo in response.json():
+                resp = req.get(
+                    'https://api.github.com/user/repos?per_page=100&sort=updated',
+                    headers={
+                        'Authorization': f'token {token}',
+                        'Accept': 'application/vnd.github.v3+json',
+                    },
+                    timeout=10,
+                )
+                if resp.status_code == 200:
+                    for r in resp.json():
                         repos.append({
-                            'id': str(repo['id']),
-                            'name': repo['name'],
-                            'full_name': repo['full_name'],
-                            'url': repo['html_url'],
-                            'clone_url': repo['clone_url'],
-                            'description': repo.get('description'),
-                            'private': repo['private'],
-                            'branch': repo.get('default_branch', 'main')
+                            'id':          str(r['id']),
+                            'name':        r['name'],
+                            'full_name':   r['full_name'],
+                            'url':         r['html_url'],
+                            'clone_url':   r['clone_url'],
+                            'description': r.get('description'),
+                            'private':     r['private'],
+                            'branch':      r.get('default_branch', 'main'),
                         })
+                    if repos:
+                        _save_cached_repos(repos)   # ✅ persist for next time
+                        print(f"[repos] Fetched {len(repos)} repos from GitHub API")
             except Exception as api_err:
-                print(f"GitHub API Error: {api_err}")
-        
-        # If no repos found (or mock token), return mock local developer repos
+                print(f"[repos] GitHub API error: {api_err}")
+
+        # 2️⃣ Fall back to SQLite cache
         if not repos:
-            repos = [
-                {
-                    'id': '101',
-                    'name': 'CODEVIZ',
-                    'full_name': 'MalcolmGov/CODEVIZ',
-                    'url': 'https://github.com/MalcolmGov/CODEVIZ',
-                    'clone_url': 'https://github.com/MalcolmGov/CODEVIZ.git',
-                    'description': 'AI-Powered Code Analysis & Refactoring Platform',
-                    'private': False,
-                    'branch': 'main',
-                    'local_path': '/Users/malcolmgovender/.gemini/antigravity-ide/scratch/codeviz'
-                },
-                {
-                    'id': '102',
-                    'name': 'coastal-clean',
-                    'full_name': 'MalcolmGov/coastal-clean',
-                    'url': 'https://github.com/MalcolmGov/coastal-clean',
-                    'clone_url': 'https://github.com/MalcolmGov/coastal-clean.git',
-                    'description': 'Coastal environmental data monitor dashboard',
-                    'private': True,
-                    'branch': 'main',
-                    'local_path': '/Users/malcolmgovender/.gemini/antigravity-ide/scratch/coastal-clean'
-                },
-                {
-                    'id': '103',
-                    'name': 'SwifterWallet',
-                    'full_name': 'MalcolmGov/SwifterWallet',
-                    'url': 'https://github.com/MalcolmGov/SwifterWallet',
-                    'clone_url': 'https://github.com/MalcolmGov/SwifterWallet.git',
-                    'description': 'iOS Swift finance wallet application',
-                    'private': False,
-                    'branch': 'main',
-                    'local_path': '/Users/malcolmgovender/.gemini/antigravity-ide/scratch/SwifterWallet'
-                },
-                {
-                    'id': '104',
-                    'name': 'intelligencehub',
-                    'full_name': 'MalcolmGov/intelligencehub',
-                    'url': 'https://github.com/MalcolmGov/intelligencehub',
-                    'clone_url': 'https://github.com/MalcolmGov/intelligencehub.git',
-                    'description': 'AI models hosting aggregator',
-                    'private': True,
-                    'branch': 'main',
-                    'local_path': '/Users/malcolmgovender/.gemini/antigravity-ide/scratch/intelligencehub'
-                }
-            ]
-            
+            repos = _load_cached_repos()
+            if repos:
+                print(f"[repos] Serving {len(repos)} repos from SQLite cache")
+
+        # 3️⃣ Last resort: hardcoded defaults
+        if not repos:
+            repos = _DEFAULT_REPOS
+            print("[repos] Serving hardcoded default repos")
+
         return format_success_response({
             'repositories': repos,
-            'count': len(repos)
+            'count': len(repos),
         })[0], 200
-        
+
     except Exception as e:
         return format_error_response(str(e))[0], 500
