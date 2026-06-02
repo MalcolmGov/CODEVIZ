@@ -24,10 +24,54 @@ export const LandingPage: React.FC = () => {
 
   // ─── Data ────────────────────────────────────────────────────────────
   const stats = [
-    { label: 'Analysis Dimensions', value: '13',      desc: 'security · perf · smells · compliance' },
-    { label: 'Detection Accuracy',  value: '94%',     desc: 'with < 3% false positives'            },
-    { label: 'Vulnerability Types', value: '40+',     desc: 'OWASP · CVE · MITRE ATT&CK'           },
-    { label: 'Data Sent to Cloud',  value: '0 bytes', desc: 'on-premise LLM, air-gapped ready'     },
+    { 
+      label: 'Analysis Dimensions', 
+      value: '13',      
+      desc: 'security · perf · smells · compliance',
+      color: 'indigo',
+      fromColor: 'from-indigo-500/10',
+      toColor: 'to-indigo-500/0',
+      borderColor: 'border-white/[0.08] hover:border-indigo-500/40',
+      glowColor: 'group-hover:shadow-[0_0_30px_-5px_rgba(99,102,241,0.2)]',
+      orbColor: 'bg-indigo-500/10 group-hover:bg-indigo-500/20',
+      textColor: 'from-indigo-400 via-purple-400 to-pink-400'
+    },
+    { 
+      label: 'Detection Accuracy',  
+      value: '94%',     
+      desc: 'with < 3% false positives',
+      color: 'emerald',
+      fromColor: 'from-emerald-500/10',
+      toColor: 'to-emerald-500/0',
+      borderColor: 'border-white/[0.08] hover:border-emerald-500/40',
+      glowColor: 'group-hover:shadow-[0_0_30px_-5px_rgba(16,185,129,0.2)]',
+      orbColor: 'bg-emerald-500/10 group-hover:bg-emerald-500/20',
+      textColor: 'from-emerald-400 via-teal-400 to-emerald-300'
+    },
+    { 
+      label: 'Vulnerability Types', 
+      value: '40+',     
+      desc: 'OWASP · CVE · MITRE ATT&CK',
+      color: 'rose',
+      fromColor: 'from-rose-500/10',
+      toColor: 'to-rose-500/0',
+      borderColor: 'border-white/[0.08] hover:border-rose-500/40',
+      glowColor: 'group-hover:shadow-[0_0_30px_-5px_rgba(244,63,94,0.2)]',
+      orbColor: 'bg-rose-500/10 group-hover:bg-rose-500/20',
+      textColor: 'from-rose-400 via-pink-500 to-red-400'
+    },
+    { 
+      label: 'Data Sent to Cloud',  
+      value: '0 bytes', 
+      desc: 'on-premise LLM, air-gapped ready',
+      color: 'amber',
+      fromColor: 'from-amber-500/10',
+      toColor: 'to-amber-500/0',
+      borderColor: 'border-white/[0.08] hover:border-amber-500/40',
+      glowColor: 'group-hover:shadow-[0_0_30px_-5px_rgba(245,158,11,0.2)]',
+      orbColor: 'bg-amber-500/10 group-hover:bg-amber-500/20',
+      textColor: 'from-amber-400 via-yellow-400 to-orange-400'
+    },
   ]
 
   const features = [
@@ -97,20 +141,6 @@ export const LandingPage: React.FC = () => {
     { name: 'Enterprise',       price: 'Custom', period: false, desc: 'On-premise deployability and dedicated infrastructure.',   features: ['Unlimited repos', 'Air-gapped LLM deployment', 'SSO/SAML', 'Dedicated SLA', 'Audit trail + compliance exports'],                     btnText: 'Contact Sales', popular: false },
   ]
 
-  const getFeatureGlow = (title: string, badge: string) => {
-    const t = title.toLowerCase()
-    const b = badge.toLowerCase()
-    if (t.includes('security') || t.includes('threat') || b.includes('mitre') || b.includes('accuracy')) {
-      return 'hover:shadow-[0_0_24px_-6px_rgba(239,68,68,0.16)] hover:border-red-500/30 border-red-500/10'
-    }
-    if (t.includes('performance') || t.includes('regression')) {
-      return 'hover:shadow-[0_0_24px_-6px_rgba(249,115,22,0.16)] hover:border-orange-500/30 border-orange-500/10'
-    }
-    if (t.includes('refactoring') || t.includes('smell') || b.includes('quality') || b.includes('ai engine')) {
-      return 'hover:shadow-[0_0_24px_-6px_rgba(168,85,247,0.16)] hover:border-purple-500/30 border-purple-500/10'
-    }
-    return 'hover:shadow-[0_0_24px_-6px_rgba(99,102,241,0.16)] hover:border-indigo-500/30 border-indigo-500/10'
-  }
 
   return (
     <div className="min-h-screen bg-[#030712] text-slate-100 relative overflow-hidden select-none font-sans scroll-smooth">
@@ -266,15 +296,48 @@ export const LandingPage: React.FC = () => {
       </section>
 
       {/* ── STATS BANNER ─────────────────────────────────────────────────── */}
-      <section className="bg-[#070b13] border-y border-slate-border/20 py-10 px-6 shadow-lg">
+      <section className="bg-[#070b13] border-y border-slate-border/20 py-12 px-6 shadow-lg relative overflow-hidden">
+        {/* Background decorative grid pattern */}
+        <div className="absolute inset-0 bg-[linear-gradient(to_right,#ffffff01_1px,transparent_1px),linear-gradient(to_bottom,#ffffff01_1px,transparent_1px)] bg-[size:32px_32px] pointer-events-none" />
+        
         <div className="max-w-7xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
           {stats.map((stat, i) => (
-            <div key={i} className="space-y-1 p-4 rounded-2xl border border-white/[0.04] bg-white/[0.01]">
-              <p className="text-4xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-indigo-300 via-purple-300 to-pink-400 font-display">
-                {stat.value}
-              </p>
-              <p className="text-xs font-bold text-slate-200 font-display uppercase tracking-wider">{stat.label}</p>
-              <p className="text-[11px] text-slate-400 font-mono mt-1">{stat.desc}</p>
+            <div key={i} className={clsx(
+              "relative overflow-hidden rounded-3xl p-7 border-t-2 bg-[#090d16]/90 shadow-card backdrop-blur-xl transition-all duration-500 group hover:scale-[1.04] flex flex-col justify-between min-h-[160px]",
+              stat.color === 'indigo' ? 'border-t-indigo-500/40' :
+              stat.color === 'emerald' ? 'border-t-emerald-500/40' :
+              stat.color === 'rose' ? 'border-t-rose-500/40' : 'border-t-amber-500/40',
+              stat.borderColor,
+              stat.glowColor
+            )}>
+              {/* Dynamic top hover glow line */}
+              <div className={clsx("absolute top-0 left-0 right-0 h-[2px] opacity-35 group-hover:opacity-100 transition-opacity duration-500", 
+                stat.color === 'indigo' ? 'bg-indigo-400' :
+                stat.color === 'emerald' ? 'bg-emerald-400' :
+                stat.color === 'rose' ? 'bg-rose-400' : 'bg-amber-400'
+              )} />
+              
+              {/* Interactive light shine overlay */}
+              <div className="absolute inset-0 bg-gradient-to-tr from-white/[0.005] via-white/[0.025] to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none -z-10" />
+              
+              {/* Background gradient flare */}
+              <div className={clsx("absolute inset-0 bg-gradient-to-b opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none -z-10", stat.fromColor, stat.toColor)} />
+              
+              {/* Larger colored radial blur orb */}
+              <div className={clsx("absolute -bottom-16 -right-16 w-32 h-32 rounded-full blur-2xl transition-all duration-500 -z-10 pointer-events-none opacity-20 group-hover:opacity-50", stat.orbColor)} />
+              
+              <div className="space-y-1.5 z-10 relative flex flex-col justify-between h-full">
+                <div>
+                  <p className={clsx(
+                    "text-4xl md:text-5xl font-black font-display tracking-tight text-transparent bg-clip-text bg-gradient-to-r drop-shadow-[0_2px_10px_rgba(0,0,0,0.3)] transition-all",
+                    stat.textColor
+                  )}>
+                    {stat.value}
+                  </p>
+                  <p className="text-[11px] font-bold text-slate-200 font-display uppercase tracking-widest mt-2">{stat.label}</p>
+                </div>
+                <p className="text-[11px] text-slate-400 font-mono mt-2 leading-normal">{stat.desc}</p>
+              </div>
             </div>
           ))}
         </div>
@@ -292,30 +355,109 @@ export const LandingPage: React.FC = () => {
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {features.map((feat, i) => {
             const Icon = feat.icon
-            const glowClass = getFeatureGlow(feat.title, feat.badge)
+            
+            // Get category-based theme color for icon and vertical bar highlight
+            const isSec = feat.title.toLowerCase().includes('security') || feat.title.toLowerCase().includes('threat')
+            const isPerf = feat.title.toLowerCase().includes('performance')
+            const isRef = feat.title.toLowerCase().includes('refactoring') || feat.title.toLowerCase().includes('smell')
+            
+            const theme = isSec ? 'security' : isPerf ? 'performance' : isRef ? 'refactoring' : 'general'
+
+            const colors = {
+              security: {
+                accentColor: 'text-rose-400',
+                accentBg: 'bg-rose-500/[0.02] group-hover:bg-rose-500/[0.08]',
+                accentBorder: 'border-rose-500/20 group-hover:border-rose-500/40',
+                cardBorder: 'hover:border-rose-500/30',
+                cardShadow: 'hover:shadow-[0_0_30px_-5px_rgba(244,63,94,0.2)]',
+                leftPill: 'bg-rose-500 group-hover:shadow-[0_0_12px_#f43f5e]',
+                badgeCls: 'text-rose-400 bg-rose-950/40 border-rose-500/20 group-hover:border-rose-500/40',
+                glowOrb: 'from-rose-500/20 to-transparent'
+              },
+              performance: {
+                accentColor: 'text-orange-400',
+                accentBg: 'bg-orange-500/[0.02] group-hover:bg-orange-500/[0.08]',
+                accentBorder: 'border-orange-500/20 group-hover:border-orange-500/40',
+                cardBorder: 'hover:border-orange-500/30',
+                cardShadow: 'hover:shadow-[0_0_30px_-5px_rgba(249,115,22,0.2)]',
+                leftPill: 'bg-orange-500 group-hover:shadow-[0_0_12px_#f97316]',
+                badgeCls: 'text-orange-400 bg-orange-950/40 border-orange-500/20 group-hover:border-orange-500/40',
+                glowOrb: 'from-orange-500/20 to-transparent'
+              },
+              refactoring: {
+                accentColor: 'text-purple-400',
+                accentBg: 'bg-purple-500/[0.02] group-hover:bg-purple-500/[0.08]',
+                accentBorder: 'border-purple-500/20 group-hover:border-purple-500/40',
+                cardBorder: 'hover:border-purple-500/30',
+                cardShadow: 'hover:shadow-[0_0_30px_-5px_rgba(168,85,247,0.2)]',
+                leftPill: 'bg-purple-500 group-hover:shadow-[0_0_12px_#a855f7]',
+                badgeCls: 'text-purple-400 bg-purple-950/40 border-purple-500/20 group-hover:border-purple-500/40',
+                glowOrb: 'from-purple-500/20 to-transparent'
+              },
+              general: {
+                accentColor: 'text-indigo-400',
+                accentBg: 'bg-indigo-500/[0.02] group-hover:bg-indigo-500/[0.08]',
+                accentBorder: 'border-indigo-500/20 group-hover:border-indigo-500/40',
+                cardBorder: 'hover:border-indigo-500/30',
+                cardShadow: 'hover:shadow-[0_0_30px_-5px_rgba(99,102,241,0.2)]',
+                leftPill: 'bg-indigo-500 group-hover:shadow-[0_0_12px_#6366f1]',
+                badgeCls: 'text-indigo-400 bg-indigo-950/40 border-indigo-500/20 group-hover:border-indigo-500/40',
+                glowOrb: 'from-indigo-500/20 to-transparent'
+              }
+            }[theme]
+
             return (
               <div key={i} onClick={() => navigate(feat.href)}
                 className={clsx(
-                  "rounded-2xl border bg-slate-elevated/95 p-6 flex flex-col justify-between hover:-translate-y-1 cursor-pointer transition-all duration-300 group",
-                  glowClass
+                  "rounded-3xl border border-white/[0.06] border-t-white/[0.18] bg-gradient-to-b from-[#0d1326] to-[#040812] p-7 flex flex-col justify-between hover:-translate-y-2 cursor-pointer transition-all duration-500 group relative overflow-hidden",
+                  colors.cardBorder,
+                  colors.cardShadow
                 )}>
-                <div className="space-y-4">
+                
+                {/* Floating vertical pill indicator */}
+                <div className={clsx(
+                  "absolute left-0 top-1/2 -translate-y-1/2 w-[3px] rounded-r-full transition-all duration-500 opacity-60 group-hover:opacity-100 h-8 group-hover:h-16",
+                  colors.leftPill
+                )} />
+
+                {/* Internal gradient flare orb */}
+                <div className={clsx("absolute -top-16 -right-16 w-32 h-32 rounded-full bg-gradient-to-br blur-3xl opacity-0 group-hover:opacity-40 transition-opacity duration-500 pointer-events-none -z-10", colors.glowOrb)} />
+
+                {/* Interactive light shine overlay */}
+                <div className="absolute inset-0 bg-gradient-to-tr from-white/[0.005] via-white/[0.02] to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none -z-10" />
+
+                <div className="space-y-5 pl-1.5">
                   <div className="flex justify-between items-center">
-                    <div className="p-2.5 rounded-lg bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 group-hover:bg-indigo-500/20 group-hover:text-indigo-300 transition-colors">
-                      <Icon size={20} />
+                    {/* Icon Wrapper */}
+                    <div className={clsx(
+                      "p-3 rounded-2xl border transition-all duration-500 shadow-inner group-hover:scale-105 group-hover:rotate-3",
+                      colors.accentBg,
+                      colors.accentBorder,
+                      colors.accentColor
+                    )}>
+                      <Icon size={22} className="transition-transform duration-500" />
                     </div>
-                    <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full border border-white/[0.08] text-slate-300 bg-slate-900/50">
+                    {/* Badge */}
+                    <span className={clsx(
+                      "text-[10px] font-mono font-bold px-3 py-1 rounded-full border transition-all duration-300 shadow-sm",
+                      colors.badgeCls
+                    )}>
                       {feat.badge}
                     </span>
                   </div>
-                  <h3 className="text-base font-bold text-slate-100 font-display">{feat.title}</h3>
-                  <p className="text-slate-300 text-xs leading-relaxed font-medium">{feat.desc}</p>
+                  <h3 className="text-base font-extrabold text-white font-display leading-tight">{feat.title}</h3>
+                  <p className="text-slate-400 group-hover:text-slate-200 text-xs leading-relaxed font-medium transition-colors duration-300">{feat.desc}</p>
                 </div>
-                <div className="mt-4 flex items-center gap-1 text-[11px] font-semibold text-indigo-400 opacity-0 group-hover:opacity-100 transition-opacity">
-                  Try it <ArrowRight size={11} />
+                
+                <div className={clsx(
+                  "mt-5 flex items-center gap-1 text-[11px] font-bold opacity-0 group-hover:opacity-100 transition-all duration-300 pl-1.5",
+                  colors.accentColor
+                )}>
+                  <span>Try it</span>
+                  <ArrowRight size={11} className="transform group-hover:translate-x-1 transition-transform" />
                 </div>
               </div>
             )
