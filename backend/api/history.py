@@ -74,7 +74,7 @@ def _row_to_dict(row) -> dict:
 
 # ── Internal: build snapshot from session context ────────────────────────────
 
-def _build_snapshot(session_id: str) -> dict | None:
+def _build_snapshot(session_id: str):  # -> dict | None (py3.10+)
     """
     Pull live data from the session context and return a snapshot dict.
     Returns None if the session doesn't exist.
