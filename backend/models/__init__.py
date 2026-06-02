@@ -15,6 +15,7 @@ from .issue import (
     Refactoring,
     PullRequest
 )
+from .scan_session import ScanSession
 
 __all__ = [
     'User',
@@ -24,5 +25,6 @@ __all__ = [
     'IssueSeverity',
     'IssueType',
     'Refactoring',
-    'PullRequest'
+    'PullRequest',
+    'ScanSession',
 ]

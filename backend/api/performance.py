@@ -73,12 +73,18 @@ def scan_performance(session_id):
         SEV_ORDER = {'critical': 0, 'high': 1, 'medium': 2, 'low': 3}
         issues_data.sort(key=lambda x: SEV_ORDER.get(x['severity'], 4))
 
-        return format_success_response({
+        result = {
             'session_id': session_id,
             'issues': issues_data,
             'metrics': combined_metrics.to_dict(),
             'total': len(all_issues),
-        }, f'Performance scan complete — {len(all_issues)} issues found')[0], 200
+        }
+        try:
+            from core.session_store import cache_result
+            cache_result(session_id, 'performance', result)
+        except Exception:
+            pass
+        return format_success_response(result, f'Performance scan complete — {len(all_issues)} issues found')[0], 200
 
     except Exception as e:
         return format_error_response(str(e))[0], 500

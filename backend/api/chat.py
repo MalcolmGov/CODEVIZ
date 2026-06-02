@@ -92,7 +92,14 @@ def create_session():
                 'is_scanned': False,
                 'context': {}
             }
-        
+
+        # Persist session to DB so it survives restarts
+        try:
+            from core.session_store import save_session
+            save_session(session_id, repo_chats[session_id])
+        except Exception:
+            pass
+
         return format_success_response({
             'session_id': session_id,
             'repo_path': repo_input
@@ -236,6 +243,11 @@ def clear_session(session_id):
                 except:
                     pass
             del repo_chats[session_id]
+            try:
+                from core.session_store import delete_session
+                delete_session(session_id)
+            except Exception:
+                pass
             return format_success_response(None, 'Session cleared')[0], 200
         
         return format_error_response('Session not found')[0], 404

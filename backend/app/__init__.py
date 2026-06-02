@@ -30,11 +30,22 @@ def create_app(config_name='development'):
     # Initialize extensions (DB, Redis, CORS, etc)
     init_extensions(app)
     
-    # Register database models
+    # Register database models and create tables
     with app.app_context():
         from extensions import db
+        import models  # ensure all models are imported before create_all
         db.create_all()
-    
+
+    # Restore persisted scan sessions into memory
+    with app.app_context():
+        try:
+            from core.session_store import load_all_sessions
+            from api.chat import repo_chats
+            restored = load_all_sessions()
+            repo_chats.update(restored)
+        except Exception as e:
+            print(f"⚠️  Could not restore sessions: {e}")
+
     # Register API blueprints
     register_blueprints(app)
     
