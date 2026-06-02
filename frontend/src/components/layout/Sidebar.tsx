@@ -1,6 +1,6 @@
 import React from 'react'
 import { Link, useLocation } from 'react-router-dom'
-import { BarChart3, Shield, RefreshCw, Settings, Home, User, Terminal, ShieldCheck, FileText } from 'lucide-react'
+import { BarChart3, Shield, RefreshCw, Settings, Home, User, Terminal, ShieldCheck, FileText, Gauge } from 'lucide-react'
 import clsx from 'clsx'
 
 interface SidebarProps {
@@ -14,8 +14,9 @@ const menuItems = [
   { icon: Shield,      label: 'Security',    href: '/security' },
   { icon: ShieldCheck, label: 'Compliance',  href: '/compliance' },
   { icon: FileText,    label: 'Reports',     href: '/reports' },
-  { icon: RefreshCw,   label: 'Refactoring', href: '/refactoring' },
-  { icon: Settings,    label: 'Settings',    href: '/settings' },
+  { icon: RefreshCw,   label: 'Refactoring',  href: '/refactoring' },
+  { icon: Gauge,       label: 'Performance',  href: '/performance' },
+  { icon: Settings,    label: 'Settings',     href: '/settings' },
 ]
 
 export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
