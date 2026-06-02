@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, Link } from 'react-router-dom'
 import { useSessionStore } from '@/store/sessionStore'
 import { useBugsStore } from '@/store/bugsStore'
 import { useRefactoringStore } from '@/store/refactoringStore'
@@ -306,6 +306,37 @@ export const DashboardPage: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* ── No-session onboarding CTA ─────────────────────────────────────── */}
+      {!currentSessionId && (
+        <div className="rounded-2xl border border-indigo-500/20 bg-gradient-to-br from-indigo-500/[0.07] to-violet-500/[0.04] p-8 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
+          <div className="space-y-2">
+            <div className="flex items-center gap-2 text-indigo-400 text-[10px] font-bold uppercase tracking-[0.12em]">
+              <span className="w-1.5 h-1.5 rounded-full bg-indigo-400 animate-pulse" />
+              Ready to analyse
+            </div>
+            <h2 className="text-[18px] font-extrabold text-white font-tight tracking-tight">
+              Scan your first repository
+            </h2>
+            <p className="text-slate-400 text-[13px] max-w-md leading-relaxed">
+              Connect a GitHub repo or paste a local path. CodeViz will detect vulnerabilities, map dependencies, flag code smells, and generate a security posture score — usually in under 2 minutes.
+            </p>
+            <div className="flex flex-wrap gap-4 pt-1 text-[11px] text-slate-500 font-mono">
+              <span>✓ Security &amp; CVE scan</span>
+              <span>✓ AI refactoring suggestions</span>
+              <span>✓ Compliance mapping</span>
+              <span>✓ Dependency graph</span>
+            </div>
+          </div>
+          <Link
+            to="/scanner"
+            className="shrink-0 flex items-center gap-2 px-6 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-[13px] font-bold tracking-wide transition-all shadow-lg shadow-indigo-500/20 whitespace-nowrap"
+          >
+            <Zap size={15} />
+            Start your first scan
+          </Link>
+        </div>
+      )}
 
       {/* ── Section 1: Posture + Threat Distribution ─────────────────────── */}
       <div className="grid grid-cols-12 gap-5">

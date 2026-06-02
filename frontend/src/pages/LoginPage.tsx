@@ -1,68 +1,92 @@
-import React, { useEffect } from 'react'
+import React, { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Button } from '@/components/common/Button'
 import { Card } from '@/components/common/Card'
 import { useAuthStore } from '@/store/authStore'
-import { Github, ShieldAlert, Terminal } from 'lucide-react'
+import { Github, ShieldAlert, AlertCircle, Loader2 } from 'lucide-react'
 import { authService } from '@/services/auth'
 import { api } from '@/services/api'
 
 export const LoginPage: React.FC = () => {
-  const navigate = useNavigate()
-  const { login } = useAuthStore()
+  const navigate   = useNavigate()
+  const { login }  = useAuthStore()
 
+  const [loading,    setLoading]    = useState(false)
+  const [error,      setError]      = useState<string | null>(null)
+  const [resolving,  setResolving]  = useState(false)
+
+  // Handle OAuth callback — ?token=... lands here after GitHub redirects back
   useEffect(() => {
     const params = new URLSearchParams(window.location.search)
-    const token = params.get('token')
-    
+    const token  = params.get('token')
+    const err    = params.get('error')
+
+    if (err) {
+      setError(err === 'access_denied'
+        ? 'GitHub access was denied. Please try again.'
+        : `OAuth error: ${err}`)
+      // Clean up the URL
+      window.history.replaceState({}, '', '/login')
+      return
+    }
+
     if (token) {
-      const fetchProfileAndLogin = async () => {
-        try {
-          // Get user details from backend using the real/mock token
-          const response = await api.get('/auth/user', {
-            headers: { Authorization: `Bearer ${token}` }
-          })
-          const userProfile = response.data.data
-          login(userProfile, token)
+      setResolving(true)
+      api.get('/auth/user', { headers: { Authorization: `Bearer ${token}` } })
+        .then(res => {
+          login(res.data.data, token)
           navigate('/dashboard')
-        } catch (err) {
-          console.error('OAuth profile retrieval failed:', err)
-        }
-      }
-      
-      fetchProfileAndLogin()
+        })
+        .catch(() => {
+          setError('Could not retrieve your profile. Please try signing in again.')
+          setResolving(false)
+          window.history.replaceState({}, '', '/login')
+        })
     }
   }, [navigate, login])
 
   const handleGitHubLogin = async () => {
+    setLoading(true)
+    setError(null)
     try {
       const response = await authService.getGitHubLoginUrl()
-      const authUrl = response.data.data?.auth_url
+      const authUrl  = response.data.data?.auth_url
       if (authUrl) {
         window.location.href = authUrl
-        return
+        return  // keep spinner going while browser navigates away
       }
-    } catch (err) {
-      console.warn('GitHub OAuth not configured on backend, falling back to Sandbox development login...', err)
+    } catch {
+      // OAuth not configured — fall through to sandbox login
     }
 
-    // Fallback Mock OAuth Login for Sandbox Dev environment
+    // Sandbox / dev fallback
     const mockUser = { id: 1, email: 'malcolm@example.com', name: 'Malcolm Govender' }
     login(mockUser, 'mock_token_123')
     navigate('/dashboard')
   }
 
+  // Show a minimal "resolving profile…" screen while the callback processes
+  if (resolving) {
+    return (
+      <div className="min-h-screen bg-[#030712] flex items-center justify-center">
+        <div className="text-center space-y-3">
+          <Loader2 size={28} className="text-indigo-400 animate-spin mx-auto" />
+          <p className="text-slate-400 text-sm font-medium">Signing you in…</p>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="min-h-screen bg-[#030712] relative overflow-hidden flex items-center justify-center p-4 select-none font-sans">
-      {/* Decorative Grids and Light Rings */}
+      {/* Background */}
       <div className="absolute inset-0 bg-[linear-gradient(to_right,#1f29370a_1px,transparent_1px),linear-gradient(to_bottom,#1f29370a_1px,transparent_1px)] bg-[size:24px_24px] pointer-events-none" />
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-indigo-500/10 rounded-full blur-[120px] pointer-events-none" />
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[400px] h-[400px] bg-violet-500/10 rounded-full blur-[90px] pointer-events-none" />
 
       <Card className="w-full max-w-md relative z-10 p-8 border-slate-border/60 bg-slate-surface/40 backdrop-blur-xl shadow-2xl">
-        {/* Glow accent bar at top of card */}
-        <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500" />
-        
+        <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 rounded-t-2xl" />
+
         <div className="text-center space-y-8">
           <div className="space-y-3">
             <div className="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-gradient-to-tr from-indigo-500 to-violet-600 text-white shadow-xl shadow-indigo-500/20 mb-2">
@@ -72,23 +96,32 @@ export const LoginPage: React.FC = () => {
               Code<span className="text-indigo-400 font-medium">Viz</span>
             </h1>
             <p className="text-slate-400 text-sm font-medium">
-              Enterprise AI Vulnerability Scanner & Refactoring Engine
+              AI-Powered Code Analysis & Security Platform
             </p>
           </div>
 
-          <div className="space-y-4 pt-2">
-            <Button 
-              onClick={handleGitHubLogin} 
-              variant="primary" 
-              size="lg" 
-              icon={Github} 
-              className="w-full flex items-center justify-center py-3 text-sm font-semibold tracking-wide"
+          <div className="space-y-3 pt-2">
+            {/* Error banner */}
+            {error && (
+              <div className="flex items-start gap-2.5 bg-red-500/10 border border-red-500/20 rounded-xl px-4 py-3 text-left">
+                <AlertCircle size={15} className="text-red-400 mt-0.5 shrink-0" />
+                <p className="text-red-300 text-[12px] leading-snug">{error}</p>
+              </div>
+            )}
+
+            <button
+              onClick={handleGitHubLogin}
+              disabled={loading}
+              className="w-full flex items-center justify-center gap-2.5 py-3 px-5 rounded-xl bg-indigo-600 hover:bg-indigo-500 disabled:opacity-60 disabled:cursor-not-allowed text-white text-sm font-semibold tracking-wide transition-all shadow-lg shadow-indigo-500/20"
             >
-              Sign In with GitHub
-            </Button>
-            
-            <p className="text-[11px] text-slate-500 flex items-center justify-center gap-1.5 font-mono">
-              <Terminal size={12} /> secure OAuth handshake sandbox
+              {loading
+                ? <Loader2 size={16} className="animate-spin" />
+                : <Github size={16} />}
+              {loading ? 'Redirecting to GitHub…' : 'Sign in with GitHub'}
+            </button>
+
+            <p className="text-[11px] text-slate-600 font-mono">
+              Secure OAuth · your code never leaves your machine
             </p>
           </div>
         </div>
@@ -96,4 +129,3 @@ export const LoginPage: React.FC = () => {
     </div>
   )
 }
-

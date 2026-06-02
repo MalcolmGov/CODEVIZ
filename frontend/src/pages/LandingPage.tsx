@@ -13,10 +13,10 @@ export const LandingPage: React.FC = () => {
   const navigate = useNavigate()
 
   const stats = [
-    { label: 'Scan Performance', value: '10k+ LOC', desc: 'in < 2 minutes' },
-    { label: 'Detection Accuracy', value: '94%', desc: 'with < 3% false positives' },
-    { label: 'Functional Endpoints', value: '28 API', desc: 'endpoints active' },
-    { label: 'State Management', value: '4 Stores', desc: 'powered by Zustand' },
+    { label: 'Scan Performance',   value: '10k+',    desc: 'lines of code in < 2 min' },
+    { label: 'Detection Accuracy', value: '94%',     desc: 'with < 3% false positives' },
+    { label: 'Vulnerability Types', value: '40+',    desc: 'OWASP · CVE · secret checks' },
+    { label: 'Auto-fix Coverage',  value: '1-click', desc: 'PR generation for any issue' },
   ]
 
   const features = [
