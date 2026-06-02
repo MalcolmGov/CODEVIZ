@@ -432,6 +432,12 @@ export const ScannerPage: React.FC = () => {
       }
     } catch (error) {
       console.error('Failed to get artifacts:', error)
+      // Stale/expired session (e.g. the backend restarted and in-memory sessions
+      // were lost). Reset so the scan form + repo selector is shown instead of an
+      // empty results page.
+      setSessionId(null)
+      setArtifacts(null)
+      setGlobalSessionId(null)
     } finally {
       // Allow the loading animation to reach final steps for premium aesthetic
       setTimeout(() => setLoading(false), 1000)
