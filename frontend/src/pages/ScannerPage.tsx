@@ -12,12 +12,61 @@ import {
   Terminal, ShieldCheck, Cpu, Code2, Server, Globe,
   Layers, Package, Settings, Activity, FolderGit2, Search, ArrowRight,
   FileCode2, ShieldAlert, Split, Database, ListPlus, Link, Hash, Key, Palette,
-  RefreshCw, ChevronRight, ArrowUpRight, BarChart3, Trophy, AlertTriangle, CheckCircle2, Info
+  RefreshCw, ChevronRight, ArrowUpRight, BarChart3, Trophy, AlertTriangle, CheckCircle2, Info,
+  Sparkles, Send, Bot
 } from 'lucide-react'
 import { Network, DataSet } from 'vis-network/standalone'
 import 'vis-network/styles/vis-network.css'
 import { api } from '@/services/api'
 import clsx from 'clsx'
+
+// ── Lightweight Markdown renderer (the AI returns Markdown) ──────────────────
+const renderInline = (text: string, keyPrefix: string): React.ReactNode[] => {
+  const nodes: React.ReactNode[] = []
+  const regex = /(\*\*([^*]+)\*\*|`([^`]+)`)/g
+  let lastIndex = 0
+  let m: RegExpExecArray | null
+  while ((m = regex.exec(text)) !== null) {
+    if (m.index > lastIndex) nodes.push(text.slice(lastIndex, m.index))
+    if (m[2] !== undefined) {
+      nodes.push(<strong key={`${keyPrefix}-b-${m.index}`} className="font-semibold text-slate-100">{m[2]}</strong>)
+    } else if (m[3] !== undefined) {
+      nodes.push(<code key={`${keyPrefix}-c-${m.index}`} className="px-1 py-0.5 rounded bg-slate-950/60 border border-slate-border/40 text-indigo-300 font-mono text-[11px]">{m[3]}</code>)
+    }
+    lastIndex = m.index + m[0].length
+  }
+  if (lastIndex < text.length) nodes.push(text.slice(lastIndex))
+  return nodes
+}
+
+const MarkdownLite: React.FC<{ text: string }> = ({ text }) => {
+  const lines = (text || '').split('\n')
+  const blocks: React.ReactNode[] = []
+  let list: React.ReactNode[] = []
+  const flushList = (key: string) => {
+    if (list.length) {
+      blocks.push(<ul key={key} className="list-disc pl-5 space-y-1 my-1.5">{list}</ul>)
+      list = []
+    }
+  }
+  lines.forEach((line, i) => {
+    const h = line.match(/^(#{1,6})\s+(.*)/)
+    const li = line.match(/^\s*([-*]|\d+\.)\s+(.*)/)
+    if (h) {
+      flushList(`ul-${i}`)
+      blocks.push(<p key={i} className="font-bold text-slate-100 font-display text-sm mt-3 mb-1">{renderInline(h[2], `h-${i}`)}</p>)
+    } else if (li) {
+      list.push(<li key={i} className="text-slate-300 leading-snug">{renderInline(li[2], `li-${i}`)}</li>)
+    } else if (line.trim() === '') {
+      flushList(`ul-${i}`)
+    } else {
+      flushList(`ul-${i}`)
+      blocks.push(<p key={i} className="text-slate-300 leading-relaxed my-1">{renderInline(line, `p-${i}`)}</p>)
+    }
+  })
+  flushList('ul-end')
+  return <div className="text-[13px]">{blocks}</div>
+}
 
 export const ScannerPage: React.FC = () => {
   const [sessionId, setSessionId] = useState<string | null>(null)
@@ -36,6 +85,42 @@ export const ScannerPage: React.FC = () => {
   const [currentTab, setCurrentTab] = useState<string>('overview')
   const [pingProgress, setPingProgress] = useState(0)
   const [isPingingAll, setIsPingingAll] = useState(false)
+
+  // ── Ask AI (LLM code chat) ──────────────────────────────────────────────
+  type ChatMessage = { role: 'user' | 'assistant'; content: string; source?: string }
+  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([])
+  const [chatInput, setChatInput] = useState('')
+  const [chatLoading, setChatLoading] = useState(false)
+  const chatEndRef = useRef<HTMLDivElement>(null)
+
+  const handleAskQuestion = async (preset?: string) => {
+    const question = (preset ?? chatInput).trim()
+    if (!question || chatLoading || !sessionId) return
+    setChatMessages(prev => [...prev, { role: 'user', content: question }])
+    setChatInput('')
+    setChatLoading(true)
+    try {
+      const res = await chatService.ask(sessionId, question)
+      const data: any = (res.data as any)?.data ?? res.data
+      setChatMessages(prev => [...prev, {
+        role: 'assistant',
+        content: data?.answer ?? 'No answer returned.',
+        source: data?.source,
+      }])
+    } catch (err) {
+      setChatMessages(prev => [...prev, {
+        role: 'assistant',
+        content: '⚠️ Could not reach the AI. Make sure the backend is running (and Ollama for AI answers).',
+        source: 'error',
+      }])
+    } finally {
+      setChatLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    chatEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+  }, [chatMessages, chatLoading])
 
   const handleTestEndpoint = async (path: string, method: string, baseUrl?: string) => {
     setApiHealth(prev => ({
@@ -638,7 +723,148 @@ export const ScannerPage: React.FC = () => {
     { id: 'dependencies', label: 'Dependencies', count: dependencies.length, icon: Package, color: 'text-violet-400 border-violet-500/20 bg-violet-500/5' },
   ]
 
+  const suggestedPrompts = [
+    'What are the main security risks in this codebase?',
+    'Explain the overall architecture',
+    'List the API endpoints and what they do',
+    'Where is authentication handled?',
+  ]
+
   const dashboardTabs = [
+    {
+      id: 'chat',
+      label: '🤖 Ask AI',
+      content: (
+        <Card className="bg-slate-surface/30 border-slate-border/40 flex flex-col h-[600px] p-0 overflow-hidden">
+          {/* Header */}
+          <div className="flex items-center justify-between gap-3 px-5 py-3.5 border-b border-slate-border/40 shrink-0">
+            <div className="flex items-center gap-2.5">
+              <div className="p-1.5 rounded-lg bg-indigo-500/10 border border-indigo-500/20">
+                <Sparkles size={15} className="text-indigo-400" />
+              </div>
+              <div>
+                <h3 className="text-sm font-bold text-slate-100 font-display">Ask AI About This Codebase</h3>
+                <p className="text-[11px] text-slate-500">Grounded in this scan's APIs, classes, models &amp; dependencies.</p>
+              </div>
+            </div>
+            {chatMessages.length > 0 && (
+              <button
+                onClick={() => setChatMessages([])}
+                className="text-[10px] font-mono text-slate-500 hover:text-slate-300 border border-slate-border/50 hover:border-slate-border px-2 py-1 rounded-md transition-all"
+              >
+                Clear
+              </button>
+            )}
+          </div>
+
+          {/* Messages */}
+          <div className="flex-1 overflow-y-auto px-5 py-4 space-y-4">
+            {chatMessages.length === 0 && !chatLoading && (
+              <div className="h-full flex flex-col items-center justify-center text-center gap-4 py-8">
+                <div className="p-3 rounded-2xl bg-indigo-500/10 border border-indigo-500/20">
+                  <Bot size={26} className="text-indigo-400" />
+                </div>
+                <div>
+                  <p className="text-slate-300 text-sm font-semibold">Ask anything about your code</p>
+                  <p className="text-slate-500 text-xs mt-1 max-w-sm">
+                    Free-form questions about security, architecture, endpoints, and more.
+                  </p>
+                </div>
+                <div className="flex flex-wrap gap-2 justify-center max-w-lg mt-1">
+                  {suggestedPrompts.map((p, i) => (
+                    <button
+                      key={i}
+                      onClick={() => handleAskQuestion(p)}
+                      className="text-[11px] text-slate-300 bg-slate-950/50 border border-slate-border/50 hover:border-indigo-500/40 hover:text-indigo-300 px-3 py-1.5 rounded-full transition-all"
+                    >
+                      {p}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {chatMessages.map((msg, idx) => (
+              <div key={idx} className={clsx('flex gap-3', msg.role === 'user' ? 'justify-end' : 'justify-start')}>
+                {msg.role === 'assistant' && (
+                  <div className="shrink-0 mt-0.5 p-1.5 rounded-lg bg-indigo-500/10 border border-indigo-500/20 h-fit">
+                    <Bot size={13} className="text-indigo-400" />
+                  </div>
+                )}
+                <div className={clsx(
+                  'rounded-xl px-3.5 py-2.5 max-w-[80%]',
+                  msg.role === 'user'
+                    ? 'bg-indigo-500/15 border border-indigo-500/25 text-slate-100 text-[13px]'
+                    : msg.source === 'error'
+                      ? 'bg-rose-500/10 border border-rose-500/25 text-rose-300 text-[13px]'
+                      : 'bg-slate-950/40 border border-slate-border/40'
+                )}>
+                  {msg.role === 'assistant' && msg.source !== 'error' ? (
+                    <>
+                      <MarkdownLite text={msg.content} />
+                      {msg.source && (
+                        <div className="mt-2 pt-2 border-t border-slate-border/30">
+                          <span className={clsx(
+                            'inline-flex items-center gap-1 text-[9px] font-mono px-1.5 py-0.5 rounded',
+                            msg.source === 'llm'
+                              ? 'text-emerald-400 bg-emerald-500/10 border border-emerald-500/20'
+                              : 'text-amber-400 bg-amber-500/10 border border-amber-500/20'
+                          )}>
+                            {msg.source === 'llm' ? '✨ AI' : '⚡ keyword fallback'}
+                          </span>
+                        </div>
+                      )}
+                    </>
+                  ) : (
+                    <span className="whitespace-pre-wrap">{msg.content}</span>
+                  )}
+                </div>
+              </div>
+            ))}
+
+            {chatLoading && (
+              <div className="flex gap-3 justify-start">
+                <div className="shrink-0 mt-0.5 p-1.5 rounded-lg bg-indigo-500/10 border border-indigo-500/20 h-fit">
+                  <Bot size={13} className="text-indigo-400" />
+                </div>
+                <div className="rounded-xl px-3.5 py-2.5 bg-slate-950/40 border border-slate-border/40 flex items-center gap-2.5">
+                  <RefreshCw size={13} className="text-indigo-400 animate-spin" />
+                  <span className="text-xs text-slate-400">Thinking… <span className="text-slate-600">(local model, may take ~30s)</span></span>
+                </div>
+              </div>
+            )}
+            <div ref={chatEndRef} />
+          </div>
+
+          {/* Input */}
+          <div className="border-t border-slate-border/40 p-3 shrink-0">
+            <div className="flex items-end gap-2">
+              <textarea
+                rows={1}
+                value={chatInput}
+                onChange={(e) => setChatInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault()
+                    handleAskQuestion()
+                  }
+                }}
+                placeholder="Ask about security, architecture, endpoints…  (Enter to send)"
+                className="flex-1 resize-none bg-slate-950/50 border border-slate-border/50 rounded-lg px-3 py-2 text-[13px] text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-indigo-500/30 focus:border-indigo-500/50 max-h-32"
+              />
+              <button
+                onClick={() => handleAskQuestion()}
+                disabled={chatLoading || !chatInput.trim()}
+                className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-semibold bg-indigo-500 hover:bg-indigo-600 disabled:bg-indigo-800/40 text-white disabled:text-slate-400 transition-all shrink-0"
+              >
+                <Send size={13} />
+                Send
+              </button>
+            </div>
+          </div>
+        </Card>
+      )
+    },
     {
       id: 'overview',
       label: '📊 Overview',
@@ -1281,6 +1507,7 @@ export const ScannerPage: React.FC = () => {
   // ── Grouped navigation ────────────────────────────────────────────────────
   const tabGroups = [
     { id: 'summary',  label: '📊 Summary',      tabIds: ['overview', 'risk_score'] },
+    { id: 'ask_ai',   label: '🤖 Ask AI',        tabIds: ['chat'] },
     { id: 'code',     label: '🔍 Code',          tabIds: ['structure', 'files', 'apis', 'classes', 'functions', 'error_handlers', 'middleware'] },
     { id: 'data',     label: '🗄️ Data',          tabIds: ['models', 'enums', 'interfaces', 'constants', 'key_files'] },
     { id: 'deps',     label: '📦 Dependencies',  tabIds: ['dependencies', 'tech_stack', 'architecture', 'ux_architecture'] },

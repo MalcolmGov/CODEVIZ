@@ -14,7 +14,9 @@ import os
 def github_login():
     """Redirect to GitHub OAuth"""
     try:
-        client_id = os.getenv("GITHUB_CLIENT_ID", "")
+        from flask import current_app
+        client_id = (os.getenv("GITHUB_CLIENT_ID") or
+                     current_app.config.get("GITHUB_CLIENT_ID", ""))
         if not client_id:
             return format_error_response('GitHub OAuth not configured')[0], 400
         
@@ -52,8 +54,11 @@ def github_callback():
         if not code:
             return redirect('http://localhost:5173/login?error=no_code')
         
-        client_id = os.getenv("GITHUB_CLIENT_ID", "")
-        client_secret = os.getenv("GITHUB_CLIENT_SECRET", "")
+        from flask import current_app
+        client_id = (os.getenv("GITHUB_CLIENT_ID") or
+                     current_app.config.get("GITHUB_CLIENT_ID", ""))
+        client_secret = (os.getenv("GITHUB_CLIENT_SECRET") or
+                         current_app.config.get("GITHUB_CLIENT_SECRET", ""))
         token = None
         
         print(f"[AUTH] GitHub callback received with code: {code[:8]}...")
