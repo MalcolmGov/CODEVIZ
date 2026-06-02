@@ -17,5 +17,18 @@ export const refactoringService = {
       pr_content: prContent,
       github_token: githubToken,
     }),
+
+  stagePR: (sessionId: string, file: string, line: number, before: string, after: string, type: string) =>
+    api.post('/refactoring/stage-pr', {
+      session_id: sessionId,
+      file,
+      line,
+      before: before,
+      after: after,
+      type: type
+    }),
+
+  autoStage: (sessionId: string, opportunities: any[]) =>
+    api.post('/refactoring/auto-stage', { session_id: sessionId, opportunities }),
 }
 

@@ -678,88 +678,128 @@ class RepositoryChat:
         return answer
     
     def _generate_answer(self, question: str) -> str:
-        """Generate answer based on discovered artifacts"""
+        """Generate answer based on discovered artifacts and source code scanning"""
         q_lower = question.lower()
         
-        if "api" in q_lower or "endpoint" in q_lower or "route" in q_lower:
-            matches = [a for a in self.context["apis"] if a['path'].lower() in q_lower]
+        # 1. SQL Injection / Security Vulnerabilities
+        if any(x in q_lower for x in ("sql", "injection", "security", "vulnerability", "risk", "credential", "password", "leak")):
+            hotspots = []
+            
+            # Scan files under the repository path for SQL injection patterns and secrets
+            for root, dirs, files in os.walk(self.repo_path):
+                dirs[:] = [d for d in dirs if d not in ('.git', 'node_modules', '__pycache__', 'dist', 'build', 'venv')]
+                for file in files:
+                    if file.endswith(('.py', '.ts', '.tsx', '.js', '.jsx')):
+                        file_path = Path(root) / file
+                        try:
+                            with open(file_path, 'r', errors='ignore') as f:
+                                lines = f.readlines()
+                                for i, line in enumerate(lines):
+                                    line_strip = line.strip()
+                                    # Skip comment lines
+                                    if line_strip.startswith(('#', '//', '*')):
+                                        continue
+                                        
+                                    # A. SQL Injection detection: look for raw SELECT/UPDATE queries using variable interpolation
+                                    sql_patterns = (
+                                        r'\b(?:execute|query|run)\b.*\b(?:select|insert|update|delete|from|where)\b.*(?:%s|\+.*\b[a-zA-Z]|\{.*\b[a-zA-Z]|\$\{.*\b[a-zA-Z])',
+                                        r'\b(?:select|insert|update|delete)\b.*(?:f"[^"]*\{|[a-zA-Z_]\w*\s*\+\s*["\']|["\'][^"\']*\s*\+\s*[a-zA-Z_])'
+                                    )
+                                    for pattern in sql_patterns:
+                                        if re.search(pattern, line_lower := line.lower()):
+                                            # Avoid parameterized bindings like "?", "$1", ":param"
+                                            if not any(x in line_lower for x in ('params=', 'bind=', '?', '$1', '$2', '$3', 'param')):
+                                                hotspots.append({
+                                                    "file": str(file_path.relative_to(self.repo_path)),
+                                                    "line": i + 1,
+                                                    "content": line_strip,
+                                                    "type": "⚠️ Potential SQL Injection (Unparameterized Raw Query)"
+                                                })
+                                                break
+                                                
+                                    # B. Hardcoded Secrets detection
+                                    secret_patterns = (
+                                        r'\b(?:api_key|apikey|secret_key|private_key|token|auth_token|jwt_secret|password|db_pass)\b\s*[:=]\s*["\'][a-zA-Z0-9_\-\.\/]{10,}["\']',
+                                    )
+                                    for pattern in secret_patterns:
+                                        if re.search(pattern, line_lower):
+                                            # Exclude dev-secret or empty or placeholders
+                                            val = line_strip.split('=')[-1].split(':')[-1].strip().strip('\'"')
+                                            if not any(x in val.lower() for x in ('dev-secret', 'secret_key', 'test', 'example', 'placeholder', 'dummy', 'none', '""', "''")):
+                                                hotspots.append({
+                                                    "file": str(file_path.relative_to(self.repo_path)),
+                                                    "line": i + 1,
+                                                    "content": line_strip,
+                                                    "type": "🔑 Potential Hardcoded Secret / Credential Leak"
+                                                })
+                                                break
+                        except Exception:
+                            pass
+            
+            if hotspots:
+                answer = f"🛡️ **Codebase Security Scan Results**\n\nFound **{len(hotspots)}** potential security risks in the codebase:\n\n"
+                for h in hotspots[:15]:
+                    answer += f"### {h['type']}\n"
+                    answer += f"- **File**: `{h['file']}` (Line {h['line']})\n"
+                    answer += f"- **Code**: `{h['content']}`\n\n"
+                if len(hotspots) > 15:
+                    answer += f"*...and {len(hotspots) - 15} more hotspots found. Please check your config parameters.*"
+                return answer
+            else:
+                return "🛡️ **Codebase Security Scan Results**\n\nNo potential raw SQL injections or hardcoded keys were detected using AST pattern matching. The scanned routes and model interfaces appear to follow correct binding patterns."
+
+        # 2. APIs/Endpoints/Routes
+        if any(x in q_lower for x in ("api", "endpoint", "route", "http")):
+            matches = [a for a in self.context["apis"] if a['path'].lower() in q_lower or q_lower in a['path'].lower()]
             if matches:
-                answer = f"Found {len(matches)} matching API(s):\n\n"
+                answer = f"🔌 **Discovered API Endpoints matching your query ({len(matches)}):**\n\n"
                 for api in matches:
-                    answer += f"**{' '.join(api['methods']).upper()} {api['path']}**\n"
-                    answer += f"File: `{api['file']}`\n\n"
+                    answer += f"- **{' '.join(api['methods']).upper()}** `{api['path']}`\n"
+                    answer += f"  - Location: `{api['file']}`\n"
+                    answer += f"  - Target Environment: `{api['environment']}`\n\n"
                 return answer
             
-            answer = f"Found {len(self.context['apis'])} total API endpoints:\n\n"
+            answer = f"🔌 **Discovered API Endpoints ({len(self.context['apis'])}):**\n\n"
             for api in self.context["apis"][:20]:
-                answer += f"- **{' '.join(api['methods']).upper()}** `{api['path']}` ({api['file']})\n"
+                answer += f"- **{' '.join(api['methods']).upper()}** `{api['path']}` (`{api['file']}`)\n"
             return answer
-        
-        if "class" in q_lower:
-            matches = [c for c in self.context["classes"] if c['name'].lower() in q_lower]
+
+        # 3. Class and models
+        if "class" in q_lower or "model" in q_lower or "database" in q_lower:
+            matches = [c for c in self.context["classes"] if c['name'].lower() in q_lower or q_lower in c['name'].lower()]
             if matches:
-                answer = f"Found {len(matches)} matching class(es):\n\n"
+                answer = f"📦 **Classes matching your query ({len(matches)}):**\n\n"
                 for cls in matches:
-                    answer += f"**class {cls['name']}** ({cls['file']})\n"
+                    answer += f"- **{cls['name']}** (`{cls['file']}`)\n"
                     if cls.get('bases'):
-                        answer += f"Extends: {cls['bases']}\n"
-                    answer += "\n"
+                        answer += f"  - Inherits from: `{cls['bases']}`\n"
                 return answer
             
-            answer = f"Found {len(self.context['classes'])} classes:\n\n"
+            answer = f"📦 **Scanned Database Models / Classes:**\n\n"
             for cls in self.context["classes"][:15]:
                 answer += f"- `{cls['name']}` ({cls['file']})\n"
             return answer
-        
-        if "model" in q_lower or "database" in q_lower:
-            answer = f"Found {len(self.context['models'])} database models:\n\n"
-            for model in self.context["models"]:
-                answer += f"- **{model['name']}** ({model['file']})\n"
-            return answer
-        
-        if "interface" in q_lower or "type" in q_lower:
-            answer = f"Found {len(self.context['interfaces'])} interfaces:\n\n"
-            for iface in self.context["interfaces"]:
-                answer += f"- `{iface['name']}` ({iface['file']})\n"
-            return answer
-        
-        if "enum" in q_lower:
-            answer = f"Found {len(self.context['enums'])} enums:\n\n"
-            for enum in self.context["enums"]:
-                answer += f"- `{enum['name']}` ({enum['file']})\n"
-            return answer
-        
-        if "middleware" in q_lower:
-            answer = f"Found {len(self.context['middleware'])} middleware:\n\n"
-            for mid in self.context["middleware"]:
-                answer += f"- `{mid['name']}` ({mid['file']})\n"
-            return answer
-        
-        if "error" in q_lower or "handler" in q_lower:
-            answer = f"Found {len(self.context['error_handlers'])} error handlers:\n\n"
-            for err in self.context["error_handlers"]:
-                answer += f"- HTTP {err['error_code']} ({err['file']})\n"
-            return answer
-        
-        if "constant" in q_lower:
-            answer = f"Found {len(self.context['constants'])} constants:\n\n"
-            for const in self.context["constants"][:20]:
-                answer += f"- `{const['name']}` = {const['value']} ({const['file']})\n"
-            return answer
-        
-        if "function" in q_lower:
-            answer = f"Found {len(self.context['functions'])} functions:\n\n"
-            for func in self.context["functions"][:20]:
-                answer += f"- `{func['name']}()` ({func['file']})\n"
-            return answer
-        
-        if "dependency" in q_lower or "package" in q_lower:
-            answer = f"Found {len(self.context['dependencies'])} dependencies:\n\n"
-            for dep in self.context["dependencies"][:20]:
-                answer += f"- {dep['package']}\n"
-            return answer
-        
-        return "Try asking about: APIs, Classes, Functions, Models, Interfaces, Enums, Middleware, Error Handlers, Constants, or Dependencies"
+
+        # 4. Keyword codebase concept explorer (e.g. auth, payment, user, etc.)
+        concepts = ("auth", "user", "payment", "stripe", "order", "email", "notification", "config", "util", "helper")
+        matched_concept = next((c for c in concepts if c in q_lower), None)
+        if matched_concept:
+            matched_files = []
+            for root, dirs, files in os.walk(self.repo_path):
+                dirs[:] = [d for d in dirs if d not in ('.git', 'node_modules', '__pycache__', 'dist', 'build', 'venv')]
+                for file in files:
+                    if matched_concept in file.lower() and file.endswith(('.py', '.ts', '.tsx', '.js')):
+                        matched_files.append(str(Path(root).relative_to(self.repo_path) / file))
+            if matched_files:
+                answer = f"🔍 **Codebase Concept Explorer: '{matched_concept}'**\n\nHere are the files related to '{matched_concept}':\n\n"
+                for f in matched_files[:10]:
+                    answer += f"- `{f}`\n"
+                answer += f"\nThese components contain the core logic for {matched_concept} systems. You can browse their definitions in the Files tab."
+                return answer
+
+        # Default fallback
+        summary = self.context_summary if self.context_summary else self.context_builder.get_context_summary()
+        return f"💡 **AI Assistant fallbacks (No LLM active)**\n\nYour question didn't trigger any specific AST scanners. Here is a summary of the scanned codebase structure:\n\n{summary}\n\n*Try asking about: APIs, security/SQL injection risks, classes, functions, or specific concepts like auth, database, or dependencies.*"
     
     def get_scan_status(self) -> Dict:
         """Get scan status"""

@@ -34,15 +34,23 @@ def scan_security(session_id):
         
         chat = repo_chats[session_id]
         
-        if DETECTOR_AVAILABLE:
+        bugs = []
+        if DETECTOR_AVAILABLE and hasattr(chat, 'repo_path'):
             detector = SecurityBugDetector()
-            # Scan using legacy detector
-            if hasattr(chat, 'repo_path'):
-                bugs = detector.scan_code(chat.repo_path, str(chat.repo_path))
-            else:
-                bugs = []
-        else:
-            bugs = []
+            import os
+            for root, dirs, files in os.walk(chat.repo_path):
+                dirs[:] = [d for d in dirs if d not in ('.git', 'node_modules', '__pycache__', 'dist', 'build', 'venv')]
+                for file in files:
+                    if file.endswith(('.py', '.ts', '.tsx', '.js', '.jsx')):
+                        file_path = os.path.join(root, file)
+                        try:
+                            with open(file_path, 'r', errors='ignore') as f:
+                                code_content = f.read()
+                            rel_path = os.path.relpath(file_path, chat.repo_path)
+                            file_bugs = detector.scan_code(code_content, rel_path)
+                            bugs.extend(file_bugs)
+                        except Exception:
+                            pass
         
         # Convert to dict
         bugs_data = [bug.to_dict() if hasattr(bug, 'to_dict') else bug for bug in bugs]
@@ -128,5 +136,217 @@ def get_security_report(session_id):
             }
         }, 'Security report generated')[0], 200
         
+    except Exception as e:
+        return format_error_response(str(e))[0], 500
+
+
+@security_bp.route('/apply-fix', methods=['POST'])
+def apply_fix():
+    """Apply security patch on a new Git branch and commit it"""
+    try:
+        from api.chat import repo_chats
+        import os
+        import subprocess
+        import random
+        import string
+        
+        data = request.get_json() or {}
+        session_id = data.get('session_id')
+        bug_id = data.get('bug_id', 'BUG-0001')
+        file_path = data.get('file')
+        line_number = data.get('line')
+        original_code = data.get('code')
+        fixed_code = data.get('fix')
+        bug_type = data.get('type', 'Vulnerability Fix')
+        
+        if not session_id or not file_path or line_number is None or not original_code or not fixed_code:
+            return format_error_response('Missing required fields')[0], 400
+            
+        if session_id not in repo_chats:
+            return format_error_response('Session not found')[0], 404
+            
+        chat = repo_chats[session_id]
+        repo_path = chat.repo_path
+        
+        # Generate clean branch name
+        rand_suffix = ''.join(random.choices(string.ascii_lowercase + string.digits, k=4))
+        branch_name = f"security/fix-{bug_id.lower()}-{rand_suffix}"
+        commit_message = f"security: resolve {bug_type} in {os.path.basename(file_path)} on line {line_number}"
+        
+        # Apply local patch
+        orig_dir = os.getcwd()
+        try:
+            os.chdir(repo_path)
+            
+            is_git = os.path.exists('.git')
+            if is_git:
+                # Ensure main is checked out first
+                subprocess.run(['git', 'checkout', 'main'], capture_output=True)
+                # Create and switch to new branch
+                subprocess.run(['git', 'checkout', '-b', branch_name], capture_output=True)
+                
+            full_file_path = os.path.join(repo_path, file_path)
+            if not os.path.exists(full_file_path):
+                return format_error_response(f"Target file not found: {file_path}")[0], 404
+                
+            with open(full_file_path, 'r', errors='ignore') as f:
+                lines = f.readlines()
+                
+            line_idx = line_number - 1
+            applied = False
+            
+            if 0 <= line_idx < len(lines):
+                lines[line_idx] = fixed_code + '\n'
+                applied = True
+            else:
+                # Fallback to absolute replace
+                content = "".join(lines)
+                if original_code in content:
+                    content = content.replace(original_code, fixed_code)
+                    lines = [content]
+                    applied = True
+                    
+            if not applied:
+                return format_error_response("Could not align the target vulnerability to source code lines.")[0], 400
+                
+            with open(full_file_path, 'w') as f:
+                f.writelines(lines)
+                
+            if is_git:
+                subprocess.run(['git', 'add', file_path], capture_output=True)
+                subprocess.run(['git', 'commit', '-m', commit_message], capture_output=True)
+                
+            return format_success_response({
+                'session_id': session_id,
+                'bug_id': bug_id,
+                'branch': branch_name if is_git else 'Local filesystem (non-git)',
+                'file_patched': file_path,
+                'commit': commit_message,
+                'is_git': is_git
+            }, 'Security PR patch branch successfully created')[0], 200
+            
+        finally:
+            os.chdir(orig_dir)
+            
+    except Exception as e:
+        return format_error_response(str(e))[0], 500
+
+
+@security_bp.route('/auto-stage', methods=['POST'])
+def auto_stage():
+    """Apply all high-confidence security fixes to the files on a single unified branch"""
+    try:
+        from api.chat import repo_chats
+        import os
+        import subprocess
+        import random
+        import string
+        
+        data = request.get_json() or {}
+        session_id = data.get('session_id')
+        bugs = data.get('bugs', [])
+        
+        if not session_id:
+            return format_error_response('Session ID required')[0], 400
+            
+        if session_id not in repo_chats:
+            return format_error_response('Session not found')[0], 404
+            
+        chat = repo_chats[session_id]
+        repo_path = chat.repo_path
+        
+        # Filter bugs for confidence >= 0.9 and ensure they have code and fix
+        high_conf_bugs = []
+        for bug in bugs:
+            conf = bug.get('confidence', 0.8)
+            try:
+                conf = float(conf)
+            except:
+                conf = 0.8
+            if conf >= 0.9 and bug.get('file') and bug.get('line') and bug.get('code') and bug.get('fix'):
+                high_conf_bugs.append(bug)
+                
+        if not high_conf_bugs:
+            return format_success_response({
+                'session_id': session_id,
+                'branch': 'No changes',
+                'files_patched': [],
+                'commit': 'No high-confidence fixes to apply',
+                'is_git': False,
+                'applied_count': 0
+            }, 'No high-confidence vulnerabilities found to auto-stage')[0], 200
+            
+        rand_suffix = ''.join(random.choices(string.ascii_lowercase + string.digits, k=4))
+        branch_name = f"remediation/auto-patch-{rand_suffix}"
+        commit_message = f"remediation: apply {len(high_conf_bugs)} high-confidence security auto-fixes"
+        
+        orig_dir = os.getcwd()
+        try:
+            os.chdir(repo_path)
+            
+            is_git = os.path.exists('.git')
+            if is_git:
+                subprocess.run(['git', 'checkout', 'main'], capture_output=True)
+                subprocess.run(['git', 'checkout', '-b', branch_name], capture_output=True)
+                
+            files_patched = []
+            applied_count = 0
+            
+            patches_by_file = {}
+            for bug in high_conf_bugs:
+                file_path = bug['file']
+                if file_path not in patches_by_file:
+                    patches_by_file[file_path] = []
+                patches_by_file[file_path].append(bug)
+                
+            for file_path, file_patches in patches_by_file.items():
+                full_file_path = os.path.join(repo_path, file_path)
+                if not os.path.exists(full_file_path):
+                    continue
+                    
+                with open(full_file_path, 'r', errors='ignore') as f:
+                    lines = f.readlines()
+                    
+                file_modified = False
+                for bug in sorted(file_patches, key=lambda b: b['line'], reverse=True):
+                    line_number = bug['line']
+                    fixed_code = bug['fix']
+                    original_code = bug['code']
+                    line_idx = line_number - 1
+                    
+                    if 0 <= line_idx < len(lines):
+                        lines[line_idx] = fixed_code + '\n'
+                        file_modified = True
+                        applied_count += 1
+                    else:
+                        content = "".join(lines)
+                        if original_code in content:
+                            content = content.replace(original_code, fixed_code)
+                            lines = [content]
+                            file_modified = True
+                            applied_count += 1
+                            
+                if file_modified:
+                    with open(full_file_path, 'w') as f:
+                        f.writelines(lines)
+                    files_patched.append(file_path)
+                    if is_git:
+                        subprocess.run(['git', 'add', file_path], capture_output=True)
+                        
+            if is_git and files_patched:
+                subprocess.run(['git', 'commit', '-m', commit_message], capture_output=True)
+                
+            return format_success_response({
+                'session_id': session_id,
+                'branch': branch_name if is_git else 'Local filesystem (non-git)',
+                'files_patched': files_patched,
+                'commit': commit_message,
+                'is_git': is_git,
+                'applied_count': applied_count
+            }, f'Successfully staged {applied_count} security auto-fixes on branch {branch_name}')[0], 200
+            
+        finally:
+            os.chdir(orig_dir)
+            
     except Exception as e:
         return format_error_response(str(e))[0], 500

@@ -8,13 +8,67 @@ import { useRefactoringStore } from '@/store/refactoringStore'
 import { refactoringService } from '@/services/refactoring'
 import { useSessionStore } from '@/store/sessionStore'
 import { Sparkles, Terminal, ShieldCheck, Hourglass, Zap, ChevronRight } from 'lucide-react'
+import { StagedPRModal } from '@/components/features/StagedPRModal'
+import clsx from 'clsx'
 
 export const RefactoringPage: React.FC = () => {
-  const { currentSessionId, sessionData } = useSessionStore()
+  const { currentSessionId, sessionData, remediationMode, setRemediationMode } = useSessionStore()
   const { opportunities, selectedOpportunity, suggestions, setOpportunities, selectOpportunity, setSuggestion } =
     useRefactoringStore()
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+
+  const [stagedData, setStagedData] = useState<any | null>(null)
+  const [isStaging, setIsStaging] = useState(false)
+  const [showStagedModal, setShowStagedModal] = useState(false)
+
+  // Auto-stage all refactoring opportunities when mode changes to autonomous
+  useEffect(() => {
+    if (remediationMode === 'autonomous' && opportunities.length > 0 && !showStagedModal && !isStaging) {
+      const runAutoStage = async () => {
+        setIsStaging(true)
+        try {
+          const autoRes = await refactoringService.autoStage(currentSessionId!, opportunities)
+          if (autoRes.data?.status === 'success' && autoRes.data.data.applied_count > 0) {
+            setStagedData(autoRes.data.data)
+            setShowStagedModal(true)
+          }
+        } catch (e) {
+          console.error('Auto staging failed:', e)
+        } finally {
+          setIsStaging(false)
+        }
+      }
+      runAutoStage()
+    }
+  }, [remediationMode, opportunities, currentSessionId])
+
+  const handleStagePR = async () => {
+    if (!currentSessionId || !selectedOpportunity) return
+    setIsStaging(true)
+    try {
+      const response = await refactoringService.stagePR(
+        currentSessionId,
+        selectedOpportunity.file || '',
+        selectedOpportunity.line || 1,
+        selectedOpportunity.current_code || '',
+        selectedOpportunity.suggested_code || '',
+        selectedOpportunity.type || 'Refactoring'
+      )
+      
+      if (response.data?.status === 'success') {
+        setStagedData(response.data.data)
+        setShowStagedModal(true)
+      } else {
+        alert(response.data?.message || 'Failed to stage PR')
+      }
+    } catch (err) {
+      console.error('Failed to stage PR:', err)
+      alert('Error communicating with backend refactoring engine')
+    } finally {
+      setIsStaging(false)
+    }
+  }
 
   useEffect(() => {
     if (currentSessionId) {
@@ -69,6 +123,7 @@ export const RefactoringPage: React.FC = () => {
   }
 
   if (loading) return <Loader text="Refactoring engine analyzing quality hotspots..." />
+  if (isStaging) return <Loader text="Staging Git branch and applying refactoring changes..." />
 
   const activeIndex = selectedOpportunity ? opportunities.indexOf(selectedOpportunity) : -1
   const activeSuggestion = activeIndex !== -1 ? suggestions[activeIndex] : null
@@ -80,11 +135,41 @@ export const RefactoringPage: React.FC = () => {
   return (
     <div className="space-y-8 select-none font-sans">
       {/* Header */}
-      <div>
-        <h1 className="text-3xl font-black text-slate-100 font-display tracking-tight">Code Refactoring</h1>
-        <p className="text-slate-400 text-sm mt-1.5 font-medium">
-          Source code quality and architectural improvements in sandbox <span className="text-indigo-400 font-mono font-semibold">{sessionData?.repo_path || '/app/src'}</span>
-        </p>
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div>
+          <h1 className="text-3xl font-black text-slate-100 font-display tracking-tight">Code Refactoring</h1>
+          <p className="text-slate-400 text-sm mt-1.5 font-medium">
+            Source code quality and architectural improvements in sandbox <span className="text-indigo-400 font-mono font-semibold">{sessionData?.repo_path || '/app/src'}</span>
+          </p>
+        </div>
+
+        {/* Mode Toggle Switch */}
+        <div className="flex items-center gap-2 p-1 bg-slate-950/60 border border-slate-border/30 rounded-xl shrink-0 font-mono text-[10.5px]">
+          <button
+            type="button"
+            onClick={() => setRemediationMode('hitl')}
+            className={clsx(
+              "px-3 py-1.5 rounded-lg transition-all font-semibold flex items-center gap-1.5",
+              remediationMode === 'hitl'
+                ? "bg-indigo-500/10 border border-indigo-500/20 text-indigo-400"
+                : "border border-transparent text-slate-400 hover:text-slate-200"
+            )}
+          >
+            👥 HITL Mode
+          </button>
+          <button
+            type="button"
+            onClick={() => setRemediationMode('autonomous')}
+            className={clsx(
+              "px-3 py-1.5 rounded-lg transition-all font-semibold flex items-center gap-1.5",
+              remediationMode === 'autonomous'
+                ? "bg-indigo-500/10 border border-indigo-500/20 text-indigo-400"
+                : "border border-transparent text-slate-400 hover:text-slate-200"
+            )}
+          >
+            🤖 Autonomous
+          </button>
+        </div>
       </div>
 
       {/* Metrics Row */}
@@ -168,7 +253,7 @@ export const RefactoringPage: React.FC = () => {
                 description={selectedOpportunity.explanation || 'Refactoring suggestion'}
                 branch={`refactor/${selectedOpportunity.type.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`}
                 filesChanged={1}
-                onCreatePR={() => alert('PR staged in codeviz sandbox successfully!')}
+                onCreatePR={handleStagePR}
               />
               
               <div className="pt-2">
@@ -196,6 +281,12 @@ export const RefactoringPage: React.FC = () => {
           )}
         </div>
       </div>
+      
+      <StagedPRModal 
+        isOpen={showStagedModal} 
+        onClose={() => setShowStagedModal(false)} 
+        data={stagedData} 
+      />
     </div>
   )
 }

@@ -11,15 +11,144 @@ import {
   Terminal, ShieldCheck, Cpu, Code2, Server, Globe, 
   Layers, Package, Settings, Activity, FolderGit2, Search, ArrowRight,
   FileCode2, ShieldAlert, Split, Database, ListPlus, Link, Hash, Key, Palette,
-  RefreshCw, ChevronRight, ArrowUpRight, BarChart3
+  RefreshCw, ChevronRight, ArrowUpRight, BarChart3, MessageSquare, Send
 } from 'lucide-react'
 import { Network, DataSet } from 'vis-network/standalone'
 import 'vis-network/styles/vis-network.css'
 import { api } from '@/services/api'
 import clsx from 'clsx'
 
+// Inline parser for bold (**), inline code (`), and links ([text](url))
+const parseInlineMarkdown = (text: string) => {
+  const regex = /(\*\*.*?\*\*|`.*?`|\[.*?\]\(.*?\))/g
+  const parts = text.split(regex)
+  
+  if (parts.length === 1) return text
+  
+  return parts.map((part, i) => {
+    if (part.startsWith('**') && part.endsWith('**')) {
+      return <strong key={i} className="font-bold text-slate-100">{part.slice(2, -2)}</strong>
+    }
+    if (part.startsWith('`') && part.endsWith('`')) {
+      return (
+        <code key={i} className="bg-indigo-950/40 text-indigo-300 px-1.5 py-0.5 rounded font-mono text-[10.5px] border border-indigo-500/10">
+          {part.slice(1, -1)}
+        </code>
+      )
+    }
+    const linkMatch = part.match(/^\[(.*?)\]\((.*?)\)$/)
+    if (linkMatch) {
+      return (
+        <a 
+          key={i} 
+          href={linkMatch[2]} 
+          target="_blank" 
+          rel="noopener noreferrer" 
+          className="text-indigo-400 hover:text-indigo-300 underline font-semibold transition-colors font-mono"
+        >
+          {linkMatch[1]}
+        </a>
+      )
+    }
+    return part
+  })
+}
+
+interface MarkdownRendererProps {
+  content: string
+}
+
+const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content }) => {
+  if (!content) return null
+  
+  // Split content by code blocks
+  const parts = content.split(/(```[\s\S]*?```)/g)
+  
+  return (
+    <div className="space-y-3 text-slate-300 text-xs font-sans leading-relaxed">
+      {parts.map((part, idx) => {
+        if (part.startsWith('```')) {
+          const lines = part.split('\n')
+          const lang = lines[0].replace('```', '').trim()
+          const code = lines.slice(1, -1).join('\n')
+          return (
+            <div key={idx} className="relative group/code my-2 font-mono text-[11px] bg-slate-950/80 rounded-lg border border-slate-border/30 overflow-hidden">
+              {lang && (
+                <div className="flex justify-between items-center px-3 py-1.5 bg-slate-900 border-b border-slate-border/20 text-[10px] text-slate-500 font-bold uppercase">
+                  <span>{lang}</span>
+                  <button 
+                    type="button"
+                    onClick={() => navigator.clipboard.writeText(code)}
+                    className="hover:text-indigo-400 transition-colors"
+                  >
+                    Copy
+                  </button>
+                </div>
+              )}
+              <pre className="p-3 overflow-x-auto text-slate-300 leading-relaxed max-h-[300px]">
+                <code>{code}</code>
+              </pre>
+            </div>
+          )
+        } else {
+          const lines = part.split('\n')
+          return (
+            <div key={idx} className="space-y-1">
+              {lines.map((line, lIdx) => {
+                const trimmed = line.trim()
+                
+                if (trimmed.startsWith('###')) {
+                  return (
+                    <h5 key={lIdx} className="text-xs font-bold text-slate-100 font-display mt-3 mb-1.5 flex items-center gap-1.5">
+                      {parseInlineMarkdown(trimmed.replace(/^###\s*/, ''))}
+                    </h5>
+                  )
+                }
+                if (trimmed.startsWith('##')) {
+                  return (
+                    <h4 key={lIdx} className="text-sm font-bold text-indigo-400 font-display mt-4 mb-2">
+                      {parseInlineMarkdown(trimmed.replace(/^##\s*/, ''))}
+                    </h4>
+                  )
+                }
+                if (trimmed.startsWith('#')) {
+                  return (
+                    <h3 key={lIdx} className="text-base font-extrabold text-indigo-300 font-display mt-4 mb-2">
+                      {parseInlineMarkdown(trimmed.replace(/^#\s*/, ''))}
+                    </h3>
+                  )
+                }
+                
+                if (trimmed.startsWith('-') || trimmed.startsWith('*')) {
+                  return (
+                    <div key={lIdx} className="flex items-start gap-2 pl-2 my-1">
+                      <span className="text-indigo-400 mt-1.5 shrink-0 w-1.5 h-1.5 rounded-full bg-indigo-500/80" />
+                      <span className="flex-1">{parseInlineMarkdown(trimmed.replace(/^[-*]\s*/, ''))}</span>
+                    </div>
+                  )
+                }
+                
+                if (!trimmed) {
+                  return <div key={lIdx} className="h-2" />
+                }
+                
+                return (
+                  <p key={lIdx} className="leading-relaxed">
+                    {parseInlineMarkdown(line)}
+                  </p>
+                )
+              })}
+            </div>
+          )
+        }
+      })}
+    </div>
+  )
+}
+
 export const ScannerPage: React.FC = () => {
-  const [sessionId, setSessionId] = useState<string | null>(null)
+  const { currentSessionId, setSessionId: setGlobalSessionId, remediationMode, setRemediationMode } = useSessionStore()
+  const [sessionId, setSessionId] = useState<string | null>(currentSessionId)
   const [artifacts, setArtifacts] = useState<any>(null)
   const [loading, setLoading] = useState(false)
   const [activeStep, setActiveStep] = useState(0)
@@ -33,6 +162,55 @@ export const ScannerPage: React.FC = () => {
   const [currentTab, setCurrentTab] = useState<string>('overview')
   const [pingProgress, setPingProgress] = useState(0)
   const [isPingingAll, setIsPingingAll] = useState(false)
+
+  const [chatMessages, setChatMessages] = useState<any[]>([])
+  const [chatInput, setChatInput] = useState('')
+  const [chatLoading, setChatLoading] = useState(false)
+  const chatEndRef = useRef<HTMLDivElement>(null)
+
+  // Scroll to bottom of chat when messages change or tab changes to chat
+  useEffect(() => {
+    if (currentTab === 'chat') {
+      setTimeout(() => {
+        chatEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+      }, 50)
+    }
+  }, [chatMessages, currentTab])
+
+  const handleSendQuestion = async (text: string) => {
+    if (!text.trim() || chatLoading || !sessionId) return
+    
+    const userMsg = {
+      role: 'user',
+      content: text,
+      timestamp: new Date().toISOString()
+    }
+    setChatMessages(prev => [...prev, userMsg])
+    setChatInput('')
+    setChatLoading(true)
+    
+    try {
+      const response = await chatService.ask(sessionId, text)
+      const data = response.data.data
+      
+      const assistantMsg = {
+        role: 'assistant',
+        content: data.answer,
+        timestamp: new Date().toISOString()
+      }
+      setChatMessages(prev => [...prev, assistantMsg])
+    } catch (err) {
+      console.error('Failed to ask chatbot:', err)
+      const errorMsg = {
+        role: 'assistant',
+        content: '❌ Sorry, there was an issue querying the AST session context. Please make sure the backend server is running and healthy.',
+        timestamp: new Date().toISOString()
+      }
+      setChatMessages(prev => [...prev, errorMsg])
+    } finally {
+      setChatLoading(false)
+    }
+  }
 
   const handleTestEndpoint = async (path: string, method: string, baseUrl?: string) => {
     setApiHealth(prev => ({
@@ -223,6 +401,7 @@ export const ScannerPage: React.FC = () => {
   const handleScanComplete = async (id: string) => {
     setLoading(true)
     setSessionId(id)
+    setGlobalSessionId(id)
     try {
       const response = await chatService.getArtifacts(id)
       const data = response.data.data.artifacts
@@ -237,6 +416,16 @@ export const ScannerPage: React.FC = () => {
       } else {
         setCustomBaseUrl('http://localhost:8000')
       }
+
+      // Load previous conversation history if available
+      try {
+        const historyRes = await chatService.getHistory(id)
+        if (historyRes.data?.data?.history) {
+          setChatMessages(historyRes.data.data.history)
+        }
+      } catch (err) {
+        console.error('Failed to load chat history:', err)
+      }
     } catch (error) {
       console.error('Failed to get artifacts:', error)
     } finally {
@@ -246,6 +435,19 @@ export const ScannerPage: React.FC = () => {
       }, 1000)
     }
   }
+
+  // Restore session artifacts and history automatically on mount if session already exists
+  useEffect(() => {
+    if (currentSessionId) {
+      setSessionId(currentSessionId)
+      if (!artifacts && !loading) {
+        handleScanComplete(currentSessionId)
+      }
+    } else {
+      setSessionId(null)
+      setArtifacts(null)
+    }
+  }, [currentSessionId])
 
   // vis.js Network Graph Integration
   useEffect(() => {
@@ -427,8 +629,52 @@ export const ScannerPage: React.FC = () => {
           </p>
         </div>
         
-        <Card className="border-slate-border/40 bg-slate-surface/30 backdrop-blur-md">
+        <Card className="border-slate-border/40 bg-slate-surface/30 backdrop-blur-md space-y-6">
           <ScanForm onScanComplete={handleScanComplete} />
+          
+          <div className="border-t border-slate-border/20 pt-4 space-y-3">
+            <h3 className="text-sm font-bold text-slate-200 font-display">Default Remediation Mode</h3>
+            <p className="text-slate-400 text-xs leading-relaxed max-w-xl">
+              Configure how CodeViz handles automatically suggested security and architectural fixes:
+            </p>
+            
+            <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
+              <div className="flex items-center gap-1.5 p-1 bg-slate-950/60 border border-slate-border/30 rounded-xl font-mono text-[11px]">
+                <button
+                  type="button"
+                  onClick={() => setRemediationMode('hitl')}
+                  className={clsx(
+                    "px-3 py-1.5 rounded-lg transition-all font-semibold flex items-center gap-1.5",
+                    remediationMode === 'hitl'
+                      ? "bg-indigo-500/10 border border-indigo-500/20 text-indigo-400"
+                      : "border border-transparent text-slate-400 hover:text-slate-200"
+                  )}
+                >
+                  👥 HITL Mode
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setRemediationMode('autonomous')}
+                  className={clsx(
+                    "px-3 py-1.5 rounded-lg transition-all font-semibold flex items-center gap-1.5",
+                    remediationMode === 'autonomous'
+                      ? "bg-indigo-500/10 border border-indigo-500/20 text-indigo-400"
+                      : "border border-transparent text-slate-400 hover:text-slate-200"
+                  )}
+                >
+                  🤖 Autonomous
+                </button>
+              </div>
+              
+              <div className="text-[11px] text-slate-500">
+                {remediationMode === 'hitl' ? (
+                  <span><strong>Human-in-the-Loop:</strong> Stages fixes in individual task branches, letting you inspect and merge each one manually.</span>
+                ) : (
+                  <span><strong>Fully Autonomous:</strong> Automates full remediation by compiling all high-confidence fixes into a single PR branch.</span>
+                )}
+              </div>
+            </div>
+          </div>
         </Card>
       </div>
     )
@@ -829,6 +1075,184 @@ export const ScannerPage: React.FC = () => {
       )
     },
     {
+      id: 'chat',
+      label: '💬 AI Chat',
+      content: (
+        <Card className="flex flex-col h-[550px] bg-slate-surface/30 border-slate-border/40 p-0 overflow-hidden">
+          {/* Header */}
+          <div className="flex justify-between items-center px-6 py-4 bg-slate-900/60 border-b border-slate-border/30">
+            <div>
+              <h3 className="text-sm font-bold text-slate-100 font-display flex items-center gap-2">
+                <div className="w-2 h-2 rounded-full bg-indigo-500 animate-pulse shadow-[0_0_8px_rgba(99,102,241,0.6)]" />
+                AI Codebase Navigator
+              </h3>
+              <p className="text-slate-400 text-[10px] mt-0.5 font-mono uppercase tracking-wider">
+                AST Sandbox Context Loaded
+              </p>
+            </div>
+            {chatMessages.length > 0 && (
+              <button
+                type="button"
+                onClick={() => {
+                  if (confirm('Clear chat history?')) {
+                    setChatMessages([])
+                  }
+                }}
+                className="text-[10px] font-mono text-slate-500 hover:text-rose-400 hover:underline transition-all"
+              >
+                Clear Conversation
+              </button>
+            )}
+          </div>
+
+          {/* Messages */}
+          <div className="flex-1 overflow-y-auto p-6 space-y-4 flex flex-col scrollbar-thin">
+            {chatMessages.length === 0 ? (
+              <div className="flex-1 flex flex-col justify-center items-center max-w-lg mx-auto text-center space-y-6 my-auto">
+                <div className="p-3 bg-indigo-500/10 border border-indigo-500/20 rounded-full text-indigo-400 animate-bounce">
+                  <Terminal size={24} />
+                </div>
+                <div>
+                  <h4 className="text-sm font-bold text-slate-200 font-display">Codebase Natural Language Assistant</h4>
+                  <p className="text-slate-400 text-xs mt-1.5 leading-relaxed">
+                    Chat directly about your project. The assistant runs a localized Abstract Syntax Tree (AST) scanning pipeline to find security hotspots, trace API route architectures, catalog database models, and map patterns.
+                  </p>
+                </div>
+                
+                <div className="w-full space-y-2.5">
+                  <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider text-left">Suggested Queries</p>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-left">
+                    {[
+                      { text: "Show me all SQL injection risks", desc: "Scan raw DB query concatenations" },
+                      { text: "List the API endpoints", desc: "Catalog active backend route signatures" },
+                      { text: "Show scanned database models", desc: "Identify classes mapped to tables" },
+                      { text: "Explain files related to auth", desc: "Explore matching codebase concepts" }
+                    ].map((chip, idx) => (
+                      <button
+                        key={idx}
+                        type="button"
+                        onClick={() => handleSendQuestion(chip.text)}
+                        className="p-3 bg-slate-950/40 border border-slate-border/50 hover:border-indigo-500/40 rounded-xl transition-all duration-150 text-left group hover:-translate-y-0.5"
+                      >
+                        <p className="text-xs font-bold text-slate-300 group-hover:text-indigo-400 transition-colors">{chip.text}</p>
+                        <p className="text-[10px] text-slate-500 mt-0.5">{chip.desc}</p>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            ) : (
+              chatMessages.map((msg, idx) => {
+                const isAI = msg.role === 'assistant'
+                return (
+                  <div 
+                    key={idx}
+                    className={clsx(
+                      "flex gap-3 max-w-[85%] items-start animate-fade-in",
+                      isAI ? "self-start" : "self-end flex-row-reverse"
+                    )}
+                  >
+                    <div className={clsx(
+                      "w-7 h-7 rounded-full shrink-0 flex items-center justify-center border font-mono text-[10px] font-bold shadow-sm",
+                      isAI 
+                        ? "bg-indigo-500/10 border-indigo-500/30 text-indigo-400" 
+                        : "bg-slate-900 border-slate-border/50 text-slate-300"
+                    )}>
+                      {isAI ? 'AI' : 'U'}
+                    </div>
+
+                    <div className={clsx(
+                      "rounded-2xl px-4 py-3 relative border text-xs",
+                      isAI 
+                        ? "bg-slate-950/20 border-slate-border/30 text-slate-200 rounded-tl-none" 
+                        : "bg-indigo-600/10 border-indigo-500/30 text-slate-100 rounded-tr-none"
+                    )}>
+                      {isAI ? (
+                        <MarkdownRenderer content={msg.content} />
+                      ) : (
+                        <p className="whitespace-pre-wrap leading-relaxed">{msg.content}</p>
+                      )}
+                      
+                      {msg.timestamp && (
+                        <span className="block text-[8px] text-slate-500 font-mono mt-1.5 text-right uppercase">
+                          {new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                )
+              })
+            )}
+
+            {chatLoading && (
+              <div className="flex gap-3 max-w-[80%] items-start self-start">
+                <div className="w-7 h-7 rounded-full shrink-0 flex items-center justify-center border bg-indigo-500/10 border-indigo-500/30 text-indigo-400 font-mono text-[10px] font-bold">
+                  AI
+                </div>
+                <div className="bg-slate-950/20 border border-slate-border/30 rounded-2xl rounded-tl-none px-4 py-3 text-xs space-y-1">
+                  <div className="flex items-center gap-1.5 py-1">
+                    <span className="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-pulse" />
+                    <span className="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-pulse [animation-delay:0.2s]" />
+                    <span className="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-pulse [animation-delay:0.4s]" />
+                  </div>
+                  <span className="text-[9px] font-mono text-slate-500 uppercase tracking-wider block">Scanning AST Context...</span>
+                </div>
+              </div>
+            )}
+            
+            <div ref={chatEndRef} />
+          </div>
+
+          {/* Prompt quick suggestions */}
+          {chatMessages.length > 0 && (
+            <div className="px-6 py-2 border-t border-slate-border/25 flex gap-2 overflow-x-auto scrollbar-none bg-slate-950/25">
+              {[
+                "Show me all SQL injection risks",
+                "List the API endpoints",
+                "Show database models",
+                "Explain auth files"
+              ].map((text, i) => (
+                <button
+                  key={i}
+                  type="button"
+                  disabled={chatLoading}
+                  onClick={() => handleSendQuestion(text)}
+                  className="px-2.5 py-1 text-[10px] font-semibold bg-slate-900 border border-slate-border/40 hover:border-indigo-500/40 text-slate-400 hover:text-indigo-400 rounded-lg transition-all"
+                >
+                  {text}
+                </button>
+              ))}
+            </div>
+          )}
+
+          {/* Form */}
+          <form 
+            onSubmit={(e) => {
+              e.preventDefault()
+              handleSendQuestion(chatInput)
+            }}
+            className="p-4 bg-slate-900/60 border-t border-slate-border/30 flex gap-3 items-center"
+          >
+            <input
+              type="text"
+              placeholder="Ask about security vulnerabilities, routes, models..."
+              value={chatInput}
+              disabled={chatLoading}
+              onChange={(e) => setChatInput(e.target.value)}
+              className="flex-1 px-4 py-2.5 bg-slate-950/60 border border-slate-border/50 rounded-xl text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-indigo-500/30 focus:border-indigo-500/50"
+            />
+            <Button
+              type="submit"
+              disabled={chatLoading || !chatInput.trim()}
+              className="px-4 py-2.5 text-xs font-semibold flex items-center gap-1.5 rounded-xl text-white bg-indigo-500 hover:bg-indigo-600 disabled:bg-slate-800 disabled:border-transparent transition-all"
+            >
+              Send
+            </Button>
+          </form>
+        </Card>
+      )
+    },
+    {
       id: 'structure',
       label: '🌳 Structure',
       content: (
@@ -1116,19 +1540,53 @@ export const ScannerPage: React.FC = () => {
           <h1 className="text-3xl font-black text-slate-100 font-display tracking-tight">Scan Results</h1>
           <p className="text-slate-400 text-sm mt-1.5 font-medium">Session ID: <span className="text-indigo-400 font-mono">{sessionId}</span></p>
         </div>
-        <Button 
-          onClick={() => {
-            setSessionId(null)
-            setArtifacts(null)
-            setSelectedKeyFile(null)
-            setCurrentTab('overview')
-          }}
-          variant="secondary"
-          size="sm"
-          className="border-slate-border/80 hover:bg-slate-800"
-        >
-          New Sandbox Scan
-        </Button>
+        
+        <div className="flex flex-wrap items-center gap-3">
+          {/* Global Remediation Mode Selector */}
+          <div className="flex items-center gap-1.5 p-1 bg-slate-950/60 border border-slate-border/30 rounded-xl font-mono text-[10.5px]">
+            <button
+              type="button"
+              onClick={() => setRemediationMode('hitl')}
+              className={clsx(
+                "px-3 py-1.5 rounded-lg transition-all font-semibold flex items-center gap-1.5",
+                remediationMode === 'hitl'
+                  ? "bg-indigo-500/10 border border-indigo-500/20 text-indigo-400"
+                  : "border border-transparent text-slate-400 hover:text-slate-200"
+              )}
+              title="Human-in-the-Loop Mode: generate individual task branches"
+            >
+              👥 HITL Mode
+            </button>
+            <button
+              type="button"
+              onClick={() => setRemediationMode('autonomous')}
+              className={clsx(
+                "px-3 py-1.5 rounded-lg transition-all font-semibold flex items-center gap-1.5",
+                remediationMode === 'autonomous'
+                  ? "bg-indigo-500/10 border border-indigo-500/20 text-indigo-400"
+                  : "border border-transparent text-slate-400 hover:text-slate-200"
+              )}
+              title="Autonomous Mode: stage all fixes into one unified branch"
+            >
+              🤖 Autonomous
+            </button>
+          </div>
+
+          <Button 
+            onClick={() => {
+              setSessionId(null)
+              setGlobalSessionId(null)
+              setArtifacts(null)
+              setSelectedKeyFile(null)
+              setCurrentTab('overview')
+            }}
+            variant="secondary"
+            size="sm"
+            className="border-slate-border/80 hover:bg-slate-800"
+          >
+            New Sandbox Scan
+          </Button>
+        </div>
       </div>
       
       {dashboardTabs.length > 0 && (
