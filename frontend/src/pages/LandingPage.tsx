@@ -87,11 +87,56 @@ export const LandingPage: React.FC = () => {
   ]
 
   const loop = [
-    { step: '01', icon: Cpu,           label: 'Connect',  desc: 'Link a GitHub repo or local path in seconds'        },
-    { step: '02', icon: Eye,           label: 'Scan',     desc: '13-dimension analysis runs in under 2 minutes'      },
-    { step: '03', icon: ShieldAlert,   label: 'Detect',   desc: 'Security, perf, smells, threats — all ranked'       },
-    { step: '04', icon: Zap,           label: 'Fix',      desc: 'AI generates a patch; you approve or auto-merge'    },
-    { step: '05', icon: Bell,          label: 'Monitor',  desc: 'Schedule recurring scans, get Slack alerts on drift' },
+    { 
+      step: '01', 
+      icon: Cpu,           
+      label: 'Connect',  
+      desc: 'Link a GitHub repo or local path in seconds',
+      image: '/images/process-connect.png',
+      glow: 'hover:shadow-[0_0_30px_-5px_rgba(6,182,212,0.25)] hover:border-cyan-500/30 border-white/[0.06]',
+      indicatorColor: 'bg-cyan-500',
+      orbBg: 'bg-cyan-500/5 group-hover:bg-cyan-500/10'
+    },
+    { 
+      step: '02', 
+      icon: Eye,           
+      label: 'Scan',     
+      desc: '13-dimension analysis runs in under 2 minutes',
+      image: '/images/process-scan.png',
+      glow: 'hover:shadow-[0_0_30px_-5px_rgba(99,102,241,0.25)] hover:border-indigo-500/30 border-white/[0.06]',
+      indicatorColor: 'bg-indigo-500',
+      orbBg: 'bg-indigo-500/5 group-hover:bg-indigo-500/10'
+    },
+    { 
+      step: '03', 
+      icon: ShieldAlert,   
+      label: 'Detect',   
+      desc: 'Security, perf, smells, threats — all ranked',
+      image: '/images/process-detect.png',
+      glow: 'hover:shadow-[0_0_30px_-5px_rgba(244,63,94,0.25)] hover:border-rose-500/30 border-white/[0.06]',
+      indicatorColor: 'bg-rose-500',
+      orbBg: 'bg-rose-500/5 group-hover:bg-rose-500/10'
+    },
+    { 
+      step: '04', 
+      icon: Zap,           
+      label: 'Fix',      
+      desc: 'AI generates a patch; you approve or auto-merge',
+      image: '/images/process-fix.png',
+      glow: 'hover:shadow-[0_0_30px_-5px_rgba(245,158,11,0.25)] hover:border-amber-500/30 border-white/[0.06]',
+      indicatorColor: 'bg-amber-500',
+      orbBg: 'bg-amber-500/5 group-hover:bg-amber-500/10'
+    },
+    { 
+      step: '05', 
+      icon: Bell,          
+      label: 'Monitor',  
+      desc: 'Schedule recurring scans, get Slack alerts on drift',
+      image: '/images/process-monitor.png',
+      glow: 'hover:shadow-[0_0_30px_-5px_rgba(16,185,129,0.25)] hover:border-emerald-500/30 border-white/[0.06]',
+      indicatorColor: 'bg-emerald-500',
+      orbBg: 'bg-emerald-500/5 group-hover:bg-emerald-500/10'
+    },
   ]
 
   const moats = [
@@ -481,20 +526,46 @@ export const LandingPage: React.FC = () => {
           </div>
 
           <div className="relative">
-            {/* Connector line */}
-            <div className="hidden lg:block absolute top-12 left-[10%] right-[10%] h-px bg-gradient-to-r from-transparent via-indigo-500/30 to-transparent" />
-
-            <div className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-5 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6">
               {loop.map((s, i) => {
                 const Icon = s.icon
                 return (
-                  <div key={i} className="flex flex-col items-center text-center space-y-3 relative">
-                    <div className="w-14 h-14 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400 relative z-10">
-                      <Icon size={22} />
+                  <div key={i} className={clsx(
+                    "rounded-3xl border bg-[#090d16]/90 p-5 flex flex-col justify-between hover:-translate-y-1.5 transition-all duration-300 group relative overflow-hidden text-left min-h-[280px]",
+                    s.glow
+                  )}>
+                    {/* Floating vertical pill indicator */}
+                    <div className={clsx(
+                      "absolute left-0 top-1/2 -translate-y-1/2 w-[3px] rounded-r-full transition-all duration-500 opacity-60 group-hover:opacity-100 h-8 group-hover:h-16",
+                      s.indicatorColor
+                    )} />
+
+                    {/* Internal gradient flare orb */}
+                    <div className={clsx("absolute -top-16 -right-16 w-32 h-32 rounded-full blur-3xl opacity-0 group-hover:opacity-30 transition-opacity duration-500 pointer-events-none -z-10", s.orbBg)} />
+
+                    {/* Dynamic 3D Image header */}
+                    <div className="w-full h-28 rounded-2xl overflow-hidden border border-white/[0.04] mb-4 relative bg-[#070b13]">
+                      <img 
+                        src={s.image} 
+                        alt={s.label} 
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                      />
+                      <div className="absolute top-2.5 left-2.5 px-2.5 py-0.5 rounded-full text-[9px] font-bold bg-[#030712]/80 border border-white/[0.08] text-indigo-400 font-mono tracking-widest">
+                        {s.step}
+                      </div>
                     </div>
-                    <div className="text-[9px] font-bold text-indigo-400/60 font-mono tracking-widest">{s.step}</div>
-                    <p className="text-sm font-bold text-slate-200 font-display">{s.label}</p>
-                    <p className="text-[11px] text-slate-400 leading-snug font-medium">{s.desc}</p>
+
+                    <div className="space-y-1.5 pl-1.5 flex-1 flex flex-col justify-between">
+                      <div>
+                        <p className="text-sm font-extrabold text-white font-display flex items-center gap-2">
+                          <Icon size={14} className="text-indigo-400 group-hover:scale-110 transition-transform duration-300" />
+                          {s.label}
+                        </p>
+                        <p className="text-[11px] text-slate-400 group-hover:text-slate-200 mt-1 leading-relaxed font-medium transition-colors duration-300">
+                          {s.desc}
+                        </p>
+                      </div>
+                    </div>
                   </div>
                 )
               })}
