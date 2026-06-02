@@ -182,14 +182,18 @@ def ask_question():
         
         if SCANNER_AVAILABLE and hasattr(chat, 'ask'):
             answer = chat.ask(question)
+            # 'llm' when answered by the language model, 'keyword' on fallback
+            source = getattr(chat, 'last_answer_source', None)
         else:
             # Mock answer
             answer = f"Mock response to: {question}"
+            source = 'mock'
         
         return format_success_response({
             'session_id': session_id,
             'question': question,
-            'answer': answer
+            'answer': answer,
+            'source': source
         })[0], 200
         
     except Exception as e:

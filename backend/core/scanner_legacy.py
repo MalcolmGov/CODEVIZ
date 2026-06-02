@@ -645,6 +645,8 @@ class RepositoryChat:
         self.context_summary = None
         self.conversation_history = []
         self.is_scanned = False
+        self.last_answer_source = None  # 'llm' or 'keyword'
+
     
     def scan(self) -> Dict:
         """Scan the repository"""
@@ -657,25 +659,85 @@ class RepositoryChat:
         return self.context
     
     def ask(self, question: str) -> str:
-        """Ask a question about the repository"""
+        """Ask a question about the repository.
+
+        Tries an LLM-backed answer (grounded on the scan context) first, and
+        falls back to the deterministic keyword answer if the LLM is disabled
+        or unavailable. Sets ``self.last_answer_source`` to 'llm' or 'keyword'.
+        """
         if not self.is_scanned:
             return "❌ Repository not scanned yet. Please scan first."
-        
+
         self.conversation_history.append({
             "role": "user",
             "content": question,
             "timestamp": datetime.now().isoformat()
         })
-        
-        answer = self._generate_answer(question)
-        
+
+        answer = self._llm_answer(question)
+        if answer is not None:
+            self.last_answer_source = "llm"
+        else:
+            answer = self._generate_answer(question)
+            self.last_answer_source = "keyword"
+
         self.conversation_history.append({
             "role": "assistant",
             "content": answer,
             "timestamp": datetime.now().isoformat()
         })
-        
+
         return answer
+
+    def _llm_answer(self, question: str):
+        """Attempt an LLM-backed answer. Returns None to trigger fallback."""
+        try:
+            from services.ollama import answer_question
+            grounding = self._grounding_text()
+            history = self.conversation_history[:-1]  # exclude current question
+            return answer_question(question, grounding, history)
+        except Exception:
+            return None
+
+    def _grounding_text(self) -> str:
+        """Build a bounded context string used to ground the LLM."""
+        summary = self.context_summary or ""
+        ctx = self.context or {}
+
+        def _digest(items, fmt, limit):
+            out = []
+            for it in (items or [])[:limit]:
+                try:
+                    out.append(fmt(it))
+                except Exception:
+                    continue
+            return out
+
+        apis = _digest(
+            ctx.get("apis"),
+            lambda a: f"- {' '.join(a.get('methods', [])).upper()} {a.get('path', '')} ({a.get('file', '')})",
+            40,
+        )
+        classes = _digest(ctx.get("classes"),
+                          lambda c: f"- {c.get('name', '')} ({c.get('file', '')})", 40)
+        models = _digest(ctx.get("models"),
+                         lambda m: f"- {m.get('name', '')} ({m.get('file', '')})", 30)
+        deps = _digest(ctx.get("dependencies"),
+                       lambda d: f"- {d.get('package', '')}", 40)
+        tech = ctx.get("tech_stack") or []
+
+        parts = [summary]
+        if tech:
+            parts.append("## Tech Stack\n" + ", ".join(str(t) for t in tech))
+        if apis:
+            parts.append("## API Endpoints (sample)\n" + "\n".join(apis))
+        if classes:
+            parts.append("## Classes (sample)\n" + "\n".join(classes))
+        if models:
+            parts.append("## Data Models\n" + "\n".join(models))
+        if deps:
+            parts.append("## Dependencies (sample)\n" + "\n".join(deps))
+        return "\n\n".join(p for p in parts if p and p.strip())
     
     def _generate_answer(self, question: str) -> str:
         """Generate answer based on discovered artifacts"""
