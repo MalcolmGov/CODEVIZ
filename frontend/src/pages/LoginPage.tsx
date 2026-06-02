@@ -55,14 +55,12 @@ export const LoginPage: React.FC = () => {
         window.location.href = authUrl
         return  // keep spinner going while browser navigates away
       }
+      // Backend returned 200 but no auth_url — misconfigured
+      setError('GitHub OAuth is not configured on the backend. Check your GITHUB_CLIENT_ID in .env.')
     } catch {
-      // OAuth not configured — fall through to sandbox login
+      setError('Cannot reach the backend. Make sure the backend server is running on port 8000.')
     }
-
-    // Sandbox / dev fallback
-    const mockUser = { id: 1, email: 'malcolm@example.com', name: 'Malcolm Govender' }
-    login(mockUser, 'mock_token_123')
-    navigate('/dashboard')
+    setLoading(false)
   }
 
   // Show a minimal "resolving profile…" screen while the callback processes

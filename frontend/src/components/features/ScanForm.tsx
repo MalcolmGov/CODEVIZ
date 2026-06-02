@@ -4,10 +4,11 @@ import { useSessionStore } from '@/store/sessionStore'
 import { chatService } from '@/services/chat'
 import { repositoriesService, GitHubRepository } from '@/services/repositories'
 import { reportsService, Schedule } from '@/services/reports'
+import { authService } from '@/services/auth'
 import {
   Search, CheckSquare, Square, Clock, Zap, Calendar,
   Mail, Trash2, Play, Plus, ChevronDown, Globe, Lock,
-  RefreshCw, CheckCircle2, XCircle
+  RefreshCw, CheckCircle2, XCircle, Github,
 } from 'lucide-react'
 import clsx from 'clsx'
 
@@ -312,9 +313,26 @@ export const ScanForm: React.FC<{ onScanComplete: (sessionId: string) => void }>
                   <option value="custom">📁 Custom path / URL…</option>
                 </select>
                 {usingCache && (
-                  <p className="text-[10px] text-amber-500/80 font-mono flex items-center gap-1">
-                    ⚡ Showing cached repos — backend offline
-                  </p>
+                  <div className="flex items-center justify-between gap-3 px-3 py-2 rounded-lg bg-amber-500/[0.07] border border-amber-500/20">
+                    <p className="text-[11px] text-amber-400/80 font-mono">
+                      ⚡ Showing cached repos — backend offline
+                    </p>
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        try {
+                          const res = await authService.getGitHubLoginUrl()
+                          const url = res.data.data?.auth_url
+                          if (url) window.location.href = url
+                        } catch {
+                          /* backend still down, do nothing */
+                        }
+                      }}
+                      className="flex items-center gap-1.5 text-[11px] font-semibold text-amber-300 hover:text-white whitespace-nowrap transition-colors"
+                    >
+                      <Github size={11} /> Re-authorize
+                    </button>
+                  </div>
                 )}
               </div>
             )}
