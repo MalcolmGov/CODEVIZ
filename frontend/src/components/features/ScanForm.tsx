@@ -55,11 +55,23 @@ export const ScanForm: React.FC<{ onScanComplete: (sessionId: string) => void }>
   // Shared state
   const REPO_CACHE_KEY = 'codeviz_cached_repos'
 
+  // Built-in fallback — always visible even with backend offline + empty cache.
+  // Update this list to match your real repos.
+  const DEFAULT_REPOS: GitHubRepository[] = [
+    { id: '101', name: 'CODEVIZ',         full_name: 'MalcolmGov/CODEVIZ',         url: 'https://github.com/MalcolmGov/CODEVIZ',         clone_url: 'https://github.com/MalcolmGov/CODEVIZ.git',         description: 'AI-Powered Code Analysis Platform', private: false, branch: 'main', local_path: '/Users/malcolmgovender/codeviz-proper' },
+    { id: '102', name: 'coastal-clean',   full_name: 'MalcolmGov/coastal-clean',   url: 'https://github.com/MalcolmGov/coastal-clean',   clone_url: 'https://github.com/MalcolmGov/coastal-clean.git',   description: 'Coastal environmental data monitor', private: true,  branch: 'main' },
+    { id: '103', name: 'SwifterWallet',   full_name: 'MalcolmGov/SwifterWallet',   url: 'https://github.com/MalcolmGov/SwifterWallet',   clone_url: 'https://github.com/MalcolmGov/SwifterWallet.git',   description: 'iOS Swift finance wallet',           private: false, branch: 'main' },
+    { id: '104', name: 'intelligencehub', full_name: 'MalcolmGov/intelligencehub', url: 'https://github.com/MalcolmGov/intelligencehub', clone_url: 'https://github.com/MalcolmGov/intelligencehub.git', description: 'AI models hosting aggregator',       private: true,  branch: 'main' },
+  ]
+
   const saveRepoCache = (list: GitHubRepository[]) => {
     try { localStorage.setItem(REPO_CACHE_KEY, JSON.stringify(list)) } catch {}
   }
   const loadRepoCache = (): GitHubRepository[] => {
-    try { return JSON.parse(localStorage.getItem(REPO_CACHE_KEY) || '[]') } catch { return [] }
+    try {
+      const stored = JSON.parse(localStorage.getItem(REPO_CACHE_KEY) || '[]')
+      return stored.length > 0 ? stored : DEFAULT_REPOS
+    } catch { return DEFAULT_REPOS }
   }
 
   const [repos, setRepos] = useState<GitHubRepository[]>(() => loadRepoCache())
@@ -109,12 +121,8 @@ export const ScanForm: React.FC<{ onScanComplete: (sessionId: string) => void }>
         }
       })
       .catch(() => {
-        // Backend offline — silently use cache if available
-        if (cached.length > 0) {
-          setUsingCache(true)
-        } else {
-          setError('Backend offline and no cached repos found. Start the backend and retry.')
-        }
+        // Backend offline — repos already pre-loaded from cache or defaults
+        setUsingCache(true)
       })
       .finally(() => setLoadingRepos(false))
     fetchSchedules()
