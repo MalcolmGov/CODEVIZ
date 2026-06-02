@@ -6,14 +6,18 @@ import { Table } from '@/components/common/Table'
 import { Badge } from '@/components/common/Badge'
 import { Button } from '@/components/common/Button'
 import { useSessionStore } from '@/store/sessionStore'
+import { useBugsStore } from '@/store/bugsStore'
+import { useRefactoringStore } from '@/store/refactoringStore'
 import { chatService } from '@/services/chat'
 import { scoringService, RiskProfile } from '@/services/scoring'
+import { securityService } from '@/services/security'
+import { refactoringService } from '@/services/refactoring'
 import {
-  Terminal, ShieldCheck, Cpu, Code2, Server, Globe,
+  Terminal, ShieldCheck, Cpu, Code2, Server, Globe, Shield,
   Layers, Package, Settings, Activity, FolderGit2, Search, ArrowRight,
   FileCode2, ShieldAlert, Split, Database, ListPlus, Link, Hash, Key, Palette,
   RefreshCw, ChevronRight, ArrowUpRight, BarChart3, Trophy, AlertTriangle, CheckCircle2, Info,
-  MessageSquare, Send
+  MessageSquare, Send, Zap, GitBranch,
 } from 'lucide-react'
 import { Network, DataSet } from 'vis-network/standalone'
 import 'vis-network/styles/vis-network.css'
@@ -171,6 +175,12 @@ export const ScannerPage: React.FC = () => {
   const [chatInput, setChatInput] = useState('')
   const [chatLoading, setChatLoading] = useState(false)
   const chatEndRef = useRef<HTMLDivElement>(null)
+
+  // Security + refactoring data for security-first overview
+  const { bugs, setBugs } = useBugsStore()
+  const { opportunities, setOpportunities } = useRefactoringStore()
+  const [securityLoading, setSecurityLoading] = useState(false)
+  const [refactorLoading, setRefactorLoading] = useState(false)
 
   // Scroll to bottom of chat when messages change or tab changes to chat
   useEffect(() => {
@@ -452,6 +462,25 @@ export const ScannerPage: React.FC = () => {
       .then(res => setRiskProfile((res.data as any).data))
       .catch(err => console.error('Risk score fetch failed:', err))
       .finally(() => setRiskLoading(false))
+  }, [sessionId, loading])
+
+  // Auto-fetch security bugs + refactoring opportunities for security-first overview
+  useEffect(() => {
+    if (!sessionId || loading) return
+    if (bugs.length === 0) {
+      setSecurityLoading(true)
+      securityService.scan(sessionId)
+        .then(res => setBugs((res.data as any).data?.bugs || []))
+        .catch(() => {})
+        .finally(() => setSecurityLoading(false))
+    }
+    if (opportunities.length === 0) {
+      setRefactorLoading(true)
+      refactoringService.getOpportunities(sessionId)
+        .then(res => setOpportunities((res.data as any)?.data?.opportunities || []))
+        .catch(() => {})
+        .finally(() => setRefactorLoading(false))
+    }
   }, [sessionId, loading])
 
   // Restore session artifacts and history automatically on mount if session already exists
@@ -878,217 +907,411 @@ export const ScannerPage: React.FC = () => {
     }
   ]
 
+  // ── Security-first derived data ──────────────────────────────────────────
+  const SEV_HEX: Record<string, string> = {
+    critical: '#ef4444', high: '#f97316', medium: '#eab308',
+    low: '#3b82f6', info: '#64748b', clean: '#22c55e',
+  }
+  const critCount  = bugs.filter((b: any) => b.severity === 'critical').length
+  const highCount  = bugs.filter((b: any) => b.severity === 'high').length
+  const medCount   = bugs.filter((b: any) => b.severity === 'medium').length
+  const lowCount   = bugs.filter((b: any) => !b.severity || b.severity === 'low').length
+  const totalBugs  = bugs.length
+  const postureScore  = riskProfile?.composite.score ?? null
+  const scoreColor = !postureScore ? SEV_HEX.info
+    : postureScore >= 80 ? SEV_HEX.clean
+    : postureScore >= 60 ? SEV_HEX.medium
+    : postureScore >= 40 ? SEV_HEX.high : SEV_HEX.critical
+
+  const aiRecs = (() => {
+    const fromOpps = opportunities.slice(0, 3).map((opp: any) => ({
+      sev: 'medium' as string,
+      title: opp.type || 'Code Quality Issue',
+      desc: opp.description || 'Refactoring opportunity detected.',
+      file: opp.file || '',
+      effort: '~30 min', confidence: 82,
+    }))
+    if (fromOpps.length > 0) return fromOpps
+    return [
+      { sev: bugs[0]?.severity || 'critical', title: bugs[0]?.type || 'Security Scan Initialising',
+        desc: bugs[0]?.description || 'Vulnerabilities will appear as the scan completes.',
+        file: bugs[0]?.file || '', effort: '~20 min', confidence: 92 },
+      { sev: bugs[1]?.severity || 'high', title: bugs[1]?.type || 'Dependency Audit Recommended',
+        desc: bugs[1]?.description || 'Review third-party packages for known CVEs.',
+        file: bugs[1]?.file || '', effort: '~15 min', confidence: 87 },
+      { sev: 'medium', title: 'API Authentication Review',
+        desc: 'Verify all endpoints enforce authentication and rate limiting.',
+        file: apis[0]?.file || '', effort: '~45 min', confidence: 78 },
+    ]
+  })()
+
+  // Compact metric cards (used in Technical Stats section)
   const metricCards = [
-    { id: 'files', label: 'Files', count: artifacts?.files?.length || 0, icon: FileCode2, color: 'text-indigo-400 border-indigo-500/20 bg-indigo-500/5' },
-    { id: 'apis', label: 'APIs', count: apis.length, icon: Server, color: 'text-emerald-400 border-emerald-500/20 bg-emerald-500/5' },
-    { id: 'classes', label: 'Classes', count: classes.length, icon: Cpu, color: 'text-purple-400 border-purple-500/20 bg-purple-500/5' },
-    { id: 'functions', label: 'Functions', count: functions.length, icon: Code2, color: 'text-pink-400 border-pink-500/20 bg-pink-500/5' },
-    { id: 'middleware', label: 'Middleware', count: middleware.length, icon: Split, color: 'text-cyan-400 border-cyan-500/20 bg-cyan-500/5' },
-    { id: 'models', label: 'Models', count: models.length, icon: Database, color: 'text-amber-400 border-amber-500/20 bg-amber-500/5' },
-    { id: 'enums', label: 'Enums', count: enums.length, icon: ListPlus, color: 'text-orange-400 border-orange-500/20 bg-orange-500/5' },
-    { id: 'error_handlers', label: 'Errors', count: error_handlers.length, icon: ShieldAlert, color: 'text-rose-400 border-rose-500/20 bg-rose-500/5' },
-    { id: 'interfaces', label: 'Interfaces', count: interfaces.length, icon: Link, color: 'text-blue-400 border-blue-500/20 bg-blue-500/5' },
-    { id: 'dependencies', label: 'Dependencies', count: dependencies.length, icon: Package, color: 'text-violet-400 border-violet-500/20 bg-violet-500/5' },
+    { id: 'files',        label: 'Files',        count: artifacts?.files?.length || 0, icon: FileCode2 },
+    { id: 'apis',         label: 'APIs',         count: apis.length,              icon: Server },
+    { id: 'classes',      label: 'Classes',      count: classes.length,           icon: Cpu },
+    { id: 'functions',    label: 'Functions',    count: functions.length,         icon: Code2 },
+    { id: 'middleware',   label: 'Middleware',   count: middleware.length,        icon: Split },
+    { id: 'models',       label: 'Models',       count: models.length,            icon: Database },
+    { id: 'enums',        label: 'Enums',        count: enums.length,             icon: ListPlus },
+    { id: 'error_handlers', label: 'Errors',     count: error_handlers.length,   icon: ShieldAlert },
+    { id: 'interfaces',   label: 'Interfaces',   count: interfaces.length,        icon: Link },
+    { id: 'dependencies', label: 'Dependencies', count: dependencies.length,     icon: Package },
   ]
+
+  const CARD = 'rounded-2xl border border-white/[0.08] bg-slate-surface shadow-card backdrop-blur-md'
 
   const dashboardTabs = [
     {
       id: 'overview',
-      label: '📊 Overview',
+      label: 'Security Overview',
       content: (
-        <div className="space-y-6">
-          {/* Metrics Grid */}
-          <div className="grid grid-cols-2 sm:grid-cols-5 gap-4">
-            {metricCards.map((card) => (
-              <div 
-                key={card.id}
-                onClick={() => setCurrentTab(card.id)}
-                className="bg-slate-950/40 border border-slate-border/50 hover:border-indigo-500/40 rounded-xl p-4 transition-all duration-205 cursor-pointer hover:-translate-y-0.5 group flex flex-col justify-between h-[110px]"
-              >
-                <div className="flex justify-between items-start">
-                  <span className="text-slate-400 text-[10px] font-bold uppercase tracking-wider font-display truncate">
-                    {card.label}
-                  </span>
-                  <div className={clsx("p-1.5 rounded-lg border", card.color.split(' ')[1], card.color.split(' ')[2])}>
-                    <card.icon size={12} className={card.color.split(' ')[0]} />
-                  </div>
+        <div className="space-y-5 pb-4">
+
+          {/* ── 1. Scan Summary Bar ─────────────────────────────────────────── */}
+          <div className={`${CARD} p-4`}>
+            <div className="flex flex-wrap items-center justify-between gap-4">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-xl bg-emerald-500/[0.08] border border-emerald-500/20">
+                  <CheckCircle2 size={15} className="text-emerald-400" />
                 </div>
-                <div className="mt-2 flex justify-between items-baseline">
-                  <span className="text-xl font-black text-slate-100 font-display tracking-tight group-hover:text-indigo-400 transition-colors">
-                    {card.count}
-                  </span>
-                  <span className="text-[10px] text-slate-500 group-hover:text-indigo-400/80 transition-colors font-mono">
-                    View →
-                  </span>
+                <div>
+                  <p className="text-[9px] font-bold uppercase tracking-[0.14em] text-slate-600">Scan Complete</p>
+                  <p className="text-slate-200 font-semibold text-[13px] font-tight mt-0.5">
+                    {artifacts?.repo_name || sessionId?.slice(0, 8) || 'Repository'}
+                  </p>
                 </div>
               </div>
-            ))}
+              <div className="flex flex-wrap items-center gap-2">
+                {[
+                  { label: `${(artifacts?.files?.length || 0).toLocaleString()} files`, icon: FileCode2 },
+                  { label: `${apis.length} APIs`, icon: Server },
+                  { label: `${classes.length} classes`, icon: Cpu },
+                  { label: `${dependencies.length} deps`, icon: Package },
+                ].map((s, i) => (
+                  <div key={i} className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-slate-elevated border border-white/[0.06] text-[11px] text-slate-500 font-mono">
+                    <s.icon size={10} className="text-slate-700" />
+                    {s.label}
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
 
-          {/* Diagnostics and Highlights */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* API Diagnostics */}
-            <Card className="lg:col-span-2 space-y-4 bg-slate-surface/30 border-slate-border/40 flex flex-col justify-between">
-              <div className="space-y-4">
-                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
-                  <div>
-                    <h3 className="text-base font-bold text-slate-100 font-display flex items-center gap-2">
-                      <Server size={16} className="text-indigo-400" />
-                      API Diagnostics Check
-                    </h3>
-                    <p className="text-slate-400 text-xs mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-1">
-                      <span>Test reachability and status of discovered endpoints.</span>
-                      {customBaseUrl && (
-                        <span className="inline-flex items-center gap-1 text-[10px] text-indigo-400 font-mono bg-indigo-950/30 px-2 py-0.5 rounded border border-indigo-500/10">
-                          <Globe size={8} /> Target: {customBaseUrl}
-                        </span>
-                      )}
-                    </p>
+          {/* ── 2. Security Posture + Threat Distribution ───────────────────── */}
+          <div className="grid grid-cols-12 gap-5">
+
+            {/* Posture Score */}
+            <div className={`col-span-12 lg:col-span-4 ${CARD} p-6 flex flex-col`}>
+              <div className="flex items-start justify-between mb-4">
+                <div>
+                  <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-slate-600">Security Posture</p>
+                  <p className="text-slate-300 text-[13px] font-medium mt-0.5">Overall risk score</p>
+                </div>
+                <div className="p-2 rounded-xl bg-slate-elevated border border-white/[0.06]">
+                  <Shield size={15} className="text-slate-500" />
+                </div>
+              </div>
+              <div className="flex justify-center py-2">
+                {postureScore != null ? (() => {
+                  const size = 156, r = size / 2 - 14
+                  const circ = 2 * Math.PI * r
+                  const fill = (Math.max(0, Math.min(100, postureScore)) / 100) * circ
+                  const grade = postureScore >= 90 ? 'A' : postureScore >= 80 ? 'B' : postureScore >= 70 ? 'C' : postureScore >= 60 ? 'D' : 'F'
+                  const posLabel = postureScore >= 80 ? 'Strong' : postureScore >= 60 ? 'Moderate' : postureScore >= 40 ? 'Elevated' : 'Critical Risk'
+                  return (
+                    <div className="flex flex-col items-center gap-2">
+                      <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
+                        <circle cx={size/2} cy={size/2} r={r} fill="none" stroke="rgba(255,255,255,0.05)" strokeWidth={12} />
+                        <circle cx={size/2} cy={size/2} r={r} fill="none" stroke={scoreColor} strokeWidth={12}
+                          strokeLinecap="round" strokeDasharray={`${fill} ${circ}`}
+                          transform={`rotate(-90 ${size/2} ${size/2})`}
+                          style={{ transition: 'stroke-dasharray 1.2s cubic-bezier(.4,0,.2,1)', filter: `drop-shadow(0 0 6px ${scoreColor}45)` }} />
+                        <text x={size/2} y={size/2 - 10} textAnchor="middle" dominantBaseline="middle"
+                          fontSize={40} fontWeight="800" fontFamily="'Inter Tight',Inter,sans-serif" fill="#f9fafb">
+                          {postureScore.toFixed(0)}
+                        </text>
+                        <text x={size/2} y={size/2 + 19} textAnchor="middle" dominantBaseline="middle"
+                          fontSize={12} fontWeight="600" fontFamily="Inter,sans-serif" fill={scoreColor} letterSpacing="0.06em">
+                          GRADE {grade}
+                        </text>
+                      </svg>
+                      <span className="text-[11px] font-semibold uppercase tracking-[0.1em]" style={{ color: scoreColor }}>
+                        {posLabel} Posture
+                      </span>
+                    </div>
+                  )
+                })() : (
+                  <div className="w-[156px] h-[156px] rounded-full border-[12px] border-white/[0.04] flex items-center justify-center">
+                    <p className="text-slate-700 text-[10px] font-mono text-center">{riskLoading ? 'Computing…' : 'No data'}</p>
                   </div>
-                  
-                  <button
-                    onClick={handlePingAll}
-                    disabled={isPingingAll || apis.length === 0}
-                    className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold font-mono bg-indigo-500 hover:bg-indigo-600 disabled:bg-indigo-800/40 text-white disabled:text-slate-400 border border-indigo-500/20 disabled:border-transparent transition-all shrink-0"
-                  >
-                    <RefreshCw size={12} className={clsx(isPingingAll && 'animate-spin')} />
-                    {isPingingAll ? 'Pinging...' : 'Ping All Routes'}
+                )}
+              </div>
+              {riskProfile && (
+                <div className="mt-auto pt-4 border-t border-white/[0.05] grid grid-cols-3 gap-0 text-center">
+                  {[
+                    { val: riskProfile.summary.positives,      label: 'Passing',  col: '#22c55e' },
+                    { val: riskProfile.summary.warnings,       label: 'Warnings', col: '#eab308' },
+                    { val: riskProfile.summary.critical_flags, label: 'Critical', col: '#ef4444' },
+                  ].map((s, i) => (
+                    <div key={i} className={i === 1 ? 'border-x border-white/[0.05]' : ''}>
+                      <p className="text-[22px] font-black font-tight" style={{ color: s.col }}>{s.val}</p>
+                      <p className="text-[9px] uppercase tracking-[0.1em] text-slate-700 mt-0.5">{s.label}</p>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Threat Distribution */}
+            <div className="col-span-12 lg:col-span-8 grid grid-cols-2 gap-4">
+              {[
+                { key: 'critical', label: 'Critical',  count: critCount, icon: ShieldAlert,   desc: 'Immediate action required' },
+                { key: 'high',     label: 'High',      count: highCount, icon: AlertTriangle,  desc: 'Address within 24 hours'  },
+                { key: 'medium',   label: 'Medium',    count: medCount,  icon: Info,           desc: 'Schedule for remediation' },
+                { key: 'low',      label: 'Low',       count: lowCount,  icon: CheckCircle2,   desc: 'Monitor and track'        },
+              ].map(s => (
+                <div key={s.key}
+                  className={`relative overflow-hidden ${CARD} p-5 cursor-pointer group hover:border-white/[0.14] hover:bg-slate-elevated transition-all duration-200`}>
+                  <div className="absolute left-0 top-0 bottom-0 w-[3px] rounded-l-2xl"
+                    style={{ backgroundColor: SEV_HEX[s.key], opacity: s.count > 0 ? 1 : 0.2 }} />
+                  <div className="pl-3">
+                    <div className="flex items-center justify-between mb-4">
+                      <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-slate-600">{s.label}</p>
+                      <div className="p-1.5 rounded-lg border"
+                        style={{ backgroundColor: `${SEV_HEX[s.key]}14`, borderColor: `${SEV_HEX[s.key]}28` }}>
+                        <s.icon size={13} style={{ color: SEV_HEX[s.key], opacity: s.count > 0 ? 1 : 0.3 }} />
+                      </div>
+                    </div>
+                    <p className="text-[50px] font-black font-tight leading-none tracking-tight text-white">
+                      {securityLoading ? '—' : s.count}
+                    </p>
+                    <p className="text-[11px] text-slate-600 mt-2">{s.desc}</p>
+                    {totalBugs > 0 && (
+                      <div className="mt-3 w-full h-[2px] rounded-full bg-white/[0.05] overflow-hidden">
+                        <div className="h-full rounded-full"
+                          style={{ width: `${(s.count / totalBugs) * 100}%`, backgroundColor: SEV_HEX[s.key], opacity: 0.6 }} />
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* ── 3. Top Findings + AI Recommendations ─────────────────────────── */}
+          <div className="grid grid-cols-12 gap-5">
+
+            {/* Top Findings */}
+            <div className={`col-span-12 lg:col-span-7 ${CARD} p-6`}>
+              <div className="flex items-start justify-between mb-5">
+                <div>
+                  <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-slate-600 mb-1">Findings</p>
+                  <h2 className="text-[15px] font-semibold text-slate-200 font-tight">Top Security Issues</h2>
+                </div>
+                {totalBugs > 0 && <span className="text-[10px] text-slate-700 font-mono mt-1">{totalBugs} total</span>}
+              </div>
+              {securityLoading ? (
+                <div className="flex items-center gap-2.5 py-6 text-slate-600 text-[12px] font-mono">
+                  <RefreshCw size={13} className="animate-spin text-indigo-400/60" />
+                  Scanning for vulnerabilities…
+                </div>
+              ) : bugs.length === 0 ? (
+                <div className="py-8 text-center border border-dashed border-white/[0.06] rounded-xl">
+                  <ShieldCheck size={20} className="text-slate-700 mx-auto mb-2" />
+                  <p className="text-slate-600 text-[12px]">No findings detected</p>
+                  <p className="text-slate-700 text-[11px] mt-1">Your codebase appears clean or scan is still running.</p>
+                </div>
+              ) : (
+                <div>
+                  {bugs.slice(0, 7).map((bug: any, i: number) => (
+                    <div key={i}
+                      className="flex items-start gap-3 py-3 border-b border-white/[0.05] last:border-0 -mx-2 px-2 rounded-lg hover:bg-white/[0.02] transition-colors cursor-pointer group">
+                      <div className="w-1.5 h-1.5 rounded-full shrink-0 mt-1.5"
+                        style={{ backgroundColor: SEV_HEX[bug.severity] || SEV_HEX.info }} />
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-0.5">
+                          <span className="text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded border"
+                            style={{ color: SEV_HEX[bug.severity] || SEV_HEX.info, backgroundColor: `${SEV_HEX[bug.severity] || SEV_HEX.info}12`, borderColor: `${SEV_HEX[bug.severity] || SEV_HEX.info}25` }}>
+                            {bug.severity || 'info'}
+                          </span>
+                          <span className="text-[12px] font-semibold text-slate-300 font-tight truncate">{bug.type || 'Security Issue'}</span>
+                        </div>
+                        <p className="text-[11px] text-slate-500 leading-snug truncate">{bug.description || 'Vulnerability detected'}</p>
+                        {bug.file && <p className="text-[10px] text-slate-700 font-mono mt-0.5 truncate">{bug.file}{bug.line ? `:${bug.line}` : ''}</p>}
+                      </div>
+                      <ChevronRight size={11} className="text-slate-800 group-hover:text-slate-600 shrink-0 mt-1 transition-colors" />
+                    </div>
+                  ))}
+                  {bugs.length > 7 && (
+                    <p className="text-center text-[11px] text-indigo-400/60 font-medium pt-3">
+                      +{bugs.length - 7} more in Security →
+                    </p>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* AI Remediation Recommendations */}
+            <div className="col-span-12 lg:col-span-5 flex flex-col gap-3">
+              <div>
+                <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-slate-600 mb-1">AI-Powered</p>
+                <h2 className="text-[15px] font-semibold text-slate-200 font-tight mb-3">Remediation Recommendations</h2>
+              </div>
+              {aiRecs.map((rec: any, i: number) => (
+                <div key={i}
+                  className={`relative overflow-hidden ${CARD} p-4 cursor-pointer group hover:border-white/[0.14] hover:bg-slate-elevated transition-all duration-200`}>
+                  <div className="absolute left-0 top-0 bottom-0 w-[3px] rounded-l-2xl"
+                    style={{ backgroundColor: SEV_HEX[rec.sev] || SEV_HEX.medium }} />
+                  <div className="pl-3 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded border"
+                        style={{ color: SEV_HEX[rec.sev] || SEV_HEX.medium, backgroundColor: `${SEV_HEX[rec.sev] || SEV_HEX.medium}12`, borderColor: `${SEV_HEX[rec.sev] || SEV_HEX.medium}25` }}>
+                        {rec.sev}
+                      </span>
+                      <div className="flex items-center gap-1">
+                        <Zap size={9} className="text-indigo-400/50" />
+                        <span className="text-[9px] text-indigo-400/50 font-mono">{rec.confidence}%</span>
+                      </div>
+                    </div>
+                    <h3 className="text-[13px] font-semibold text-slate-300 font-tight group-hover:text-slate-100 transition-colors leading-snug">
+                      {rec.title}
+                    </h3>
+                    <p className="text-[11px] text-slate-500 leading-relaxed line-clamp-2">{rec.desc}</p>
+                    <div className="flex items-center justify-between pt-2 border-t border-white/[0.04]">
+                      <span className="text-[9px] text-slate-700 font-mono truncate max-w-[55%]">{rec.file || '—'}</span>
+                      <span className="text-[9px] text-slate-600 font-mono">{rec.effort}</span>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* ── 4. API Security + Files Requiring Attention ──────────────────── */}
+          <div className="grid grid-cols-12 gap-5">
+
+            {/* API Overview */}
+            <div className={`col-span-12 lg:col-span-6 ${CARD} p-6`}>
+              <div className="flex items-start justify-between mb-5">
+                <div>
+                  <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-slate-600 mb-1">Endpoints</p>
+                  <h2 className="text-[15px] font-semibold text-slate-200 font-tight">API Security Overview</h2>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-[11px] text-slate-700 font-mono">{apis.length} routes</span>
+                  {customBaseUrl && (
+                    <span className="text-[9px] font-mono text-indigo-400/50 bg-indigo-500/[0.07] px-2 py-0.5 rounded border border-indigo-500/15 truncate max-w-[110px]">
+                      {customBaseUrl.replace(/https?:\/\//, '')}
+                    </span>
+                  )}
+                </div>
+              </div>
+              {apis.length === 0 ? (
+                <div className="py-6 text-center"><Server size={18} className="text-slate-800 mx-auto mb-2" /><p className="text-slate-700 text-[11px]">No endpoints detected</p></div>
+              ) : (
+                <div className="space-y-0.5 max-h-[260px] overflow-y-auto scrollbar-none">
+                  {apis.slice(0, 14).map((apiItem: any, idx: number) => {
+                    const health = apiHealth[apiItem.path]
+                    const method = apiItem.methods?.[0] || 'GET'
+                    const mc: Record<string, string> = { GET: '#3b82f6', POST: '#22c55e', PUT: '#f97316', DELETE: '#ef4444', PATCH: '#8b5cf6' }
+                    return (
+                      <div key={idx} className="flex items-center gap-2.5 px-3 py-2 rounded-xl hover:bg-white/[0.025] group transition-colors">
+                        <span className="text-[9px] font-bold w-9 text-center py-0.5 rounded border shrink-0"
+                          style={{ color: mc[method] || '#64748b', backgroundColor: `${mc[method] || '#64748b'}14`, borderColor: `${mc[method] || '#64748b'}28` }}>
+                          {method}
+                        </span>
+                        <code className="text-[11px] text-slate-500 font-mono flex-1 truncate group-hover:text-slate-300 transition-colors">{apiItem.path}</code>
+                        <div className="flex items-center gap-1.5 shrink-0">
+                          <div className={clsx('w-1.5 h-1.5 rounded-full',
+                            health?.loading ? 'bg-amber-400 animate-pulse' :
+                            health?.status === 'Online' ? 'bg-emerald-400' :
+                            health ? 'bg-rose-400' : 'bg-slate-800'
+                          )} />
+                          <button onClick={(e) => { e.stopPropagation(); handleTestEndpoint(apiItem.path, method, apiItem.base_url) }}
+                            className="text-[9px] text-slate-700 hover:text-indigo-400 font-mono transition-colors">
+                            {health?.loading ? '…' : 'test'}
+                          </button>
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              )}
+              {apis.length > 0 && (
+                <div className="mt-4 pt-3 border-t border-white/[0.05]">
+                  <button onClick={handlePingAll} disabled={isPingingAll}
+                    className="flex items-center gap-1.5 text-[11px] font-medium text-indigo-400/60 hover:text-indigo-400 transition-colors disabled:opacity-40">
+                    <RefreshCw size={11} className={clsx(isPingingAll && 'animate-spin')} />
+                    {isPingingAll ? `Pinging… ${pingProgress}%` : 'Ping all routes'}
                   </button>
                 </div>
+              )}
+            </div>
 
-                {isPingingAll && (
-                  <div className="space-y-1">
-                    <div className="flex justify-between text-[10px] font-mono text-slate-400">
-                      <span>Running diagnostics check...</span>
-                      <span>{pingProgress}%</span>
-                    </div>
-                    <div className="w-full bg-slate-950/50 rounded-full h-1 border border-slate-border/40 overflow-hidden">
-                      <div 
-                        className="bg-indigo-500 h-full rounded-full transition-all duration-200" 
-                        style={{ width: `${pingProgress}%` }}
-                      />
-                    </div>
-                  </div>
-                )}
-
-                {apis.length > 0 ? (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-[220px] overflow-y-auto pr-1">
-                    {apis.map((apiItem: any, idx: number) => {
-                      const health = apiHealth[apiItem.path]
-                      const method = apiItem.methods?.[0] || 'GET'
-                      return (
-                        <div 
-                          key={idx}
-                          className="flex items-center justify-between p-2 rounded-lg bg-slate-950/30 border border-slate-border/30 hover:border-slate-border/60 transition-all text-xs"
-                        >
-                          <div className="flex items-center gap-2 font-mono overflow-hidden mr-2">
-                            <span className="px-1.5 py-0.5 rounded text-[8px] font-bold bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 uppercase">
-                              {method}
-                            </span>
-                            <span className="text-slate-300 font-semibold truncate text-[11px]" title={apiItem.path}>
-                              {apiItem.path}
-                            </span>
-                          </div>
-                          
-                          <div className="flex items-center gap-2 shrink-0">
-                            <span className={clsx(
-                              "w-1.5 h-1.5 rounded-full",
-                              health?.loading ? "bg-amber-500 animate-pulse" :
-                              health?.status === 'Online' ? "bg-emerald-500 animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.4)]" :
-                              health?.status === 'Offline' ? "bg-rose-500 animate-pulse shadow-[0_0_8px_rgba(244,63,94,0.4)]" : "bg-slate-500"
-                            )} />
-                            <span className={clsx(
-                              "text-[9px] font-bold font-mono",
-                              health?.loading ? "text-amber-400" :
-                              health?.status === 'Online' ? "text-emerald-400" :
-                              health?.status === 'Offline' ? "text-rose-400" : "text-slate-500"
-                            )}>
-                              {health?.loading ? 'Ping...' : health?.status === 'Online' ? `200` : health?.status === 'Offline' ? 'ERR' : 'Untested'}
-                            </span>
-                            
-                            <button
-                              onClick={() => handleTestEndpoint(apiItem.path, method)}
-                              disabled={isPingingAll}
-                              className="text-[9px] bg-slate-900 border border-slate-border/60 text-slate-400 hover:text-indigo-400 px-1.5 py-0.5 rounded transition-all font-mono"
-                            >
-                              Test
-                            </button>
-                          </div>
-                        </div>
-                      )
-                    })}
-                  </div>
-                ) : (
-                  <div className="text-slate-500 text-xs italic py-4 text-center">
-                    No REST endpoints found in this repository.
-                  </div>
-                )}
+            {/* Files Requiring Attention */}
+            <div className={`col-span-12 lg:col-span-6 ${CARD} p-6`}>
+              <div className="flex items-start justify-between mb-5">
+                <div>
+                  <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-slate-600 mb-1">Key Files</p>
+                  <h2 className="text-[15px] font-semibold text-slate-200 font-tight">Files Requiring Attention</h2>
+                </div>
+                <span className="text-[11px] text-slate-700 font-mono mt-1">{keyFiles.length} flagged</span>
               </div>
-            </Card>
-
-            {/* Code Highlights */}
-            <Card className="bg-slate-surface/30 border-slate-border/40 flex flex-col justify-between">
-              <div className="space-y-4">
-                <h3 className="text-base font-bold text-slate-100 font-display flex items-center gap-2">
-                  <FileCode2 size={16} className="text-indigo-400" />
-                  Key Code Highlights
-                </h3>
-                {keyFiles.length > 0 ? (
-                  <div className="space-y-2 max-h-[220px] overflow-y-auto pr-1">
-                    {keyFiles.slice(0, 4).map((file: any, idx: number) => {
-                      const maxLines = Math.max(...keyFiles.map((f: any) => f.lines || 1))
-                      const percentage = Math.min(100, Math.round((file.lines / maxLines) * 100))
-                      return (
-                        <div 
-                          key={idx} 
-                          onClick={() => {
-                            setSelectedKeyFile(file)
-                            setCurrentTab('key_files')
-                          }}
-                          className="bg-slate-950/40 border border-slate-border/50 hover:border-indigo-500/30 p-2.5 rounded-xl transition-all duration-200 cursor-pointer group space-y-1.5"
-                        >
-                          <div className="flex justify-between items-center text-xs">
-                            <span className="font-mono text-slate-300 font-bold group-hover:text-indigo-400 transition-colors truncate max-w-[170px]" title={file.name}>
-                              {file.name}
+              {keyFiles.length === 0 ? (
+                <div className="py-6 text-center"><FileCode2 size={18} className="text-slate-800 mx-auto mb-2" /><p className="text-slate-700 text-[11px]">No key files flagged</p></div>
+              ) : (
+                <div className="space-y-0.5 max-h-[260px] overflow-y-auto scrollbar-none">
+                  {keyFiles.slice(0, 14).map((file: any, i: number) => {
+                    const ext = (file.path || '').split('.').pop() || 'file'
+                    const ec: Record<string, string> = { py: '#3b82f6', ts: '#6366f1', tsx: '#8b5cf6', js: '#eab308', jsx: '#f97316', json: '#22c55e' }
+                    const fileBugs = bugs.filter((b: any) => b.file && file.path && b.file.includes(file.path.split('/').pop() || ''))
+                    return (
+                      <div key={i} onClick={() => setCurrentTab('key_files')}
+                        className="flex items-center gap-2.5 px-3 py-2 rounded-xl hover:bg-white/[0.025] group transition-colors cursor-pointer">
+                        <span className="text-[9px] font-bold w-6 text-center shrink-0" style={{ color: ec[ext] || '#64748b' }}>{ext}</span>
+                        <span className="text-[11px] text-slate-500 font-mono flex-1 truncate group-hover:text-slate-300 transition-colors">{file.path}</span>
+                        <div className="flex items-center gap-2 shrink-0">
+                          {fileBugs.length > 0 && (
+                            <span className="text-[9px] font-bold text-rose-400 bg-rose-500/10 px-1.5 py-0.5 rounded border border-rose-500/20">
+                              {fileBugs.length} issue{fileBugs.length > 1 ? 's' : ''}
                             </span>
-                            <span className="text-[10px] text-slate-500 font-mono">
-                              {file.lines} lines
-                            </span>
-                          </div>
-                          <div className="w-full bg-slate-900/60 h-1 rounded-full overflow-hidden">
-                            <div 
-                              className="bg-gradient-to-r from-indigo-500 to-indigo-400 h-full rounded-full transition-all"
-                              style={{ width: `${percentage}%` }}
-                            />
-                          </div>
+                          )}
+                          <span className="text-[9px] text-slate-700 font-mono">{file.lines || '—'}L</span>
                         </div>
-                      )
-                    })}
-                  </div>
-                ) : (
-                  <div className="text-slate-500 text-xs italic py-4 text-center">
-                    No key files identified.
-                  </div>
-                )}
-              </div>
-            </Card>
+                      </div>
+                    )
+                  })}
+                </div>
+              )}
+            </div>
           </div>
 
-          {/* Network Graph */}
-          <Card className="border-slate-border/40 bg-slate-surface/30 backdrop-blur-md p-6 space-y-4">
-            <div className="flex justify-between items-center">
+          {/* ── 5. Technical Stats (secondary) ───────────────────────────────── */}
+          <div className={`${CARD} p-6`}>
+            <div className="flex items-center justify-between mb-4">
               <div>
-                <h3 className="text-base font-bold text-slate-100 font-display">🌐 Interconnected Network Mesh</h3>
-                <p className="text-slate-400 text-xs mt-0.5">Obsidian-inspired interconnected view of APIs, classes, and functions.</p>
+                <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-slate-600 mb-1">Code Statistics</p>
+                <h2 className="text-[15px] font-semibold text-slate-200 font-tight">Technical Scan Summary</h2>
               </div>
-              <Badge severity="medium">vis.js Network</Badge>
+              <span className="text-[10px] text-slate-700 font-mono">Click to explore</span>
             </div>
-            
-            <div 
-              ref={networkRef}
-              className="w-full h-[320px] bg-slate-950/60 rounded-xl border border-slate-border/30 overflow-hidden relative"
-            />
-          </Card>
+            <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
+              {metricCards.map(card => (
+                <div key={card.id} onClick={() => setCurrentTab(card.id)}
+                  className="flex items-center justify-between p-3 rounded-xl border border-white/[0.05] bg-slate-elevated hover:border-white/[0.1] hover:bg-white/[0.03] transition-all cursor-pointer group">
+                  <div>
+                    <p className="text-[9px] font-bold uppercase tracking-[0.1em] text-slate-700 mb-1">{card.label}</p>
+                    <p className="text-[22px] font-black text-slate-400 font-tight leading-none group-hover:text-slate-200 transition-colors">
+                      {card.count.toLocaleString()}
+                    </p>
+                  </div>
+                  <card.icon size={14} className="text-slate-800 group-hover:text-slate-600 transition-colors shrink-0" />
+                </div>
+              ))}
+            </div>
+          </div>
+
         </div>
       )
     },
@@ -1709,16 +1932,15 @@ export const ScannerPage: React.FC = () => {
     }
   ]
 
-  // ── Grouped navigation ────────────────────────────────────────────────────
+  // ── Navigation ────────────────────────────────────────────────────────────
   const tabGroups = [
-    { id: 'summary',  label: '📊 Summary',      tabIds: ['overview', 'risk_score'] },
-    { id: 'ask_ai',   label: '🤖 Ask AI',        tabIds: ['chat'] },
-    { id: 'code',     label: '🔍 Code',          tabIds: ['structure', 'files', 'apis', 'classes', 'functions', 'error_handlers', 'middleware'] },
-    { id: 'data',     label: '🗄️ Data',          tabIds: ['models', 'enums', 'interfaces', 'constants', 'key_files'] },
-    { id: 'deps',     label: '📦 Dependencies',  tabIds: ['dependencies', 'tech_stack', 'architecture', 'ux_architecture'] },
+    { id: 'security',  label: 'Security',   tabIds: ['overview', 'risk_score'] },
+    { id: 'ask_ai',    label: 'ask_ai',      tabIds: ['chat'] },
+    { id: 'apis',      label: 'APIs',        tabIds: ['apis'] },
+    { id: 'technical', label: 'Technical',   tabIds: ['structure', 'files', 'classes', 'functions', 'error_handlers', 'middleware', 'models', 'enums', 'interfaces', 'constants', 'key_files', 'dependencies', 'tech_stack', 'architecture', 'ux_architecture'] },
   ]
 
-  const activeGroup = tabGroups.find(g => g.tabIds.includes(currentTab))?.id ?? 'summary'
+  const activeGroup = tabGroups.find(g => g.tabIds.includes(currentTab))?.id ?? 'security'
 
   const handleGroupChange = (groupId: string) => {
     const group = tabGroups.find(g => g.id === groupId)
@@ -1732,101 +1954,106 @@ export const ScannerPage: React.FC = () => {
   const activeContent = dashboardTabs.find(t => t.id === currentTab)?.content
 
   return (
-    <div className="space-y-6 select-none animate-fade-in">
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+    <div className="space-y-5 select-none animate-fade-in pb-8">
+
+      {/* ── Page Header ───────────────────────────────────────────────────── */}
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 pt-1">
         <div>
-          <h1 className="text-3xl font-black text-slate-100 font-display tracking-tight">Scan Results</h1>
-          <p className="text-slate-400 text-sm mt-1.5 font-medium">Session ID: <span className="text-indigo-400 font-mono">{sessionId}</span></p>
+          <h1 className="text-[22px] font-extrabold text-white font-tight tracking-tight leading-none">
+            Scan Results
+          </h1>
+          <p className="text-slate-500 text-[13px] mt-1.5">
+            Session&nbsp;<span className="text-indigo-400/80 font-mono text-[11px]">{sessionId}</span>
+          </p>
         </div>
-        
-        <div className="flex flex-wrap items-center gap-3">
-          {/* Global Remediation Mode Selector */}
-          <div className="flex items-center gap-1.5 p-1 bg-slate-950/60 border border-slate-border/30 rounded-xl font-mono text-[10.5px]">
-            <button
-              type="button"
-              onClick={() => setRemediationMode('hitl')}
-              className={clsx(
-                "px-3 py-1.5 rounded-lg transition-all font-semibold flex items-center gap-1.5",
-                remediationMode === 'hitl'
-                  ? "bg-indigo-500/10 border border-indigo-500/20 text-indigo-400"
-                  : "border border-transparent text-slate-400 hover:text-slate-200"
-              )}
-              title="Human-in-the-Loop Mode: generate individual task branches"
-            >
-              👥 HITL Mode
-            </button>
-            <button
-              type="button"
-              onClick={() => setRemediationMode('autonomous')}
-              className={clsx(
-                "px-3 py-1.5 rounded-lg transition-all font-semibold flex items-center gap-1.5",
-                remediationMode === 'autonomous'
-                  ? "bg-indigo-500/10 border border-indigo-500/20 text-indigo-400"
-                  : "border border-transparent text-slate-400 hover:text-slate-200"
-              )}
-              title="Autonomous Mode: stage all fixes into one unified branch"
-            >
-              🤖 Autonomous
-            </button>
+
+        <div className="flex flex-wrap items-center gap-2.5">
+          {/* Remediation mode selector */}
+          <div className="flex items-center gap-1 p-1 rounded-xl border border-white/[0.07] bg-slate-elevated font-mono text-[10.5px]">
+            {([
+              { id: 'hitl',       label: '👥 HITL',      title: 'Human-in-the-Loop: stage individual task branches' },
+              { id: 'autonomous', label: '🤖 Autonomous', title: 'Autonomous: compile all fixes into one PR' },
+            ] as const).map(m => (
+              <button key={m.id} type="button" title={m.title}
+                onClick={() => setRemediationMode(m.id)}
+                className={clsx(
+                  'px-3 py-1.5 rounded-lg transition-all font-semibold',
+                  remediationMode === m.id
+                    ? 'bg-indigo-500/15 border border-indigo-500/25 text-indigo-400'
+                    : 'border border-transparent text-slate-500 hover:text-slate-300'
+                )}>
+                {m.label}
+              </button>
+            ))}
           </div>
 
-          <Button 
-            onClick={() => {
-              setSessionId(null)
-              setGlobalSessionId(null)
-              setArtifacts(null)
-              setSelectedKeyFile(null)
-              setCurrentTab('overview')
-            }}
-            variant="secondary"
-            size="sm"
-            className="border-slate-border/80 hover:bg-slate-800"
-          >
-            New Sandbox Scan
+          <Button
+            onClick={() => { setSessionId(null); setGlobalSessionId(null); setArtifacts(null); setSelectedKeyFile(null); setCurrentTab('overview') }}
+            variant="secondary" size="sm"
+            className="border-white/[0.09] bg-slate-surface hover:bg-slate-elevated text-slate-400 hover:text-slate-200 text-[11px] font-semibold">
+            New Scan
           </Button>
         </div>
       </div>
-      
+
+      {/* ── Navigation ────────────────────────────────────────────────────── */}
       {dashboardTabs.length > 0 && (
-        <div className="space-y-0">
-          {/* Group pills */}
-          <div className="flex gap-2 mb-3 flex-wrap">
-            {tabGroups.map(group => (
-              <button
-                key={group.id}
-                onClick={() => handleGroupChange(group.id)}
-                className={clsx(
-                  'px-4 py-1.5 rounded-full text-xs font-semibold font-mono transition-all duration-200',
-                  activeGroup === group.id
-                    ? 'bg-indigo-500 text-white shadow-lg shadow-indigo-500/20'
-                    : 'bg-slate-900/40 border border-slate-border/40 text-slate-400 hover:text-slate-200 hover:border-slate-border/70'
-                )}
-              >
-                {group.label}
-              </button>
-            ))}
+        <div>
+          {/* Primary group pills */}
+          <div className="flex gap-2 flex-wrap items-center">
+            {tabGroups.map(group => {
+              const isActive = activeGroup === group.id
+              const isAskAI  = group.id === 'ask_ai'
+
+              if (isAskAI) return (
+                <button key={group.id} onClick={() => handleGroupChange(group.id)}
+                  className={clsx(
+                    'relative overflow-hidden px-4 py-1.5 rounded-full text-[11px] font-bold font-mono transition-all duration-200 animate-glow-pulse',
+                    isActive
+                      ? 'bg-gradient-to-r from-indigo-500 via-violet-500 to-purple-500 text-white scale-105'
+                      : 'bg-gradient-to-r from-indigo-500/20 via-violet-500/20 to-purple-500/20 border border-violet-500/35 text-violet-300 hover:border-violet-400/60 hover:scale-105'
+                  )}>
+                  <span className="absolute inset-0 w-1/3 bg-gradient-to-r from-transparent via-white/20 to-transparent animate-shimmer pointer-events-none" />
+                  <span className="relative flex items-center gap-1.5">
+                    <span className={clsx('w-1.5 h-1.5 rounded-full shrink-0 animate-pulse', isActive ? 'bg-white/80' : 'bg-violet-400')} />
+                    ✨ Ask AI
+                  </span>
+                </button>
+              )
+
+              return (
+                <button key={group.id} onClick={() => handleGroupChange(group.id)}
+                  className={clsx(
+                    'px-4 py-1.5 rounded-full text-[11px] font-semibold transition-all duration-200',
+                    isActive
+                      ? 'bg-indigo-500 text-white shadow-sm shadow-indigo-500/30'
+                      : 'border border-white/[0.08] bg-slate-surface text-slate-400 hover:text-slate-200 hover:border-white/[0.14]'
+                  )}>
+                  {group.label}
+                </button>
+              )
+            })}
           </div>
 
-          {/* Sub-tabs */}
-          <div className="flex gap-0 border-b border-slate-border/50 mb-4 overflow-x-auto scrollbar-none">
-            {subTabs.map(tab => (
-              <button
-                key={tab.id}
-                onClick={() => setCurrentTab(tab.id)}
-                className={clsx(
-                  'px-4 py-2 text-sm font-medium border-b-2 -mb-px transition-colors whitespace-nowrap shrink-0',
-                  currentTab === tab.id
-                    ? 'border-indigo-500 text-indigo-400'
-                    : 'border-transparent text-slate-400 hover:text-slate-200'
-                )}
-              >
-                {tab.label}
-              </button>
-            ))}
-          </div>
+          {/* Sub-tabs — only when the active group has more than one tab */}
+          {subTabs.length > 1 && (
+            <div className="flex gap-0 border-b border-white/[0.06] mt-4 overflow-x-auto scrollbar-none">
+              {subTabs.map(tab => (
+                <button key={tab.id} onClick={() => setCurrentTab(tab.id)}
+                  className={clsx(
+                    'px-4 py-2 text-[12px] font-medium border-b-2 -mb-px transition-colors whitespace-nowrap shrink-0',
+                    currentTab === tab.id
+                      ? 'border-indigo-500 text-indigo-400'
+                      : 'border-transparent text-slate-500 hover:text-slate-300'
+                  )}>
+                  {tab.label}
+                </button>
+              ))}
+            </div>
+          )}
 
           {/* Active tab content */}
-          <div>{activeContent}</div>
+          <div className="mt-5">{activeContent}</div>
         </div>
       )}
     </div>

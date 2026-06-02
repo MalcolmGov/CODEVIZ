@@ -32,11 +32,15 @@ html {
 }
 
 html.dark {
-  --slate-canvas: 3 7 18;
-  --slate-surface: 9 13 22;
-  --slate-elevated: 15 23 42;
-  --slate-border: 31 41 55;
-  
+  /* Page canvas — deep navy, not pure black */
+  --slate-canvas: 8 11 20;
+  /* Card surface — #111827, clearly lifted from canvas */
+  --slate-surface: 17 24 39;
+  /* Elevated panels within cards — #172033 */
+  --slate-elevated: 23 32 51;
+  /* Borders — visible but subtle */
+  --slate-border: 38 52 74;
+
   --slate-50: 15 23 42;
   --slate-100: 248 250 252;
   --slate-200: 226 232 240;
@@ -48,16 +52,18 @@ html.dark {
   --slate-800: 30 41 59;
   --slate-900: 15 23 42;
   --slate-950: 9 13 22;
-  
+
   --indigo-400: 129 140 248;
   --emerald-400: 52 211 153;
   --rose-400: 248 113 113;
   --amber-400: 251 191 36;
 
-  --gradient-from: 15 23 42;
-  --gradient-via: 26 31 58;
-  --gradient-to: 22 33 62;
-  --grid-color: rgba(99, 102, 241, 0.06);
+  /* Subtle navy background gradient */
+  --gradient-from: 8 11 20;
+  --gradient-via: 10 15 26;
+  --gradient-to: 8 12 22;
+  /* Grid at <1.5% opacity — barely visible structural guide */
+  --grid-color: rgba(148, 163, 184, 0.012);
 }
 
 * {
@@ -136,4 +142,27 @@ body {
 .scrollbar-none {
   -ms-overflow-style: none;
   scrollbar-width: none;
+}
+
+/* Inter Tight utility */
+.font-tight {
+  font-family: 'Inter Tight', Inter, sans-serif;
+}
+
+/* Ask AI pill shimmer sweep */
+@keyframes shimmer-sweep {
+  0%   { transform: translateX(-100%) skewX(-12deg); }
+  100% { transform: translateX(300%) skewX(-12deg); }
+}
+.animate-shimmer {
+  animation: shimmer-sweep 2.4s ease-in-out infinite;
+}
+
+/* Ask AI pill outer glow pulse */
+@keyframes glow-pulse {
+  0%, 100% { box-shadow: 0 0 8px 1px rgba(139,92,246,0.3), 0 0 20px 2px rgba(99,102,241,0.15); }
+  50%       { box-shadow: 0 0 14px 3px rgba(139,92,246,0.55), 0 0 32px 6px rgba(99,102,241,0.25); }
+}
+.animate-glow-pulse {
+  animation: glow-pulse 2.4s ease-in-out infinite;
 }

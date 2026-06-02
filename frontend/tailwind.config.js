@@ -6,6 +6,12 @@ export default {
       fontFamily: {
         sans: ['Inter', 'sans-serif'],
         display: ['Outfit', 'sans-serif'],
+        tight: ['"Inter Tight"', 'Inter', 'sans-serif'],
+      },
+      boxShadow: {
+        'card':    '0 1px 3px rgba(0,0,0,0.45), 0 2px 8px rgba(0,0,0,0.3)',
+        'card-lg': '0 4px 24px rgba(0,0,0,0.4), 0 1px 4px rgba(0,0,0,0.3)',
+        'inset-t': 'inset 0 1px 0 rgba(255,255,255,0.06)',
       },
       colors: {
         primary: {
