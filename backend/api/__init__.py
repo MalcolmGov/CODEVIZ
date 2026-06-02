@@ -19,11 +19,13 @@ compliance_bp = Blueprint('compliance', __name__)
 reports_bp = Blueprint('reports', __name__)
 settings_bp = Blueprint('settings', __name__)
 performance_bp = Blueprint('performance', __name__)
+threats_bp = Blueprint('threats', __name__)
 
 # Import route handlers (at bottom to avoid circular imports)
-from . import chat, security, refactoring, auth, repositories, health, scoring, compliance, reports, settings, performance
+from . import chat, security, refactoring, auth, repositories, health, scoring, compliance, reports, settings, performance, threats
 
 __all__ = [
     'chat_bp', 'security_bp', 'refactoring_bp', 'auth_bp',
     'repositories_bp', 'health_bp', 'scoring_bp', 'compliance_bp', 'reports_bp', 'settings_bp', 'performance_bp',
+    'threats_bp',
 ]
