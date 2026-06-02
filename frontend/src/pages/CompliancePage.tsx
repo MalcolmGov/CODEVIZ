@@ -1,11 +1,11 @@
 import React, { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Card } from '@/components/common/Card'
-import { Button } from '@/components/common/Button'
 import { useSessionStore } from '@/store/sessionStore'
 import { complianceService, ComplianceReport, FrameworkResult, ComplianceControl } from '@/services/compliance'
 import { ShieldCheck, AlertTriangle, XCircle, Info, RefreshCw, Terminal, CheckCircle2 } from 'lucide-react'
 import clsx from 'clsx'
+
+const CARD = 'rounded-2xl border border-white/[0.08] bg-slate-surface shadow-card backdrop-blur-md'
 
 const STATUS_CONFIG = {
   pass: { icon: CheckCircle2, color: 'text-emerald-400', bg: 'bg-emerald-500/10 border-emerald-500/20', label: 'Pass' },
@@ -187,7 +187,12 @@ export const CompliancePage: React.FC = () => {
         <p className="text-slate-500 text-sm text-center max-w-xs">
           Run a repository scan first to generate a compliance report.
         </p>
-        <Button onClick={() => navigate('/scanner')} size="sm">Go to Scanner</Button>
+        <button
+          onClick={() => navigate('/scanner')}
+          className="flex items-center gap-2 px-4 py-2 rounded-xl text-[12px] font-semibold bg-indigo-500 hover:bg-indigo-600 text-white transition-all"
+        >
+          Go to Scanner
+        </button>
       </div>
     )
   }
@@ -206,7 +211,12 @@ export const CompliancePage: React.FC = () => {
       <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-4">
         <XCircle size={36} className="text-rose-400" />
         <p className="text-slate-400 text-sm">{error}</p>
-        <Button onClick={() => fetchReport(currentSessionId!)} size="sm" variant="secondary">Retry</Button>
+        <button
+          onClick={() => fetchReport(currentSessionId!)}
+          className="flex items-center gap-2 px-4 py-2 rounded-xl text-[12px] font-semibold border border-white/[0.08] text-slate-400 hover:text-slate-200 hover:border-white/[0.14] transition-all"
+        >
+          Retry
+        </button>
       </div>
     )
   }
@@ -226,38 +236,36 @@ export const CompliancePage: React.FC = () => {
             Session: <span className="text-indigo-400 font-mono">{currentSessionId}</span>
           </p>
         </div>
-        <Button
-          variant="secondary"
-          size="sm"
+        <button
           onClick={() => fetchReport(currentSessionId!)}
-          className="border-slate-border/80 hover:bg-slate-800 flex items-center gap-2"
+          className="flex items-center gap-2 px-4 py-2 rounded-xl text-[12px] font-semibold border border-white/[0.08] text-slate-400 hover:text-slate-200 hover:border-white/[0.14] transition-all bg-slate-surface hover:bg-slate-elevated"
         >
           <RefreshCw size={14} />
           Re-run checks
-        </Button>
+        </button>
       </div>
 
       {/* Overall + framework score cards */}
       <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
         {/* Overall */}
-        <Card className="col-span-2 md:col-span-1 flex flex-col items-center justify-center py-5 bg-slate-surface/30 border-slate-border/40">
+        <div className={clsx(CARD, "col-span-2 md:col-span-1 flex flex-col items-center justify-center py-5 bg-slate-surface/30")}>
           <ScoreRing score={report.overall.score} grade={report.overall.grade} size={80} />
           <p className="text-slate-400 text-[10px] font-mono mt-2 uppercase tracking-wider">Overall</p>
-        </Card>
+        </div>
 
         {/* Per-framework */}
         {orderedFrameworks.map(fwId => {
           const fw = report.frameworks[fwId]
           return (
-            <Card
+            <div
               key={fwId}
-              hover
               onClick={() => setActiveFramework(fwId)}
               className={clsx(
-                'flex flex-col items-center justify-center py-5 cursor-pointer transition-all duration-200',
+                CARD,
+                'flex flex-col items-center justify-center py-5 cursor-pointer transition-all duration-200 hover:-translate-y-0.5',
                 activeFramework === fwId
                   ? 'bg-indigo-500/10 border-indigo-500/40'
-                  : 'bg-slate-surface/30 border-slate-border/40 hover:border-slate-border/70'
+                  : 'bg-slate-surface/30 border-white/[0.08] hover:border-slate-border/70'
               )}
             >
               <ScoreRing score={fw.score} grade={fw.grade} size={64} />
@@ -267,16 +275,16 @@ export const CompliancePage: React.FC = () => {
                 <span className="text-[9px] text-amber-400 font-mono">{fw.summary.warned}W</span>
                 <span className="text-[9px] text-emerald-400 font-mono">{fw.summary.passed}P</span>
               </div>
-            </Card>
+            </div>
           )
         })}
       </div>
 
       {/* Framework detail */}
       {activefw && (
-        <Card className="bg-slate-surface/30 border-slate-border/40">
+        <div className={clsx(CARD, "p-6 bg-slate-surface/30")}>
           <FrameworkPanel fw={activefw} />
-        </Card>
+        </div>
       )}
     </div>
   )

@@ -1,10 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { ScanForm } from '@/components/features/ScanForm'
-import { Card } from '@/components/common/Card'
 import { Tabs } from '@/components/common/Tabs'
 import { Table } from '@/components/common/Table'
 import { Badge } from '@/components/common/Badge'
-import { Button } from '@/components/common/Button'
 import { useSessionStore } from '@/store/sessionStore'
 import { useBugsStore } from '@/store/bugsStore'
 import { useRefactoringStore } from '@/store/refactoringStore'
@@ -23,6 +21,8 @@ import { Network, DataSet } from 'vis-network/standalone'
 import 'vis-network/styles/vis-network.css'
 import { api } from '@/services/api'
 import clsx from 'clsx'
+
+const CARD = 'rounded-2xl border border-white/[0.08] bg-slate-surface shadow-card backdrop-blur-md'
 
 // Inline parser for bold (**), inline code (`), and links ([text](url))
 const parseInlineMarkdown = (text: string) => {
@@ -335,7 +335,7 @@ export const ScannerPage: React.FC = () => {
     const paginatedData = filteredData.slice(page * itemsPerPage, (page + 1) * itemsPerPage)
 
     return (
-      <Card className="bg-slate-surface/30 border-slate-border/40 space-y-4">
+      <div className={clsx(CARD, 'p-6 bg-slate-surface/30 space-y-4')}>
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 pb-2">
           <div>
             <h3 className="text-base font-bold text-slate-100 font-display">{title}</h3>
@@ -367,29 +367,25 @@ export const ScannerPage: React.FC = () => {
               Showing {page * itemsPerPage + 1}-{Math.min((page + 1) * itemsPerPage, filteredData.length)} of {filteredData.length} entries
             </span>
             <div className="flex items-center gap-2">
-              <Button
-                variant="secondary"
-                size="sm"
+              <button
                 onClick={() => setCurrentPages(prev => ({ ...prev, [tabId]: Math.max(0, page - 1) }))}
                 disabled={page === 0}
-                className="py-1 px-2.5"
+                className="flex items-center gap-2 px-2.5 py-1 rounded-xl text-[12px] font-semibold border border-white/[0.08] text-slate-400 hover:text-slate-200 hover:border-white/[0.14] transition-all disabled:opacity-40"
               >
                 Previous
-              </Button>
+              </button>
               <span>{page + 1} / {totalPages}</span>
-              <Button
-                variant="secondary"
-                size="sm"
+              <button
                 onClick={() => setCurrentPages(prev => ({ ...prev, [tabId]: Math.min(totalPages - 1, page + 1) }))}
                 disabled={page >= totalPages - 1}
-                className="py-1 px-2.5"
+                className="flex items-center gap-2 px-2.5 py-1 rounded-xl text-[12px] font-semibold border border-white/[0.08] text-slate-400 hover:text-slate-200 hover:border-white/[0.14] transition-all disabled:opacity-40"
               >
                 Next
-              </Button>
+              </button>
             </div>
           </div>
         )}
-      </Card>
+      </div>
     )
   }
 
@@ -684,7 +680,7 @@ export const ScannerPage: React.FC = () => {
           </p>
         </div>
         
-        <Card className="border-slate-border/40 bg-slate-surface/30 backdrop-blur-md space-y-6">
+        <div className={clsx(CARD, "p-6 bg-slate-surface/30 space-y-6")}>
           <ScanForm onScanComplete={handleScanComplete} />
           
           <div className="border-t border-slate-border/20 pt-4 space-y-3">
@@ -730,7 +726,7 @@ export const ScannerPage: React.FC = () => {
               </div>
             </div>
           </div>
-        </Card>
+        </div>
       </div>
     )
   }
@@ -966,8 +962,6 @@ export const ScannerPage: React.FC = () => {
     { id: 'interfaces',   label: 'Interfaces',   count: interfaces.length,        icon: Link },
     { id: 'dependencies', label: 'Dependencies', count: dependencies.length,     icon: Package },
   ]
-
-  const CARD = 'rounded-2xl border border-white/[0.08] bg-slate-surface shadow-card backdrop-blur-md'
 
   const dashboardTabs = [
     {
@@ -1364,7 +1358,7 @@ export const ScannerPage: React.FC = () => {
       id: 'chat',
       label: '💬 AI Chat',
       content: (
-        <Card className="flex flex-col h-[550px] bg-slate-surface/30 border-slate-border/40 p-0 overflow-hidden">
+        <div className={clsx(CARD, "flex flex-col h-[550px] bg-slate-surface/30 p-0 overflow-hidden")}>
           {/* Header */}
           <div className="flex justify-between items-center px-6 py-4 bg-slate-900/60 border-b border-slate-border/30">
             <div>
@@ -1527,22 +1521,22 @@ export const ScannerPage: React.FC = () => {
               onChange={(e) => setChatInput(e.target.value)}
               className="flex-1 px-4 py-2.5 bg-slate-950/60 border border-slate-border/50 rounded-xl text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-indigo-500/30 focus:border-indigo-500/50"
             />
-            <Button
+            <button
               type="submit"
               disabled={chatLoading || !chatInput.trim()}
-              className="px-4 py-2.5 text-xs font-semibold flex items-center gap-1.5 rounded-xl text-white bg-indigo-500 hover:bg-indigo-600 disabled:bg-slate-800 disabled:border-transparent transition-all"
+              className="flex items-center gap-2 px-4 py-2 rounded-xl text-[12px] font-semibold bg-indigo-500 hover:bg-indigo-600 text-white transition-all disabled:opacity-40"
             >
               Send
-            </Button>
+            </button>
           </form>
-        </Card>
+        </div>
       )
     },
     {
       id: 'structure',
       label: '🌳 Structure',
       content: (
-        <Card className="space-y-4 bg-slate-surface/30 border-slate-border/40">
+        <div className={clsx(CARD, "p-6 space-y-4 bg-slate-surface/30")}>
           <div>
             <h3 className="text-base font-bold text-slate-100 font-display">Directory Structure</h3>
             <p className="text-slate-400 text-xs mt-0.5">Static representation of repository directories.</p>
@@ -1550,7 +1544,7 @@ export const ScannerPage: React.FC = () => {
           <pre className="bg-slate-950/60 p-5 border border-slate-border/30 rounded-xl overflow-x-auto text-xs font-mono text-slate-300 leading-relaxed max-h-[500px]">
             {artifacts?.structure || 'No structure parsed.'}
           </pre>
-        </Card>
+        </div>
       )
     },
     {
@@ -1563,7 +1557,7 @@ export const ScannerPage: React.FC = () => {
       label: `🔌 APIs (${apis.length})`,
       content: (
         <div className="space-y-4">
-          <Card className="bg-slate-surface/30 border-slate-border/40 p-4">
+          <div className={clsx(CARD, "bg-slate-surface/30 p-4")}>
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
               <div className="space-y-1">
                 <h4 className="text-sm font-bold text-slate-200 flex items-center gap-2">
@@ -1594,7 +1588,7 @@ export const ScannerPage: React.FC = () => {
                 )}
               </div>
             </div>
-          </Card>
+          </div>
           
           {renderExplorer('apis', 'Discovered REST Endpoints', 'Routes parsed from router annotations and HTTP middleware.', apis, apisColumns, ['path', 'file', 'methods'])}
         </div>
@@ -1645,7 +1639,7 @@ export const ScannerPage: React.FC = () => {
       label: `🔑 Key Files (${keyFiles.length})`,
       content: (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <Card className="bg-slate-surface/30 border-slate-border/40 max-h-[500px] overflow-y-auto">
+          <div className={clsx(CARD, "p-6 bg-slate-surface/30 max-h-[500px] overflow-y-auto")}>
             <h3 className="text-base font-bold text-slate-100 font-display mb-4">Code Highlights</h3>
             <div className="space-y-2">
               {keyFiles.map((file: any, idx: number) => (
@@ -1666,9 +1660,9 @@ export const ScannerPage: React.FC = () => {
                 </button>
               ))}
             </div>
-          </Card>
+          </div>
 
-          <Card className="lg:col-span-2 bg-slate-surface/30 border-slate-border/40 flex flex-col">
+          <div className={clsx(CARD, "p-6 lg:col-span-2 bg-slate-surface/30 flex flex-col")}>
             <div className="flex justify-between items-center mb-4 pb-3 border-b border-slate-border/30">
               <div>
                 <h3 className="text-base font-bold text-slate-100 font-display">Code Viewer</h3>
@@ -1690,7 +1684,7 @@ export const ScannerPage: React.FC = () => {
                 Select a key file from the list to view its code snippet.
               </div>
             )}
-          </Card>
+          </div>
         </div>
       )
     },
@@ -1949,7 +1943,7 @@ export const ScannerPage: React.FC = () => {
       label: '🛠️ Tech Stack',
       content: (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <Card className="bg-slate-surface/30 border-slate-border/40">
+          <div className={clsx(CARD, "p-6 bg-slate-surface/30")}>
             <h3 className="text-sm font-bold text-slate-100 font-display mb-3">Languages</h3>
             <div className="flex flex-wrap gap-1.5">
               {techStack.languages?.length > 0 ? (
@@ -1958,8 +1952,8 @@ export const ScannerPage: React.FC = () => {
                 ))
               ) : <span className="text-slate-500 italic text-xs">None detected</span>}
             </div>
-          </Card>
-          <Card className="bg-slate-surface/30 border-slate-border/40">
+          </div>
+          <div className={clsx(CARD, "p-6 bg-slate-surface/30")}>
             <h3 className="text-sm font-bold text-slate-100 font-display mb-3">Frameworks</h3>
             <div className="flex flex-wrap gap-1.5">
               {techStack.frameworks?.length > 0 ? (
@@ -1968,8 +1962,8 @@ export const ScannerPage: React.FC = () => {
                 ))
               ) : <span className="text-slate-500 italic text-xs">None detected</span>}
             </div>
-          </Card>
-          <Card className="bg-slate-surface/30 border-slate-border/40">
+          </div>
+          <div className={clsx(CARD, "p-6 bg-slate-surface/30")}>
             <h3 className="text-sm font-bold text-slate-100 font-display mb-3">Databases</h3>
             <div className="flex flex-wrap gap-1.5">
               {techStack.databases?.length > 0 ? (
@@ -1978,7 +1972,7 @@ export const ScannerPage: React.FC = () => {
                 ))
               ) : <span className="text-slate-500 italic text-xs">None detected</span>}
             </div>
-          </Card>
+          </div>
         </div>
       )
     },
@@ -1987,7 +1981,7 @@ export const ScannerPage: React.FC = () => {
       label: '🏗️ Architecture',
       content: (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <Card className="bg-slate-surface/30 border-slate-border/40">
+          <div className={clsx(CARD, "p-6 bg-slate-surface/30")}>
             <h3 className="text-sm font-bold text-slate-100 font-display mb-3">Backend Architecture Layers</h3>
             <div className="space-y-2">
               {architecture.layers?.length > 0 ? (
@@ -1996,8 +1990,8 @@ export const ScannerPage: React.FC = () => {
                 ))
               ) : <div className="text-slate-500 italic text-xs">None detected</div>}
             </div>
-          </Card>
-          <Card className="bg-slate-surface/30 border-slate-border/40">
+          </div>
+          <div className={clsx(CARD, "p-6 bg-slate-surface/30")}>
             <h3 className="text-sm font-bold text-slate-100 font-display mb-3">Structural Patterns</h3>
             <div className="space-y-2">
               {architecture.patterns?.length > 0 ? (
@@ -2006,8 +2000,8 @@ export const ScannerPage: React.FC = () => {
                 ))
               ) : <div className="text-slate-500 italic text-xs">None detected</div>}
             </div>
-          </Card>
-          <Card className="bg-slate-surface/30 border-slate-border/40">
+          </div>
+          <div className={clsx(CARD, "p-6 bg-slate-surface/30")}>
             <h3 className="text-sm font-bold text-slate-100 font-display mb-3">External Integrations</h3>
             <div className="space-y-2">
               {architecture.external_services?.length > 0 ? (
@@ -2016,7 +2010,7 @@ export const ScannerPage: React.FC = () => {
                 ))
               ) : <div className="text-slate-500 italic text-xs">None detected</div>}
             </div>
-          </Card>
+          </div>
         </div>
       )
     },
@@ -2025,11 +2019,11 @@ export const ScannerPage: React.FC = () => {
       label: '🎨 UX & Build',
       content: (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          <Card className="bg-slate-surface/30 border-slate-border/40">
+          <div className={clsx(CARD, "p-6 bg-slate-surface/30")}>
             <h4 className="text-xs text-slate-500 font-mono uppercase tracking-wider mb-2">Frontend Framework</h4>
             <div className="text-slate-200 font-bold font-mono text-sm">{uxArchitecture.frontend_framework || 'Not detected'}</div>
-          </Card>
-          <Card className="bg-slate-surface/30 border-slate-border/40">
+          </div>
+          <div className={clsx(CARD, "p-6 bg-slate-surface/30")}>
             <h4 className="text-xs text-slate-500 font-mono uppercase tracking-wider mb-2">Styling Libraries</h4>
             <div className="flex flex-wrap gap-1.5">
               {uxArchitecture.styling?.length > 0 ? (
@@ -2038,8 +2032,8 @@ export const ScannerPage: React.FC = () => {
                 ))
               ) : <span className="text-slate-500 italic text-xs">None detected</span>}
             </div>
-          </Card>
-          <Card className="bg-slate-surface/30 border-slate-border/40">
+          </div>
+          <div className={clsx(CARD, "p-6 bg-slate-surface/30")}>
             <h4 className="text-xs text-slate-500 font-mono uppercase tracking-wider mb-2">State Management</h4>
             <div className="flex flex-wrap gap-1.5">
               {uxArchitecture.state_management?.length > 0 ? (
@@ -2048,8 +2042,8 @@ export const ScannerPage: React.FC = () => {
                 ))
               ) : <span className="text-slate-500 italic text-xs">None detected</span>}
             </div>
-          </Card>
-          <Card className="bg-slate-surface/30 border-slate-border/40">
+          </div>
+          <div className={clsx(CARD, "p-6 bg-slate-surface/30")}>
             <h4 className="text-xs text-slate-500 font-mono uppercase tracking-wider mb-2">Build Tools</h4>
             <div className="flex flex-wrap gap-1.5">
               {uxArchitecture.build_tools?.length > 0 ? (
@@ -2058,7 +2052,7 @@ export const ScannerPage: React.FC = () => {
                 ))
               ) : <span className="text-slate-500 italic text-xs">None detected</span>}
             </div>
-          </Card>
+          </div>
         </div>
       )
     },
@@ -2116,7 +2110,7 @@ export const ScannerPage: React.FC = () => {
               <>
                 {/* Composite Score Hero */}
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                  <Card className={clsx('lg:col-span-1 flex flex-col items-center justify-center py-10 border', bgMap[riskProfile.composite.color] || 'bg-slate-surface/30 border-slate-border/40')}>
+                  <div className={clsx(CARD, 'lg:col-span-1 flex flex-col items-center justify-center py-10 border', bgMap[riskProfile.composite.color] || 'bg-slate-surface/30 border-white/[0.08]')}>
                     <div className="text-7xl font-black font-display tracking-tight">
                       <span className={colorMap[riskProfile.composite.color] || 'text-slate-100'}>
                         {riskProfile.composite.score.toFixed(0)}
@@ -2140,10 +2134,10 @@ export const ScannerPage: React.FC = () => {
                         <CheckCircle2 size={10} /> {riskProfile.summary.positives} passing
                       </span>
                     </div>
-                  </Card>
+                  </div>
 
                   {/* Radar Chart */}
-                  <Card className="lg:col-span-2 bg-slate-surface/30 border-slate-border/40 flex items-center justify-center">
+                  <div className={clsx(CARD, "p-6 lg:col-span-2 bg-slate-surface/30 flex items-center justify-center")}>
                     <svg viewBox="0 0 280 280" width="280" height="280">
                       {/* Grid rings */}
                       {[0.25, 0.5, 0.75, 1].map(frac => (
@@ -2175,13 +2169,13 @@ export const ScannerPage: React.FC = () => {
                         </text>
                       ))}
                     </svg>
-                  </Card>
+                  </div>
                 </div>
 
                 {/* Dimension Breakdown */}
                 <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
                   {riskProfile.dimensions.map(dim => (
-                    <Card key={dim.name} className="bg-slate-surface/30 border-slate-border/40 space-y-4">
+                    <div key={dim.name} className={clsx(CARD, "p-6 bg-slate-surface/30 space-y-4")}>
                       <div className="flex items-center justify-between">
                         <div>
                           <h4 className="font-bold text-slate-100 font-display text-sm">{dim.name}</h4>
@@ -2211,7 +2205,7 @@ export const ScannerPage: React.FC = () => {
                           <li key={i} className="text-[11px] text-slate-400 leading-snug">{f}</li>
                         ))}
                       </ul>
-                    </Card>
+                    </div>
                   ))}
                 </div>
               </>
@@ -2277,12 +2271,12 @@ export const ScannerPage: React.FC = () => {
             ))}
           </div>
 
-          <Button
+          <button
             onClick={() => { setSessionId(null); setGlobalSessionId(null); setArtifacts(null); setSelectedKeyFile(null); setCurrentTab('overview') }}
-            variant="secondary" size="sm"
-            className="border-white/[0.09] bg-slate-surface hover:bg-slate-elevated text-slate-400 hover:text-slate-200 text-[11px] font-semibold">
+            className="flex items-center gap-2 px-3 py-1.5 rounded-xl text-[11px] font-semibold border border-white/[0.08] text-slate-400 hover:text-slate-200 hover:border-white/[0.14] transition-all bg-slate-surface hover:bg-slate-elevated"
+          >
             New Scan
-          </Button>
+          </button>
         </div>
       </div>
 

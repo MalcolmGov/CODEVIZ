@@ -1,11 +1,12 @@
 import React, { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Button } from '@/components/common/Button'
-import { Card } from '@/components/common/Card'
 import { useAuthStore } from '@/store/authStore'
 import { Github, ShieldAlert, AlertCircle, Loader2 } from 'lucide-react'
 import { authService } from '@/services/auth'
 import { api } from '@/services/api'
+import clsx from 'clsx'
+
+const CARD = 'rounded-2xl border border-white/[0.08] bg-slate-surface shadow-card backdrop-blur-md'
 
 export const LoginPage: React.FC = () => {
   const navigate   = useNavigate()
@@ -82,7 +83,7 @@ export const LoginPage: React.FC = () => {
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-indigo-500/10 rounded-full blur-[120px] pointer-events-none" />
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[400px] h-[400px] bg-violet-500/10 rounded-full blur-[90px] pointer-events-none" />
 
-      <Card className="w-full max-w-md relative z-10 p-8 border-slate-border/60 bg-slate-surface/40 backdrop-blur-xl shadow-2xl">
+      <div className={clsx(CARD, "w-full max-w-md relative z-10 p-8 bg-slate-surface/40 backdrop-blur-xl")}>
         <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 rounded-t-2xl" />
 
         <div className="text-center space-y-8">
@@ -123,7 +124,7 @@ export const LoginPage: React.FC = () => {
             </p>
           </div>
         </div>
-      </Card>
+      </div>
     </div>
   )
 }

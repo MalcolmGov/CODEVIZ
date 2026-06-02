@@ -1,8 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { BugList } from '@/components/features/BugList'
 import { BugDetail } from '@/components/features/BugDetail'
-import { Card } from '@/components/common/Card'
-import { Button } from '@/components/common/Button'
 import { Loader } from '@/components/common/Loader'
 import { Issue } from '@/types'
 import { useBugsStore } from '@/store/bugsStore'
@@ -13,6 +11,8 @@ import { notificationsService } from '@/services/apis'
 import { ShieldAlert, AlertTriangle, ShieldCheck, Terminal, HelpCircle, Bell, BellOff, CheckCircle2 } from 'lucide-react'
 import { StagedPRModal } from '@/components/features/StagedPRModal'
 import clsx from 'clsx'
+
+const CARD = 'rounded-2xl border border-white/[0.08] bg-slate-surface shadow-card backdrop-blur-md'
 
 export const SecurityPage: React.FC = () => {
   const { bugs, setBugs } = useBugsStore()
@@ -215,7 +215,7 @@ export const SecurityPage: React.FC = () => {
           <p className="text-xs text-slate-500 font-mono animate-pulse">Running static threat detector...</p>
         </div>
       ) : error ? (
-        <Card className="border-rose-500/20 bg-rose-500/5 max-w-2xl">
+        <div className={clsx(CARD, "p-6 border-rose-500/20 bg-rose-500/5 max-w-2xl")}>
           <div className="flex items-start gap-3">
             <AlertTriangle className="text-rose-450 mt-0.5 text-rose-400" size={18} />
             <div>
@@ -223,7 +223,7 @@ export const SecurityPage: React.FC = () => {
               <p className="text-xs text-slate-400 mt-1">{error}</p>
             </div>
           </div>
-        </Card>
+        </div>
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
           {/* Main List */}
@@ -237,7 +237,7 @@ export const SecurityPage: React.FC = () => {
 
           {/* Metrics summary card */}
           <div className="space-y-6">
-            <Card className="border-slate-border/40 bg-slate-surface/30 backdrop-blur-md">
+            <div className={clsx(CARD, "p-6 bg-slate-surface/30")}>
               <h3 className="text-base font-bold text-slate-100 mb-4 font-display">Threat Overview</h3>
               
               <div className="space-y-4 font-mono text-xs">
@@ -285,14 +285,14 @@ export const SecurityPage: React.FC = () => {
                   </div>
                 </div>
               )}
-            </Card>
+            </div>
 
-            <Card className="border-slate-border/40 bg-slate-surface/30 backdrop-blur-md">
+            <div className={clsx(CARD, "p-6 bg-slate-surface/30")}>
               <h3 className="text-base font-bold text-slate-100 mb-3 font-display">Compliance Check</h3>
               <p className="text-xs text-slate-450 leading-relaxed text-slate-500">
                 Threat engine matches OWASP Top 10 guidelines and CWE metadata catalog profiles.
               </p>
-            </Card>
+            </div>
           </div>
         </div>
       )}

@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react'
 import { RefactoringCard } from '@/components/features/RefactoringCard'
 import { CodeDiffViewer } from '@/components/features/CodeDiffViewer'
 import { PRPreview } from '@/components/features/PRPreview'
-import { Card } from '@/components/common/Card'
 import { Loader } from '@/components/common/Loader'
 import { useRefactoringStore } from '@/store/refactoringStore'
 import { refactoringService } from '@/services/refactoring'
@@ -10,6 +9,8 @@ import { useSessionStore } from '@/store/sessionStore'
 import { Sparkles, Terminal, ShieldCheck, Hourglass, Zap, ChevronRight } from 'lucide-react'
 import { StagedPRModal } from '@/components/features/StagedPRModal'
 import clsx from 'clsx'
+
+const CARD = 'rounded-2xl border border-white/[0.08] bg-slate-surface shadow-card backdrop-blur-md'
 
 export const RefactoringPage: React.FC = () => {
   const { currentSessionId, sessionData, remediationMode, setRemediationMode } = useSessionStore()
@@ -174,7 +175,7 @@ export const RefactoringPage: React.FC = () => {
 
       {/* Metrics Row */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
-        <Card className="border-slate-border/40 bg-slate-surface/30 backdrop-blur-md">
+        <div className={clsx(CARD, "p-6 bg-slate-surface/30")}>
           <div className="flex justify-between items-center">
             <span className="text-slate-400 text-xs font-semibold uppercase tracking-wider font-display">Time Saved</span>
             <div className="p-2 rounded-lg bg-indigo-500/10 border border-indigo-500/20 text-indigo-400">
@@ -185,9 +186,9 @@ export const RefactoringPage: React.FC = () => {
             <p className="text-2xl font-black text-slate-100 font-display tracking-tight">~{estimatedHoursSaved} Hours</p>
             <p className="text-slate-500 text-[10px] mt-1 font-mono">Manual dev refactoring time saved</p>
           </div>
-        </Card>
+        </div>
         
-        <Card className="border-slate-border/40 bg-slate-surface/30 backdrop-blur-md">
+        <div className={clsx(CARD, "p-6 bg-slate-surface/30")}>
           <div className="flex justify-between items-center">
             <span className="text-slate-400 text-xs font-semibold uppercase tracking-wider font-display">Complexity Drop</span>
             <div className="p-2 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-400">
@@ -198,9 +199,9 @@ export const RefactoringPage: React.FC = () => {
             <p className="text-2xl font-black text-slate-100 font-display tracking-tight">-{totalComplexityReduction}%</p>
             <p className="text-slate-500 text-[10px] mt-1 font-mono">Cognitive complexity reduction</p>
           </div>
-        </Card>
+        </div>
 
-        <Card className="border-slate-border/40 bg-slate-surface/30 backdrop-blur-md">
+        <div className={clsx(CARD, "p-6 bg-slate-surface/30")}>
           <div className="flex justify-between items-center">
             <span className="text-slate-400 text-xs font-semibold uppercase tracking-wider font-display">Sandbox Integrity</span>
             <div className="p-2 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-400">
@@ -211,7 +212,7 @@ export const RefactoringPage: React.FC = () => {
             <p className="text-2xl font-black text-slate-100 font-display tracking-tight">A+ Rating</p>
             <p className="text-slate-500 text-[10px] mt-1 font-mono">Estimated readability score</p>
           </div>
-        </Card>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
@@ -223,13 +224,13 @@ export const RefactoringPage: React.FC = () => {
           
           <div className="space-y-3.5">
             {opportunities.length === 0 ? (
-              <Card className="bg-slate-surface/20 border-slate-border/30">
+              <div className={clsx(CARD, "bg-slate-surface/20 border-white/[0.08] p-6")}>
                 <div className="text-center py-16">
                   <ShieldCheck size={36} className="mx-auto text-slate-500 mb-3" />
                   <h3 className="text-sm font-semibold text-slate-300 font-display">No hotspots detected</h3>
                   <p className="text-xs text-slate-500 mt-1">This repository's architecture is highly optimized.</p>
                 </div>
-              </Card>
+              </div>
             ) : (
               opportunities.map((opp, idx) => (
                 <div key={opp.id} onClick={() => handleViewSuggestion(opp, idx)}>
@@ -264,20 +265,20 @@ export const RefactoringPage: React.FC = () => {
               </div>
             </div>
           ) : selectedOpportunity ? (
-            <Card className="border-slate-border/40 bg-slate-surface/30 backdrop-blur-md p-6 text-center py-12">
+            <div className={clsx(CARD, "bg-slate-surface/30 p-6 text-center py-12")}>
               <div className="w-8 h-8 rounded-full border border-slate-border/60 flex items-center justify-center mx-auto mb-3">
                 <span className="w-2 h-2 rounded-full bg-indigo-500 animate-ping" />
               </div>
               <p className="text-xs text-slate-400 font-mono animate-pulse">Requesting AI suggestion payload...</p>
-            </Card>
+            </div>
           ) : (
-            <Card className="border-slate-border/40 bg-slate-surface/30 backdrop-blur-md p-6 text-center py-16">
+            <div className={clsx(CARD, "bg-slate-surface/30 p-6 text-center py-16")}>
               <Sparkles size={24} className="mx-auto text-slate-600 mb-3" />
               <h4 className="text-sm font-semibold text-slate-300 font-display">No Hotspot Selected</h4>
               <p className="text-xs text-slate-500 mt-1 max-w-[200px] mx-auto leading-normal">
                 Click on one of the quality hotspots to view suggested changes.
               </p>
-            </Card>
+            </div>
           )}
         </div>
       </div>

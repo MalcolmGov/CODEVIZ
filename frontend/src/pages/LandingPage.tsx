@@ -1,7 +1,5 @@
 import React from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Button } from '@/components/common/Button'
-import { Card } from '@/components/common/Card'
 import {
   Shield, RefreshCw, CheckCircle2, Activity, Cpu,
   Layers, ArrowRight, FileCode2, ShieldAlert,
@@ -10,6 +8,9 @@ import {
   Network, Lock, Eye, GitPullRequest, BarChart3, Bell,
   Server, ChevronRight,
 } from 'lucide-react'
+import clsx from 'clsx'
+
+const CARD = 'rounded-2xl border border-white/[0.08] bg-slate-surface shadow-card backdrop-blur-md'
 
 const GITHUB_REPO    = 'https://github.com/MalcolmGov/CODEVIZ'
 const CONTACT_EMAIL  = 'mailto:malcolmgov24@gmail.com?subject=CodeViz%20Enterprise%20Enquiry'
@@ -134,9 +135,12 @@ export const LandingPage: React.FC = () => {
               className="text-sm font-semibold text-slate-300 hover:text-slate-100 px-4 py-2">
               Sign In
             </button>
-            <Button onClick={() => navigate('/login')} variant="primary" size="sm">
+            <button
+              onClick={() => navigate('/login')}
+              className="flex items-center gap-2 px-4 py-2 rounded-xl text-[12px] font-semibold bg-indigo-500 hover:bg-indigo-600 text-white transition-all shadow-md"
+            >
               Get Started Free
-            </Button>
+            </button>
           </div>
         </div>
       </header>
@@ -161,10 +165,12 @@ export const LandingPage: React.FC = () => {
         </p>
 
         <div className="flex flex-col sm:flex-row justify-center items-center gap-4 pt-4">
-          <Button onClick={() => navigate('/login')} variant="primary" size="lg"
-            className="w-full sm:w-auto px-8 py-3 text-base shadow-lg shadow-indigo-500/20">
+          <button
+            onClick={() => navigate('/login')}
+            className="w-full sm:w-auto flex items-center justify-center gap-2 px-8 py-3 rounded-xl text-[14px] font-bold bg-indigo-500 hover:bg-indigo-600 text-white transition-all shadow-lg shadow-indigo-500/20"
+          >
             Start Scanning Now <ArrowRight className="ml-2" size={18} />
-          </Button>
+          </button>
           <button onClick={() => scrollTo('loop')}
             className="w-full sm:w-auto px-6 py-3 text-sm font-bold border border-slate-border/50 hover:bg-slate-900/30 rounded-xl transition-all text-slate-300 hover:text-slate-100">
             See How It Works
@@ -174,7 +180,7 @@ export const LandingPage: React.FC = () => {
         {/* Terminal preview */}
         <div className="pt-10 max-w-5xl mx-auto relative group">
           <div className="absolute -inset-1 bg-gradient-to-r from-indigo-500 via-purple-500 to-emerald-500 rounded-2xl blur-xl opacity-20 group-hover:opacity-30 transition duration-1000" />
-          <Card className="bg-slate-surface/30 border-slate-border/40 backdrop-blur-md overflow-hidden relative shadow-2xl p-0.5">
+          <div className={clsx(CARD, "overflow-hidden relative shadow-2xl p-0.5 bg-slate-surface/30")}>
             <div className="bg-[#0b0f19] rounded-xl overflow-hidden border border-slate-border/30">
               <div className="flex items-center justify-between px-4 py-3 bg-[#070b13] border-b border-slate-border/30">
                 <div className="flex items-center gap-1.5">
@@ -210,7 +216,7 @@ export const LandingPage: React.FC = () => {
                 <div className="text-emerald-400 font-bold mt-2">✓ PR #247 opened · "fix: SQL injection in UserController + 4 related issues" · Awaiting review</div>
               </div>
             </div>
-          </Card>
+          </div>
         </div>
       </section>
 
@@ -245,8 +251,8 @@ export const LandingPage: React.FC = () => {
           {features.map((feat, i) => {
             const Icon = feat.icon
             return (
-              <Card key={i} onClick={() => navigate(feat.href)}
-                className="bg-slate-surface/30 border-slate-border/40 hover:border-indigo-500/30 p-6 flex flex-col justify-between hover:-translate-y-0.5 transition-all duration-300 group cursor-pointer">
+              <div key={i} onClick={() => navigate(feat.href)}
+                className={clsx(CARD, "hover:border-indigo-500/30 p-6 flex flex-col justify-between hover:-translate-y-1 bg-slate-surface/30 cursor-pointer transition-all duration-300 group")}>
                 <div className="space-y-4">
                   <div className="flex justify-between items-center">
                     <div className="p-2.5 rounded-lg bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 group-hover:bg-indigo-500/20 group-hover:text-indigo-300 transition-colors">
@@ -262,7 +268,7 @@ export const LandingPage: React.FC = () => {
                 <div className="mt-4 flex items-center gap-1 text-[11px] font-semibold text-indigo-400 opacity-0 group-hover:opacity-100 transition-opacity">
                   Try it <ArrowRight size={11} />
                 </div>
-              </Card>
+              </div>
             )
           })}
         </div>
@@ -516,7 +522,7 @@ export const LandingPage: React.FC = () => {
           </p>
         </div>
 
-        <Card className="bg-slate-surface/30 border-slate-border/40 backdrop-blur-md overflow-hidden p-0 border-l-4 border-l-indigo-500">
+        <div className={clsx(CARD, "overflow-hidden p-0 border-l-4 border-l-indigo-500 bg-slate-surface/30")}>
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse text-xs md:text-sm">
               <thead>
@@ -541,7 +547,7 @@ export const LandingPage: React.FC = () => {
               </tbody>
             </table>
           </div>
-        </Card>
+        </div>
       </section>
 
       {/* ── USE CASES ────────────────────────────────────────────────────── */}
@@ -559,7 +565,7 @@ export const LandingPage: React.FC = () => {
               { title: 'Engineering Managers', points: ['Multi-dimensional posture score', 'Performance regression tracking', 'Scheduled scan reports', 'Slack alerting on drift'] },
               { title: 'Enterprise',           points: ['On-premise LLM, zero cloud', 'Air-gap compatible', 'SSO / SAML integration', 'Custom security policies'] },
             ].map((uc, i) => (
-              <Card key={i} className="bg-slate-surface/30 border-slate-border/40 p-5 space-y-4">
+              <div key={i} className={clsx(CARD, "bg-slate-surface/30 p-5 space-y-4")}>
                 <h3 className="text-sm font-bold text-indigo-400 font-display uppercase tracking-wider">{uc.title}</h3>
                 <ul className="space-y-2 text-xs text-slate-400 font-medium">
                   {uc.points.map((p, idx) => (
@@ -569,7 +575,7 @@ export const LandingPage: React.FC = () => {
                     </li>
                   ))}
                 </ul>
-              </Card>
+              </div>
             ))}
           </div>
         </div>
@@ -588,7 +594,7 @@ export const LandingPage: React.FC = () => {
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
           {pricing.map((plan, i) => (
-            <Card key={i} className={`p-6 flex flex-col justify-between space-y-5 relative overflow-hidden bg-slate-surface/30 border-slate-border/40 ${plan.popular ? 'border-indigo-500/60 ring-2 ring-indigo-500/10' : ''}`}>
+            <div key={i} className={clsx(CARD, "p-6 flex flex-col justify-between space-y-5 relative overflow-hidden bg-slate-surface/30", plan.popular ? 'border-indigo-500/60 ring-2 ring-indigo-500/10' : '')}>
               {plan.popular && (
                 <div className="absolute top-0 right-0 bg-indigo-500 text-white font-bold text-[10px] tracking-wide uppercase px-3 py-1 rounded-bl-lg">
                   Most Popular
@@ -618,11 +624,19 @@ export const LandingPage: React.FC = () => {
                   Contact Sales
                 </a>
               ) : (
-                <Button onClick={() => navigate('/login')} variant={plan.popular ? 'primary' : 'secondary'} size="md" className="w-full justify-center">
+                <button
+                  onClick={() => navigate('/login')}
+                  className={clsx(
+                    "flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-[12px] font-semibold w-full transition-all disabled:opacity-40",
+                    plan.popular
+                      ? "bg-indigo-500 hover:bg-indigo-600 text-white"
+                      : "border border-white/[0.08] text-slate-400 hover:text-slate-200 hover:border-white/[0.14]"
+                  )}
+                >
                   {plan.btnText}
-                </Button>
+                </button>
               )}
-            </Card>
+            </div>
           ))}
         </div>
       </section>
@@ -630,7 +644,7 @@ export const LandingPage: React.FC = () => {
       {/* ── CTA BANNER ───────────────────────────────────────────────────── */}
       <section className="py-20 px-6 max-w-5xl mx-auto text-center relative group">
         <div className="absolute -inset-1 bg-gradient-to-r from-indigo-500 via-purple-500 to-emerald-500 rounded-2xl blur-2xl opacity-10 group-hover:opacity-20 transition duration-1000" />
-        <Card className="bg-slate-surface/30 border-slate-border/40 backdrop-blur-xl p-10 md:p-16 space-y-6 relative z-10 overflow-hidden">
+        <div className={clsx(CARD, "bg-slate-surface/30 backdrop-blur-xl p-10 md:p-16 space-y-6 relative z-10 overflow-hidden")}>
           <h2 className="text-3xl md:text-5xl font-black font-display tracking-tight text-slate-100 max-w-2xl mx-auto">
             Ready to Automate Your Security & Reviews?
           </h2>
@@ -638,16 +652,18 @@ export const LandingPage: React.FC = () => {
             13 analysis dimensions. On-premise AI. Automated PRs. Threat actor simulation. All in one platform.
           </p>
           <div className="pt-4 flex flex-col sm:flex-row justify-center items-center gap-3">
-            <Button onClick={() => navigate('/login')} variant="primary" size="lg"
-              className="w-full sm:w-auto px-8 shadow-xl shadow-indigo-500/20">
+            <button
+              onClick={() => navigate('/login')}
+              className="w-full sm:w-auto flex items-center justify-center gap-2 px-8 py-3 rounded-xl text-[14px] font-bold bg-indigo-500 hover:bg-indigo-600 text-white transition-all shadow-xl shadow-indigo-500/20"
+            >
               Get Started with GitHub <ArrowUpRight className="ml-1" size={16} />
-            </Button>
+            </button>
             <a href={GITHUB_REPO} target="_blank" rel="noopener noreferrer"
               className="w-full sm:w-auto flex items-center justify-center gap-2 px-6 py-3 text-xs font-bold border border-slate-border/50 hover:bg-slate-900/30 rounded-xl transition-all text-slate-300 hover:text-slate-100 font-mono">
               <Github size={13} /> View on GitHub
             </a>
           </div>
-        </Card>
+        </div>
       </section>
 
       {/* ── FOOTER ───────────────────────────────────────────────────────── */}
