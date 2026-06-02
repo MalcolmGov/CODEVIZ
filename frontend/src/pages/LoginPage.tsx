@@ -88,9 +88,11 @@ export const LoginPage: React.FC = () => {
 
         <div className="text-center space-y-8">
           <div className="space-y-3">
-            <div className="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-gradient-to-tr from-indigo-500 to-violet-600 text-white shadow-xl shadow-indigo-500/20 mb-2">
-              <ShieldAlert size={24} />
-            </div>
+            <img 
+              src="/images/logo.png" 
+              alt="CodeViz 3D Logo" 
+              className="inline-flex w-12 h-12 rounded-xl object-contain shadow-xl shadow-indigo-500/20 mb-2"
+            />
             <h1 className="text-4xl font-black tracking-tight text-slate-100 font-display">
               Code<span className="text-indigo-400 font-medium">Viz</span>
             </h1>

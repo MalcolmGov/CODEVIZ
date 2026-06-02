@@ -124,9 +124,11 @@ export const LandingPage: React.FC = () => {
       <header className="sticky top-0 bg-[#030712]/80 backdrop-blur-md border-b border-slate-border/20 z-50 px-6 py-4">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-indigo-500 to-violet-600 flex items-center justify-center text-white shadow-lg shadow-indigo-500/15">
-              <Shield size={16} />
-            </div>
+            <img 
+              src="/images/logo.png" 
+              alt="CodeViz 3D Logo" 
+              className="w-8 h-8 rounded-lg object-contain"
+            />
             <span className="text-xl font-extrabold tracking-tight text-slate-100 font-display">
               Code<span className="text-indigo-400 font-medium">Viz</span>
             </span>
@@ -759,9 +761,11 @@ export const LandingPage: React.FC = () => {
         <div className="max-w-7xl mx-auto grid grid-cols-1 sm:grid-cols-3 gap-8 mb-10 text-left">
           <div className="space-y-3">
             <div className="flex items-center gap-2">
-              <div className="w-6 h-6 rounded-md bg-indigo-500/20 border border-indigo-500/30 flex items-center justify-center text-indigo-400">
-                <Shield size={12} />
-              </div>
+              <img 
+                src="/images/logo.png" 
+                alt="CodeViz 3D Logo" 
+                className="w-6 h-6 rounded-md object-contain"
+              />
               <span className="font-extrabold tracking-tight text-slate-300">Code<span className="text-indigo-400 font-medium">Viz</span></span>
             </div>
             <p className="text-slate-400 leading-relaxed font-medium">AI-powered code analysis, security scanning, and automated remediation. On-premise. No cloud dependency.</p>

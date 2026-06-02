@@ -122,9 +122,11 @@ export const Header: React.FC<{ onMenuClick: () => void }> = ({ onMenuClick }) =
           </button>
           
           <Link to="/" className="flex items-center gap-2.5 group">
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-indigo-500 to-violet-600 flex items-center justify-center text-white shadow-lg shadow-indigo-500/15 group-hover:scale-105 transition-transform duration-200">
-              <Shield size={16} className="text-white" />
-            </div>
+            <img 
+              src="/images/logo.png" 
+              alt="CodeViz 3D Logo" 
+              className="w-8 h-8 rounded-lg object-contain group-hover:scale-105 transition-transform duration-200"
+            />
             <span className="text-xl font-extrabold tracking-tight text-slate-100 font-display">
               Code<span className="text-indigo-400 font-medium">Viz</span>
             </span>
