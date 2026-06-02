@@ -7,21 +7,37 @@ import { Loader } from '@/components/common/Loader'
 import { Issue } from '@/types'
 import { useBugsStore } from '@/store/bugsStore'
 import { useSessionStore } from '@/store/sessionStore'
+import { useSettingsStore } from '@/store/settingsStore'
 import { securityService } from '@/services/security'
-import { ShieldAlert, AlertTriangle, ShieldCheck, Terminal, HelpCircle } from 'lucide-react'
+import { notificationsService } from '@/services/apis'
+import { ShieldAlert, AlertTriangle, ShieldCheck, Terminal, HelpCircle, Bell, BellOff, CheckCircle2 } from 'lucide-react'
 import { StagedPRModal } from '@/components/features/StagedPRModal'
 import clsx from 'clsx'
 
 export const SecurityPage: React.FC = () => {
   const { bugs, setBugs } = useBugsStore()
   const { currentSessionId, sessionData, remediationMode, setRemediationMode } = useSessionStore()
+  const slackSettings = useSettingsStore(s => ({ enabled: s.enableSlackNotifications, webhook: s.slackWebhook }))
   const [selectedBug, setSelectedBug] = useState<Issue | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [slackSending, setSlackSending] = useState(false)
+  const [slackSent, setSlackSent]       = useState(false)
 
   const [stagedData, setStagedData] = useState<any | null>(null)
   const [isStaging, setIsStaging] = useState(false)
   const [showStagedModal, setShowStagedModal] = useState(false)
+
+  const sendSlackAlert = async () => {
+    if (!currentSessionId || !slackSettings.webhook) return
+    setSlackSending(true)
+    try {
+      await notificationsService.slackAlert(currentSessionId, slackSettings.webhook)
+      setSlackSent(true)
+      setTimeout(() => setSlackSent(false), 4000)
+    } catch { /* non-critical */ }
+    finally { setSlackSending(false) }
+  }
 
   const handleStagePR = async (bug: Issue) => {
     if (!currentSessionId || !bug) return
@@ -142,6 +158,27 @@ export const SecurityPage: React.FC = () => {
             Automated threat intelligence for sandbox path <span className="text-indigo-400 font-mono font-semibold">{sessionData?.repo_path || '/app/src'}</span>
           </p>
         </div>
+
+        {/* Slack Alert Button */}
+        {slackSettings.enabled && slackSettings.webhook && currentSessionId && bugs.length > 0 && (
+          <button
+            onClick={sendSlackAlert}
+            disabled={slackSending || slackSent}
+            className={clsx(
+              'flex items-center gap-2 px-3 py-2 rounded-xl border text-[12px] font-semibold transition-all shrink-0',
+              slackSent
+                ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-400'
+                : 'border-white/[0.08] bg-slate-surface text-slate-400 hover:text-slate-200 hover:border-white/[0.14] disabled:opacity-50'
+            )}
+          >
+            {slackSent
+              ? <><CheckCircle2 size={13} /> Sent to Slack</>
+              : slackSending
+                ? <><Bell size={13} className="animate-pulse" /> Sending…</>
+                : <><Bell size={13} /> Alert Slack</>
+            }
+          </button>
+        )}
 
         {/* Mode Toggle Switch */}
         <div className="flex items-center gap-2 p-1 bg-slate-950/60 border border-slate-border/30 rounded-xl shrink-0 font-mono text-[10.5px]">

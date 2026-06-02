@@ -6,6 +6,8 @@ import { repositoriesService, GitHubRepository } from '@/services/repositories'
 import { reportsService, Schedule } from '@/services/reports'
 import { authService } from '@/services/auth'
 import { historyService } from '@/services/history'
+import { notificationsService } from '@/services/apis'
+import { useSettingsStore } from '@/store/settingsStore'
 import {
   Search, CheckSquare, Square, Clock, Zap, Calendar,
   Mail, Trash2, Play, Plus, ChevronDown, Globe, Lock,
@@ -53,6 +55,10 @@ function StatusPill({ status }: { status: string | null }) {
 
 export const ScanForm: React.FC<{ onScanComplete: (sessionId: string) => void }> = ({ onScanComplete }) => {
   const { createSession } = useSessionStore()
+  const slackSettings = useSettingsStore(s => ({
+    enabled: s.enableSlackNotifications,
+    webhook: s.slackWebhook,
+  }))
 
   // Shared state
   const REPO_CACHE_KEY = 'codeviz_cached_repos'
@@ -173,10 +179,17 @@ export const ScanForm: React.FC<{ onScanComplete: (sessionId: string) => void }>
       const path = (repo as any).local_path || repo.clone_url
       const sessionId = await createSession(path)
       await chatService.scan(sessionId)
-      // Persist a snapshot to history (fire-and-forget — don't block the UI)
+      // Persist scan history (fire-and-forget)
       historyService.record(sessionId, {
         repo_full_name: repo.full_name,
-      }).catch(() => { /* history save failure is non-critical */ })
+      }).catch(() => {})
+
+      // Auto Slack alert if enabled and webhook is configured
+      if (slackSettings.enabled && slackSettings.webhook) {
+        notificationsService.slackAlert(sessionId, slackSettings.webhook)
+          .catch(() => {}) // non-critical
+      }
+
       onScanComplete(sessionId)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Scan failed')
