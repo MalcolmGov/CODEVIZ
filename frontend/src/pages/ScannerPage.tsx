@@ -978,7 +978,7 @@ export const ScannerPage: React.FC = () => {
                   <CheckCircle2 size={15} className="text-emerald-400" />
                 </div>
                 <div>
-                  <p className="text-[9px] font-bold uppercase tracking-[0.14em] text-slate-600">Scan Complete</p>
+                  <p className="text-[9px] font-bold uppercase tracking-[0.14em] text-slate-400">Scan Complete</p>
                   <p className="text-slate-200 font-semibold text-[13px] font-tight mt-0.5">
                     {artifacts?.repo_name || sessionId?.slice(0, 8) || 'Repository'}
                   </p>
@@ -992,7 +992,7 @@ export const ScannerPage: React.FC = () => {
                   { label: `${dependencies.length} deps`, icon: Package },
                 ].map((s, i) => (
                   <div key={i} className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-slate-elevated border border-white/[0.06] text-[11px] text-slate-500 font-mono">
-                    <s.icon size={10} className="text-slate-700" />
+                    <s.icon size={10} className="text-slate-400" />
                     {s.label}
                   </div>
                 ))}
@@ -1007,11 +1007,11 @@ export const ScannerPage: React.FC = () => {
             <div className={`col-span-12 lg:col-span-4 ${CARD} p-6 flex flex-col`}>
               <div className="flex items-start justify-between mb-4">
                 <div>
-                  <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-slate-600">Security Posture</p>
+                  <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-slate-400">Security Posture</p>
                   <p className="text-slate-300 text-[13px] font-medium mt-0.5">Overall risk score</p>
                 </div>
                 <div className="p-2 rounded-xl bg-slate-elevated border border-white/[0.06]">
-                  <Shield size={15} className="text-slate-500" />
+                  <Shield size={15} className="text-slate-400" />
                 </div>
               </div>
               <div className="flex justify-center py-2">
@@ -1045,7 +1045,7 @@ export const ScannerPage: React.FC = () => {
                   )
                 })() : (
                   <div className="w-[156px] h-[156px] rounded-full border-[12px] border-white/[0.04] flex items-center justify-center">
-                    <p className="text-slate-700 text-[10px] font-mono text-center">{riskLoading ? 'Computing…' : 'No data'}</p>
+                    <p className="text-slate-400 text-[10px] font-mono text-center">{riskLoading ? 'Computing…' : 'No data'}</p>
                   </div>
                 )}
               </div>
@@ -1058,7 +1058,7 @@ export const ScannerPage: React.FC = () => {
                   ].map((s, i) => (
                     <div key={i} className={i === 1 ? 'border-x border-white/[0.05]' : ''}>
                       <p className="text-[22px] font-black font-tight" style={{ color: s.col }}>{s.val}</p>
-                      <p className="text-[9px] uppercase tracking-[0.1em] text-slate-700 mt-0.5">{s.label}</p>
+                      <p className="text-[9px] uppercase tracking-[0.1em] text-slate-400 mt-0.5">{s.label}</p>
                     </div>
                   ))}
                 </div>
@@ -1079,7 +1079,7 @@ export const ScannerPage: React.FC = () => {
                     style={{ backgroundColor: SEV_HEX[s.key], opacity: s.count > 0 ? 1 : 0.2 }} />
                   <div className="pl-3">
                     <div className="flex items-center justify-between mb-4">
-                      <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-slate-600">{s.label}</p>
+                      <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-slate-400">{s.label}</p>
                       <div className="p-1.5 rounded-lg border"
                         style={{ backgroundColor: `${SEV_HEX[s.key]}14`, borderColor: `${SEV_HEX[s.key]}28` }}>
                         <s.icon size={13} style={{ color: SEV_HEX[s.key], opacity: s.count > 0 ? 1 : 0.3 }} />
@@ -1088,7 +1088,7 @@ export const ScannerPage: React.FC = () => {
                     <p className="text-[50px] font-black font-tight leading-none tracking-tight text-white">
                       {securityLoading ? '—' : s.count}
                     </p>
-                    <p className="text-[11px] text-slate-600 mt-2">{s.desc}</p>
+                    <p className="text-[11px] text-slate-300 mt-2">{s.desc}</p>
                     {totalBugs > 0 && (
                       <div className="mt-3 w-full h-[2px] rounded-full bg-white/[0.05] overflow-hidden">
                         <div className="h-full rounded-full"
@@ -1110,7 +1110,7 @@ export const ScannerPage: React.FC = () => {
                     <Package size={15} className="text-amber-400" />
                   </div>
                   <div>
-                    <p className="text-[9px] font-bold uppercase tracking-[0.13em] text-slate-600">Supply Chain</p>
+                    <p className="text-[9px] font-bold uppercase tracking-[0.13em] text-slate-400">Supply Chain</p>
                     <p className="text-slate-300 text-[13px] font-semibold font-tight">
                       {cveResults.length} CVEs in {cveAffected} packages
                     </p>
@@ -1145,21 +1145,21 @@ export const ScannerPage: React.FC = () => {
             <div className={`col-span-12 lg:col-span-7 ${CARD} p-6`}>
               <div className="flex items-start justify-between mb-5">
                 <div>
-                  <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-slate-600 mb-1">Findings</p>
+                  <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-slate-400 mb-1">Findings</p>
                   <h2 className="text-[15px] font-semibold text-slate-200 font-tight">Top Security Issues</h2>
                 </div>
-                {totalBugs > 0 && <span className="text-[10px] text-slate-700 font-mono mt-1">{totalBugs} total</span>}
+                {totalBugs > 0 && <span className="text-[10px] text-slate-400 font-mono mt-1">{totalBugs} total</span>}
               </div>
               {securityLoading ? (
-                <div className="flex items-center gap-2.5 py-6 text-slate-600 text-[12px] font-mono">
+                <div className="flex items-center gap-2.5 py-6 text-slate-400 text-[12px] font-mono">
                   <RefreshCw size={13} className="animate-spin text-indigo-400/60" />
                   Scanning for vulnerabilities…
                 </div>
               ) : bugs.length === 0 ? (
                 <div className="py-8 text-center border border-dashed border-white/[0.06] rounded-xl">
-                  <ShieldCheck size={20} className="text-slate-700 mx-auto mb-2" />
-                  <p className="text-slate-600 text-[12px]">No findings detected</p>
-                  <p className="text-slate-700 text-[11px] mt-1">Your codebase appears clean or scan is still running.</p>
+                  <ShieldCheck size={20} className="text-slate-500 mx-auto mb-2" />
+                  <p className="text-slate-400 text-[12px]">No findings detected</p>
+                  <p className="text-slate-400 text-[11px] mt-1">Your codebase appears clean or scan is still running.</p>
                 </div>
               ) : (
                 <div>
@@ -1176,10 +1176,10 @@ export const ScannerPage: React.FC = () => {
                           </span>
                           <span className="text-[12px] font-semibold text-slate-300 font-tight truncate">{bug.type || 'Security Issue'}</span>
                         </div>
-                        <p className="text-[11px] text-slate-500 leading-snug truncate">{bug.description || 'Vulnerability detected'}</p>
-                        {bug.file && <p className="text-[10px] text-slate-700 font-mono mt-0.5 truncate">{bug.file}{bug.line ? `:${bug.line}` : ''}</p>}
+                        <p className="text-[11px] text-slate-400 leading-snug truncate">{bug.description || 'Vulnerability detected'}</p>
+                        {bug.file && <p className="text-[10px] text-slate-400 font-mono mt-0.5 truncate">{bug.file}{bug.line ? `:${bug.line}` : ''}</p>}
                       </div>
-                      <ChevronRight size={11} className="text-slate-800 group-hover:text-slate-600 shrink-0 mt-1 transition-colors" />
+                      <ChevronRight size={11} className="text-slate-500 group-hover:text-slate-300 shrink-0 mt-1 transition-colors" />
                     </div>
                   ))}
                   {bugs.length > 7 && (
@@ -1194,7 +1194,7 @@ export const ScannerPage: React.FC = () => {
             {/* AI Remediation Recommendations */}
             <div className="col-span-12 lg:col-span-5 flex flex-col gap-3">
               <div>
-                <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-slate-600 mb-1">AI-Powered</p>
+                <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-slate-400 mb-1">AI-Powered</p>
                 <h2 className="text-[15px] font-semibold text-slate-200 font-tight mb-3">Remediation Recommendations</h2>
               </div>
               {aiRecs.map((rec: any, i: number) => (
@@ -1216,10 +1216,10 @@ export const ScannerPage: React.FC = () => {
                     <h3 className="text-[13px] font-semibold text-slate-300 font-tight group-hover:text-slate-100 transition-colors leading-snug">
                       {rec.title}
                     </h3>
-                    <p className="text-[11px] text-slate-500 leading-relaxed line-clamp-2">{rec.desc}</p>
+                    <p className="text-[11px] text-slate-300 leading-relaxed line-clamp-2">{rec.desc}</p>
                     <div className="flex items-center justify-between pt-2 border-t border-white/[0.04]">
-                      <span className="text-[9px] text-slate-700 font-mono truncate max-w-[55%]">{rec.file || '—'}</span>
-                      <span className="text-[9px] text-slate-600 font-mono">{rec.effort}</span>
+                      <span className="text-[9px] text-slate-400 font-mono truncate max-w-[55%]">{rec.file || '—'}</span>
+                      <span className="text-[9px] text-slate-400 font-mono">{rec.effort}</span>
                     </div>
                   </div>
                 </div>
@@ -1234,11 +1234,11 @@ export const ScannerPage: React.FC = () => {
             <div className={`col-span-12 lg:col-span-6 ${CARD} p-6`}>
               <div className="flex items-start justify-between mb-5">
                 <div>
-                  <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-slate-600 mb-1">Endpoints</p>
+                  <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-slate-400 mb-1">Endpoints</p>
                   <h2 className="text-[15px] font-semibold text-slate-200 font-tight">API Security Overview</h2>
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="text-[11px] text-slate-700 font-mono">{apis.length} routes</span>
+                  <span className="text-[11px] text-slate-400 font-mono">{apis.length} routes</span>
                   {customBaseUrl && (
                     <span className="text-[9px] font-mono text-indigo-400/50 bg-indigo-500/[0.07] px-2 py-0.5 rounded border border-indigo-500/15 truncate max-w-[110px]">
                       {customBaseUrl.replace(/https?:\/\//, '')}
@@ -1247,7 +1247,7 @@ export const ScannerPage: React.FC = () => {
                 </div>
               </div>
               {apis.length === 0 ? (
-                <div className="py-6 text-center"><Server size={18} className="text-slate-800 mx-auto mb-2" /><p className="text-slate-700 text-[11px]">No endpoints detected</p></div>
+                <div className="py-6 text-center"><Server size={18} className="text-slate-500 mx-auto mb-2" /><p className="text-slate-400 text-[11px]">No endpoints detected</p></div>
               ) : (
                 <div className="space-y-0.5 max-h-[260px] overflow-y-auto scrollbar-none">
                   {apis.slice(0, 14).map((apiItem: any, idx: number) => {
@@ -1268,7 +1268,7 @@ export const ScannerPage: React.FC = () => {
                             health ? 'bg-rose-400' : 'bg-slate-800'
                           )} />
                           <button onClick={(e) => { e.stopPropagation(); handleTestEndpoint(apiItem.path, method, apiItem.base_url) }}
-                            className="text-[9px] text-slate-700 hover:text-indigo-400 font-mono transition-colors">
+                            className="text-[9px] text-slate-400 hover:text-indigo-300 font-mono transition-colors">
                             {health?.loading ? '…' : 'test'}
                           </button>
                         </div>
@@ -1292,13 +1292,13 @@ export const ScannerPage: React.FC = () => {
             <div className={`col-span-12 lg:col-span-6 ${CARD} p-6`}>
               <div className="flex items-start justify-between mb-5">
                 <div>
-                  <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-slate-600 mb-1">Key Files</p>
+                  <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-slate-400 mb-1">Key Files</p>
                   <h2 className="text-[15px] font-semibold text-slate-200 font-tight">Files Requiring Attention</h2>
                 </div>
-                <span className="text-[11px] text-slate-700 font-mono mt-1">{keyFiles.length} flagged</span>
+                <span className="text-[11px] text-slate-400 font-mono mt-1">{keyFiles.length} flagged</span>
               </div>
               {keyFiles.length === 0 ? (
-                <div className="py-6 text-center"><FileCode2 size={18} className="text-slate-800 mx-auto mb-2" /><p className="text-slate-700 text-[11px]">No key files flagged</p></div>
+                <div className="py-6 text-center"><FileCode2 size={18} className="text-slate-500 mx-auto mb-2" /><p className="text-slate-400 text-[11px]">No key files flagged</p></div>
               ) : (
                 <div className="space-y-0.5 max-h-[260px] overflow-y-auto scrollbar-none">
                   {keyFiles.slice(0, 14).map((file: any, i: number) => {
@@ -1316,7 +1316,7 @@ export const ScannerPage: React.FC = () => {
                               {fileBugs.length} issue{fileBugs.length > 1 ? 's' : ''}
                             </span>
                           )}
-                          <span className="text-[9px] text-slate-700 font-mono">{file.lines || '—'}L</span>
+                          <span className="text-[9px] text-slate-400 font-mono">{file.lines || '—'}L</span>
                         </div>
                       </div>
                     )
@@ -1330,22 +1330,22 @@ export const ScannerPage: React.FC = () => {
           <div className={`${CARD} p-6`}>
             <div className="flex items-center justify-between mb-4">
               <div>
-                <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-slate-600 mb-1">Code Statistics</p>
+                <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-slate-400 mb-1">Code Statistics</p>
                 <h2 className="text-[15px] font-semibold text-slate-200 font-tight">Technical Scan Summary</h2>
               </div>
-              <span className="text-[10px] text-slate-700 font-mono">Click to explore</span>
+              <span className="text-[10px] text-slate-400 font-mono">Click to explore</span>
             </div>
             <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
               {metricCards.map(card => (
                 <div key={card.id} onClick={() => setCurrentTab(card.id)}
                   className="flex items-center justify-between p-3 rounded-xl border border-white/[0.05] bg-slate-elevated hover:border-white/[0.1] hover:bg-white/[0.03] transition-all cursor-pointer group">
                   <div>
-                    <p className="text-[9px] font-bold uppercase tracking-[0.1em] text-slate-700 mb-1">{card.label}</p>
+                    <p className="text-[9px] font-bold uppercase tracking-[0.1em] text-slate-400 mb-1">{card.label}</p>
                     <p className="text-[22px] font-black text-slate-400 font-tight leading-none group-hover:text-slate-200 transition-colors">
                       {card.count.toLocaleString()}
                     </p>
                   </div>
-                  <card.icon size={14} className="text-slate-800 group-hover:text-slate-600 transition-colors shrink-0" />
+                  <card.icon size={14} className="text-slate-500 group-hover:text-slate-300 transition-colors shrink-0" />
                 </div>
               ))}
             </div>
