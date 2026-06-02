@@ -1,5 +1,6 @@
 import { create } from 'zustand'
 import { AuthState, User } from '@/types'
+import { useSessionStore } from '@/store/sessionStore'
 
 export const useAuthStore = create<AuthState>((set) => ({
   user: null,
@@ -14,6 +15,8 @@ export const useAuthStore = create<AuthState>((set) => ({
       isAuthenticated: true,
       githubToken: token,
     })
+    // Always start with a clean slate — no stale session from a previous user/repo
+    useSessionStore.getState().clearSession()
   },
 
   logout: () => {
@@ -24,6 +27,8 @@ export const useAuthStore = create<AuthState>((set) => ({
       isAuthenticated: false,
       githubToken: undefined,
     })
+    // Clear the active scan session so a fresh login always starts clean
+    useSessionStore.getState().clearSession()
   },
 
   setUser: (user: User) => {
