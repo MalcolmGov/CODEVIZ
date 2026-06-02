@@ -12,4 +12,18 @@ export const securityService = {
 
   getReport: (sessionId: string) =>
     api.get(`/security/report/${sessionId}`),
+
+  applyFix: (sessionId: string, bugId: string, file: string, line: number, code: string, fix: string, type: string) =>
+    api.post('/security/apply-fix', {
+      session_id: sessionId,
+      bug_id: bugId,
+      file,
+      line,
+      code,
+      fix,
+      type
+    }),
+
+  autoStage: (sessionId: string, bugs: any[]) =>
+    api.post('/security/auto-stage', { session_id: sessionId, bugs }),
 }

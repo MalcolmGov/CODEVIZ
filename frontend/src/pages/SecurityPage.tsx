@@ -3,18 +3,53 @@ import { BugList } from '@/components/features/BugList'
 import { BugDetail } from '@/components/features/BugDetail'
 import { Card } from '@/components/common/Card'
 import { Button } from '@/components/common/Button'
+import { Loader } from '@/components/common/Loader'
 import { Issue } from '@/types'
 import { useBugsStore } from '@/store/bugsStore'
 import { useSessionStore } from '@/store/sessionStore'
 import { securityService } from '@/services/security'
 import { ShieldAlert, AlertTriangle, ShieldCheck, Terminal, HelpCircle } from 'lucide-react'
+import { StagedPRModal } from '@/components/features/StagedPRModal'
+import clsx from 'clsx'
 
 export const SecurityPage: React.FC = () => {
   const { bugs, setBugs } = useBugsStore()
-  const { currentSessionId, sessionData } = useSessionStore()
+  const { currentSessionId, sessionData, remediationMode, setRemediationMode } = useSessionStore()
   const [selectedBug, setSelectedBug] = useState<Issue | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+
+  const [stagedData, setStagedData] = useState<any | null>(null)
+  const [isStaging, setIsStaging] = useState(false)
+  const [showStagedModal, setShowStagedModal] = useState(false)
+
+  const handleStagePR = async (bug: Issue) => {
+    if (!currentSessionId || !bug) return
+    setIsStaging(true)
+    try {
+      const response = await securityService.applyFix(
+        currentSessionId,
+        bug.bug_id || 'BUG-0001',
+        bug.file || '',
+        bug.line || 1,
+        bug.code || '',
+        bug.fix || '',
+        bug.type || 'Security Fix'
+      )
+      
+      if (response.data?.status === 'success') {
+        setStagedData(response.data.data)
+        setShowStagedModal(true)
+      } else {
+        alert(response.data?.message || 'Failed to stage PR')
+      }
+    } catch (err) {
+      console.error('Failed to stage security PR:', err)
+      alert('Error communicating with backend threat remediation engine')
+    } finally {
+      setIsStaging(false)
+    }
+  }
 
   useEffect(() => {
     const triggerScan = async () => {
@@ -23,7 +58,24 @@ export const SecurityPage: React.FC = () => {
       setError(null)
       try {
         const response = await securityService.scan(currentSessionId)
-        setBugs(response.data.data.bugs || [])
+        const scannedBugs = response.data.data.bugs || []
+        setBugs(scannedBugs)
+
+        // Bulk auto staging in autonomous mode
+        if (remediationMode === 'autonomous' && scannedBugs.length > 0) {
+          setIsStaging(true)
+          try {
+            const autoRes = await securityService.autoStage(currentSessionId, scannedBugs)
+            if (autoRes.data?.status === 'success' && autoRes.data.data.applied_count > 0) {
+              setStagedData(autoRes.data.data)
+              setShowStagedModal(true)
+            }
+          } catch (e) {
+            console.error('Auto staging failed:', e)
+          } finally {
+            setIsStaging(false)
+          }
+        }
       } catch (err) {
         console.error('Vulnerability scan failed:', err)
         setError('Static analysis engine failed to scan this session ID.')
@@ -34,7 +86,28 @@ export const SecurityPage: React.FC = () => {
     
     // Always trigger scan on mount if session is active
     triggerScan()
-  }, [currentSessionId, setBugs])
+  }, [currentSessionId, setBugs, remediationMode])
+
+  // Auto-stage all vulnerabilities when mode changes to autonomous
+  useEffect(() => {
+    if (remediationMode === 'autonomous' && bugs.length > 0 && !showStagedModal && !isStaging) {
+      const runAutoStage = async () => {
+        setIsStaging(true)
+        try {
+          const autoRes = await securityService.autoStage(currentSessionId!, bugs)
+          if (autoRes.data?.status === 'success' && autoRes.data.data.applied_count > 0) {
+            setStagedData(autoRes.data.data)
+            setShowStagedModal(true)
+          }
+        } catch (e) {
+          console.error('Auto staging failed:', e)
+        } finally {
+          setIsStaging(false)
+        }
+      }
+      runAutoStage()
+    }
+  }, [remediationMode, bugs, currentSessionId])
 
   if (!currentSessionId) {
     return (
@@ -57,14 +130,46 @@ export const SecurityPage: React.FC = () => {
   const medium = bugs.filter((b) => b.severity?.toLowerCase().includes('medium')).length
   const low = bugs.filter((b) => b.severity?.toLowerCase().includes('low') || (!b.severity)).length
 
+  if (isStaging) return <Loader text="Fully Autonomous Agent staging all high-confidence security fixes..." />
+
   return (
     <div className="space-y-8 select-none font-sans">
       {/* Header */}
-      <div>
-        <h1 className="text-3xl font-black text-slate-100 font-display tracking-tight">Security Analysis</h1>
-        <p className="text-slate-400 text-sm mt-1.5 font-medium">
-          Automated threat intelligence for sandbox path <span className="text-indigo-400 font-mono font-semibold">{sessionData?.repo_path || '/app/src'}</span>
-        </p>
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div>
+          <h1 className="text-3xl font-black text-slate-100 font-display tracking-tight">Security Analysis</h1>
+          <p className="text-slate-400 text-sm mt-1.5 font-medium">
+            Automated threat intelligence for sandbox path <span className="text-indigo-400 font-mono font-semibold">{sessionData?.repo_path || '/app/src'}</span>
+          </p>
+        </div>
+
+        {/* Mode Toggle Switch */}
+        <div className="flex items-center gap-2 p-1 bg-slate-950/60 border border-slate-border/30 rounded-xl shrink-0 font-mono text-[10.5px]">
+          <button
+            type="button"
+            onClick={() => setRemediationMode('hitl')}
+            className={clsx(
+              "px-3 py-1.5 rounded-lg transition-all font-semibold flex items-center gap-1.5",
+              remediationMode === 'hitl'
+                ? "bg-indigo-500/10 border border-indigo-500/20 text-indigo-400"
+                : "border border-transparent text-slate-400 hover:text-slate-200"
+            )}
+          >
+            👥 HITL Mode
+          </button>
+          <button
+            type="button"
+            onClick={() => setRemediationMode('autonomous')}
+            className={clsx(
+              "px-3 py-1.5 rounded-lg transition-all font-semibold flex items-center gap-1.5",
+              remediationMode === 'autonomous'
+                ? "bg-indigo-500/10 border border-indigo-500/20 text-indigo-400"
+                : "border border-transparent text-slate-400 hover:text-slate-200"
+            )}
+          >
+            🤖 Autonomous
+          </button>
+        </div>
       </div>
 
       {loading ? (
@@ -155,7 +260,19 @@ export const SecurityPage: React.FC = () => {
         </div>
       )}
 
-      <BugDetail bug={selectedBug} isOpen={!!selectedBug} onClose={() => setSelectedBug(null)} />
+      <BugDetail 
+        bug={selectedBug} 
+        isOpen={!!selectedBug} 
+        onClose={() => setSelectedBug(null)} 
+        onStagePR={handleStagePR}
+        isStaging={isStaging}
+      />
+
+      <StagedPRModal 
+        isOpen={showStagedModal} 
+        onClose={() => setShowStagedModal(false)} 
+        data={stagedData} 
+      />
     </div>
   )
 }

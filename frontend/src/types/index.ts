@@ -123,8 +123,10 @@ export interface SessionState {
     repo_path?: string
     scan_status?: Record<string, any>
   } | null
+  remediationMode: 'hitl' | 'autonomous'
   createSession: (path: string) => Promise<string>
-  setSessionId: (id: string) => void
+  setSessionId: (id: string | null) => void
+  setRemediationMode: (mode: 'hitl' | 'autonomous') => void
   clearSession: () => void
 }
 
