@@ -26,7 +26,7 @@ const SEV: Record<string, string> = {
 // ─── Card class helpers ────────────────────────────────────────────────────
 // bg-slate-surface  →  #111827  in dark mode (CSS var updated in globals.css)
 // bg-slate-elevated →  #172033  in dark mode
-const CARD    = 'rounded-2xl border border-white/[0.08] bg-slate-surface shadow-card backdrop-blur-md'
+const CARD    = 'rounded-2xl border border-white/[0.12] border-t-white/[0.22] bg-slate-elevated/90 shadow-card backdrop-blur-md transition-all duration-300 hover:border-white/[0.18] hover:shadow-[0_0_24px_-6px_rgba(99,102,241,0.1)]'
 const CARD_P  = `${CARD} p-6`
 const CARD_P8 = `${CARD} p-7`
 
@@ -138,7 +138,7 @@ function TrendChart({ data }: { data: TDay[] }) {
             {/* Day label */}
             <text x={x + BW / 2} y={H + 20}
               textAnchor="middle" fontSize={11}
-              fill={i === data.length - 1 ? '#94a3b8' : '#475569'}
+              fill={i === data.length - 1 ? '#cbd5e1' : '#94a3b8'}
               fontFamily="Inter, sans-serif" fontWeight={i === data.length - 1 ? '600' : '400'}>
               {d.day}
             </text>
@@ -146,7 +146,7 @@ function TrendChart({ data }: { data: TDay[] }) {
             {i === data.length - 1 && total > 0 && (
               <text x={x + BW / 2} y={segs[segs.length - 1]?.y - 6}
                 textAnchor="middle" fontSize={10}
-                fill="#94a3b8" fontFamily="Inter, sans-serif" fontWeight="600">
+                fill="#cbd5e1" fontFamily="Inter, sans-serif" fontWeight="600">
                 {total}
               </text>
             )}
@@ -320,15 +320,15 @@ export const DashboardPage: React.FC = () => {
           <h1 className="text-[22px] font-extrabold tracking-tight text-white font-tight leading-none">
             Security Operations Center
           </h1>
-          <p className="text-slate-400 text-[13px] mt-1.5 font-medium">
+          <p className="text-slate-300 text-[13px] mt-1.5 font-medium">
             {repoName
-              ? <><span className="text-slate-300 font-mono text-[12px]">{repoName}</span> &nbsp;·&nbsp; Session <span className="text-indigo-400/80 font-mono text-[11px]">{currentSessionId?.slice(0, 8)}</span></>
+              ? <><span className="text-slate-200 font-mono text-[12px]">{repoName}</span> &nbsp;·&nbsp; Session <span className="text-indigo-400 font-mono text-[11px]">{currentSessionId?.slice(0, 8)}</span></>
               : 'No active session — run a scan to begin monitoring'
             }
           </p>
         </div>
         <div className="flex items-center gap-3 shrink-0">
-          <span className="text-slate-600 text-[11px] font-mono hidden md:block">{ts}</span>
+          <span className="text-slate-400 text-[11px] font-mono hidden md:block">{ts}</span>
           <div className="flex items-center gap-2 px-3 py-1.5 rounded-full border border-emerald-500/25 bg-emerald-500/[0.07] text-emerald-400 text-[11px] font-semibold tracking-wide">
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
             API Healthy
@@ -347,10 +347,10 @@ export const DashboardPage: React.FC = () => {
             <h2 className="text-[18px] font-extrabold text-white font-tight tracking-tight">
               Scan your first repository
             </h2>
-            <p className="text-slate-400 text-[13px] max-w-md leading-relaxed">
+            <p className="text-slate-300 text-[13px] max-w-md leading-relaxed font-medium">
               Connect a GitHub repo or paste a local path. CodeViz will detect vulnerabilities, map dependencies, flag code smells, and generate a security posture score — usually in under 2 minutes.
             </p>
-            <div className="flex flex-wrap gap-4 pt-1 text-[11px] text-slate-500 font-mono">
+            <div className="flex flex-wrap gap-4 pt-1 text-[11px] text-slate-400 font-mono">
               <span>✓ Security &amp; CVE scan</span>
               <span>✓ AI refactoring suggestions</span>
               <span>✓ Compliance mapping</span>
@@ -371,14 +371,14 @@ export const DashboardPage: React.FC = () => {
       <div className="grid grid-cols-12 gap-5">
 
         {/* Security Posture Score */}
-        <div className={`col-span-12 lg:col-span-4 ${CARD_P8} flex flex-col`}>
+        <div className="col-span-12 lg:col-span-4 rounded-2xl border border-white/[0.12] border-t-white/[0.22] bg-gradient-to-br from-indigo-500/[0.08] to-slate-elevated shadow-card backdrop-blur-md p-7 flex flex-col hover:border-indigo-500/35 hover:shadow-[0_0_24px_-6px_rgba(99,102,241,0.15)] transition-all duration-300">
           <div className="flex items-start justify-between mb-1">
             <div>
-              <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-slate-500">Security Posture</p>
-              <p className="text-slate-300 text-[13px] font-medium mt-0.5">Overall health score</p>
+              <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-slate-300">Security Posture</p>
+              <p className="text-slate-200 text-[13px] font-semibold mt-0.5">Overall health score</p>
             </div>
             <div className="p-2 rounded-xl bg-slate-elevated border border-white/[0.06]">
-              <Shield size={16} className="text-slate-400" />
+              <Shield size={16} className="text-indigo-400" />
             </div>
           </div>
 
@@ -389,8 +389,8 @@ export const DashboardPage: React.FC = () => {
                 <div className="w-[180px] h-[180px] rounded-full border-[13px] border-white/[0.04]
                   flex items-center justify-center">
                   <div className="text-center">
-                    <Terminal size={20} className="text-slate-700 mx-auto mb-2" />
-                    <p className="text-slate-700 text-[11px] font-mono">No scan data</p>
+                    <Terminal size={20} className="text-slate-300 mx-auto mb-2" />
+                    <p className="text-slate-300 text-[11px] font-mono">No scan data</p>
                   </div>
                 </div>
               )
@@ -409,13 +409,13 @@ export const DashboardPage: React.FC = () => {
                   <p className="text-[22px] font-black font-tight text-white" style={{ color: i === 0 ? SEV.clean : i === 1 ? SEV.medium : SEV.critical }}>
                     {s.val}
                   </p>
-                  <p className="text-[9px] uppercase tracking-[0.12em] text-slate-600 mt-0.5">{s.label}</p>
+                  <p className="text-[9px] uppercase tracking-[0.12em] text-slate-300 mt-0.5 font-bold">{s.label}</p>
                 </div>
               ))}
             </div>
           ) : (
             <div className="mt-auto pt-5 border-t border-white/[0.06]">
-              <p className="text-[11px] text-slate-700 text-center">
+              <p className="text-[11px] text-slate-300 text-center font-medium">
                 {currentSessionId ? 'Loading posture data…' : 'Run a scan to see posture analysis'}
               </p>
             </div>
@@ -425,25 +425,23 @@ export const DashboardPage: React.FC = () => {
         {/* Threat Distribution — 4 severity cards */}
         <div className="col-span-12 lg:col-span-8 grid grid-cols-2 gap-4">
           {[
-            { key: 'critical', label: 'Critical',  count: critCount, Icon: ShieldAlert,   desc: 'Immediate action required' },
-            { key: 'high',     label: 'High',      count: highCount, Icon: AlertTriangle,  desc: 'Address within 24 hours'  },
-            { key: 'medium',   label: 'Medium',    count: medCount,  Icon: Info,           desc: 'Schedule for remediation' },
-            { key: 'low',      label: 'Low',       count: lowCount,  Icon: CheckCircle2,   desc: 'Monitor and track'        },
+            { key: 'critical', label: 'Critical',  count: critCount, Icon: ShieldAlert,   desc: 'Immediate action required', bg: 'from-rose-500/[0.08] to-slate-elevated hover:from-rose-500/[0.14]', border: 'border-rose-500/25 hover:border-rose-500/45', shadow: 'hover:shadow-[0_0_24px_-6px_rgba(239,68,68,0.16)]' },
+            { key: 'high',     label: 'High',      count: highCount, Icon: AlertTriangle,  desc: 'Address within 24 hours', bg: 'from-amber-500/[0.08] to-slate-elevated hover:from-amber-500/[0.14]', border: 'border-amber-500/25 hover:border-amber-500/45', shadow: 'hover:shadow-[0_0_24px_-6px_rgba(249,115,22,0.16)]' },
+            { key: 'medium',   label: 'Medium',    count: medCount,  Icon: Info,           desc: 'Schedule for remediation', bg: 'from-yellow-500/[0.06] to-slate-elevated hover:from-yellow-500/[0.12]', border: 'border-yellow-500/20 hover:border-yellow-500/40', shadow: 'hover:shadow-[0_0_24px_-6px_rgba(234,179,8,0.12)]' },
+            { key: 'low',      label: 'Low',       count: lowCount,  Icon: CheckCircle2,   desc: 'Monitor and track', bg: 'from-blue-500/[0.08] to-slate-elevated hover:from-blue-500/[0.14]', border: 'border-blue-500/25 hover:border-blue-500/45', shadow: 'hover:shadow-[0_0_24px_-6px_rgba(59,130,246,0.16)]' },
           ].map(s => (
             <div key={s.key}
               onClick={() => navigate('/security')}
-              className="relative overflow-hidden rounded-2xl border border-white/[0.08] bg-slate-surface
-                shadow-card backdrop-blur-md p-6 cursor-pointer group
-                hover:border-white/[0.14] hover:bg-slate-elevated transition-all duration-200">
+              className={`relative overflow-hidden rounded-2xl border ${s.border} bg-gradient-to-br ${s.bg} ${s.shadow} backdrop-blur-md p-6 cursor-pointer transition-all duration-300`}>
 
               {/* Left severity bar */}
-              <div className="absolute left-0 top-0 bottom-0 w-[3px] rounded-l-2xl"
+              <div className="absolute left-0 top-3 bottom-3 w-[4.5px] rounded-r-lg"
                 style={{ backgroundColor: SEV[s.key], opacity: s.count > 0 ? 1 : 0.2 }} />
 
               <div className="pl-3">
                 {/* Top row */}
                 <div className="flex items-center justify-between mb-4">
-                  <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-slate-500">{s.label}</p>
+                  <p className="text-[10.5px] font-extrabold uppercase tracking-[0.14em] text-slate-100">{s.label}</p>
                   <div className="p-1.5 rounded-lg border"
                     style={{ backgroundColor: `${SEV[s.key]}14`, borderColor: `${SEV[s.key]}28` }}>
                     <s.Icon size={13} style={{ color: SEV[s.key], opacity: s.count > 0 ? 1 : 0.35 }} />
@@ -454,13 +452,13 @@ export const DashboardPage: React.FC = () => {
                 <p className="text-[52px] font-black font-tight leading-none tracking-tight text-white">
                   {s.count}
                 </p>
-                <p className="text-[12px] text-slate-500 mt-2 leading-snug">{s.desc}</p>
+                <p className="text-[12px] text-slate-200 mt-2 leading-snug font-medium">{s.desc}</p>
 
                 {/* Distribution bar */}
                 {totalBugs > 0 && (
                   <div className="mt-4">
                     <div className="flex items-center justify-between mb-1.5">
-                      <span className="text-[9px] uppercase tracking-[0.1em] text-slate-700">
+                      <span className="text-[9.5px] uppercase tracking-[0.1em] text-slate-400 font-bold">
                         {Math.round((s.count / totalBugs) * 100)}% of exposure
                       </span>
                     </div>
@@ -485,6 +483,7 @@ export const DashboardPage: React.FC = () => {
             sub: currentSessionId ? `${critCount} critical · ${highCount} high · ${medCount} medium` : 'Run a scan to detect threats',
             Icon: ShieldAlert,
             accent: totalBugs > 0 ? SEV.critical : SEV.clean,
+            shadow: totalBugs > 0 ? 'hover:shadow-[0_0_24px_-6px_rgba(239,68,68,0.16)] hover:border-red-500/30' : 'hover:shadow-[0_0_24px_-6px_rgba(34,197,94,0.16)] hover:border-emerald-500/30',
             nav: '/security',
           },
           {
@@ -493,6 +492,7 @@ export const DashboardPage: React.FC = () => {
             sub: currentSessionId && repoName ? `${repoName} · active` : '4 repositories connected',
             Icon: GitBranch,
             accent: '#6366f1',
+            shadow: 'hover:shadow-[0_0_24px_-6px_rgba(99,102,241,0.16)] hover:border-indigo-500/30',
             nav: '/scanner',
           },
           {
@@ -503,6 +503,9 @@ export const DashboardPage: React.FC = () => {
               : 'OWASP · SOC 2 · GDPR · PCI-DSS',
             Icon: CheckCircle2,
             accent: postureScore != null ? scoreColor : SEV.clean,
+            shadow: postureScore != null
+              ? (postureScore >= 80 ? 'hover:shadow-[0_0_24px_-6px_rgba(34,197,94,0.16)] hover:border-emerald-500/30' : postureScore >= 60 ? 'hover:shadow-[0_0_24px_-6px_rgba(234,179,8,0.12)] hover:border-yellow-500/30' : 'hover:shadow-[0_0_24px_-6px_rgba(239,68,68,0.16)] hover:border-red-500/30')
+              : 'hover:shadow-[0_0_24px_-6px_rgba(34,197,94,0.16)] hover:border-emerald-500/30',
             nav: '/compliance',
           },
           {
@@ -511,21 +514,22 @@ export const DashboardPage: React.FC = () => {
             sub: 'Automated remediation suggestions',
             Icon: Zap,
             accent: '#8b5cf6',
+            shadow: 'hover:shadow-[0_0_24px_-6px_rgba(139,92,246,0.16)] hover:border-violet-500/30',
             nav: '/refactoring',
           },
         ].map((m, i) => (
           <div key={i}
             onClick={() => navigate(m.nav)}
-            className={`${CARD_P} cursor-pointer hover:border-white/[0.14] hover:bg-slate-elevated transition-all duration-200 group`}>
+            className={`${CARD_P} cursor-pointer hover:bg-slate-elevated/95 transition-all duration-300 group ${m.shadow}`}>
 
             {/* Top accent line */}
             <div className="h-[2px] w-10 rounded-full mb-5" style={{ backgroundColor: m.accent }} />
 
             <div className="flex items-start justify-between">
               <div className="flex-1 min-w-0">
-                <p className="text-[10px] font-bold uppercase tracking-[0.13em] text-slate-500 mb-2">{m.label}</p>
+                <p className="text-[10px] font-bold uppercase tracking-[0.13em] text-slate-300 mb-2">{m.label}</p>
                 <p className="text-[32px] font-black font-tight text-white leading-none tracking-tight">{m.value}</p>
-                <p className="text-[11px] text-slate-500 mt-2 leading-snug truncate">{m.sub}</p>
+                <p className="text-[11px] text-slate-300 mt-2 leading-snug font-medium truncate">{m.sub}</p>
               </div>
               <div className="p-2 rounded-xl border border-white/[0.07] bg-slate-elevated shrink-0 ml-3 mt-1">
                 <m.Icon size={14} style={{ color: m.accent }} />
@@ -540,29 +544,29 @@ export const DashboardPage: React.FC = () => {
         <div>
           <div className="flex items-center justify-between mb-3">
             <div>
-              <p className="text-[10px] font-bold uppercase tracking-[0.13em] text-slate-600 mb-0.5">Live Analysis</p>
+              <p className="text-[10px] font-bold uppercase tracking-[0.13em] text-slate-400 mb-0.5">Live Analysis</p>
               <h2 className="text-[15px] font-semibold text-slate-200 font-tight">All Analysers</h2>
             </div>
             {summaryLoading && (
-              <span className="text-[10px] font-mono text-slate-700 animate-pulse">Aggregating…</span>
+              <span className="text-[10px] font-mono text-slate-400 animate-pulse">Aggregating…</span>
             )}
           </div>
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
             {[
-              { key: 'security',    label: 'Security',     Icon: Shield,        color: '#ef4444', route: '/security' },
-              { key: 'performance', label: 'Performance',  Icon: Gauge,         color: '#f97316', route: '/performance' },
-              { key: 'smells',      label: 'Code Smells',  Icon: FlaskConical,  color: '#a855f7', route: '/code-smells' },
-              { key: 'threats',     label: 'Attack Chains', Icon: Skull,        color: '#dc2626', route: '/threats' },
-            ].map(({ key, label, Icon, color, route }) => {
+              { key: 'security',    label: 'Security',     Icon: Shield,        color: '#ef4444', shadow: 'hover:shadow-[0_0_24px_-6px_rgba(239,68,68,0.16)] hover:border-red-500/30', route: '/security' },
+              { key: 'performance', label: 'Performance',  Icon: Gauge,         color: '#f97316', shadow: 'hover:shadow-[0_0_24px_-6px_rgba(249,115,22,0.16)] hover:border-orange-500/30', route: '/performance' },
+              { key: 'smells',      label: 'Code Smells',  Icon: FlaskConical,  color: '#a855f7', shadow: 'hover:shadow-[0_0_24px_-6px_rgba(168,85,247,0.16)] hover:border-purple-500/30', route: '/code-smells' },
+              { key: 'threats',     label: 'Attack Chains', Icon: Skull,        color: '#dc2626', shadow: 'hover:shadow-[0_0_24px_-6px_rgba(220,38,38,0.16)] hover:border-red-600/30', route: '/threats' },
+            ].map(({ key, label, Icon, color, shadow, route }) => {
               const sec = liveSummary?.sections?.[key]
               return (
                 <div key={key}
                   onClick={() => navigate(route)}
-                  className={`${CARD_P} cursor-pointer hover:border-white/[0.14] transition-all duration-200`}>
+                  className={`${CARD_P} cursor-pointer hover:bg-slate-elevated/95 transition-all duration-300 ${shadow}`}>
                   <div className="h-[3px] w-8 rounded-full mb-4" style={{ backgroundColor: color }} />
                   <div className="flex items-start justify-between">
                     <div>
-                      <p className="text-[10px] font-bold uppercase tracking-[0.13em] text-slate-500 mb-1">{label}</p>
+                      <p className="text-[10px] font-bold uppercase tracking-[0.13em] text-slate-300 mb-1">{label}</p>
                       <p className="text-[28px] font-black text-white font-tight leading-none tracking-tight">
                         {summaryLoading ? '…' : sec ? sec.total : '—'}
                       </p>
@@ -600,7 +604,7 @@ export const DashboardPage: React.FC = () => {
         <div className={`col-span-12 lg:col-span-7 ${CARD_P}`}>
           <div className="flex items-start justify-between mb-6">
             <div>
-              <p className="text-[10px] font-bold uppercase tracking-[0.13em] text-slate-500 mb-1">Vulnerability Trend</p>
+              <p className="text-[10px] font-bold uppercase tracking-[0.13em] text-slate-300 mb-1">Vulnerability Trend</p>
               <h2 className="text-[15px] font-semibold text-slate-200 font-tight">7-Day Rolling View</h2>
             </div>
             <div className="flex items-center gap-4 flex-wrap justify-end">
@@ -612,7 +616,7 @@ export const DashboardPage: React.FC = () => {
               ].map(l => (
                 <div key={l.label} className="flex items-center gap-1.5">
                   <div className="w-2 h-2 rounded-[3px]" style={{ backgroundColor: l.color, opacity: 0.82 }} />
-                  <span className="text-[10px] text-slate-500 font-mono">{l.label}</span>
+                  <span className="text-[10px] text-slate-400 font-mono font-medium">{l.label}</span>
                 </div>
               ))}
             </div>
@@ -624,10 +628,10 @@ export const DashboardPage: React.FC = () => {
         <div className={`col-span-12 lg:col-span-5 ${CARD_P}`}>
           <div className="flex items-start justify-between mb-5">
             <div>
-              <p className="text-[10px] font-bold uppercase tracking-[0.13em] text-slate-500 mb-1">Recent Events</p>
+              <p className="text-[10px] font-bold uppercase tracking-[0.13em] text-slate-300 mb-1">Recent Events</p>
               <h2 className="text-[15px] font-semibold text-slate-200 font-tight">Security Activity</h2>
             </div>
-            <Clock size={13} className="text-slate-700 mt-1" />
+            <Clock size={13} className="text-slate-400 mt-1" />
           </div>
 
           {activity.length > 0 ? (
@@ -644,11 +648,11 @@ export const DashboardPage: React.FC = () => {
                   </div>
                   {/* Content */}
                   <div className="flex-1 min-w-0">
-                    <p className="text-[12px] text-slate-300 leading-snug">{a.msg}</p>
+                    <p className="text-[12px] text-slate-200 leading-snug font-medium">{a.msg}</p>
                     <div className="flex items-center gap-2 mt-1">
-                      <span className="text-[10px] text-slate-600 font-mono">{a.t}</span>
-                      <span className="text-slate-800 text-[10px]">·</span>
-                      <span className="text-[10px] text-slate-600 font-mono truncate">{a.repo}</span>
+                      <span className="text-[10px] text-slate-400 font-mono">{a.t}</span>
+                      <span className="text-slate-500 text-[10px]">·</span>
+                      <span className="text-[10px] text-slate-400 font-mono truncate">{a.repo}</span>
                     </div>
                   </div>
                 </div>
@@ -656,8 +660,8 @@ export const DashboardPage: React.FC = () => {
             </div>
           ) : (
             <div className="flex flex-col items-center justify-center py-10 text-center">
-              <Activity size={22} className="text-slate-800 mb-3" />
-              <p className="text-slate-700 text-[12px]">No events — run a scan to populate</p>
+              <Activity size={22} className="text-slate-500 mb-3" />
+              <p className="text-slate-400 text-[12px] font-medium">No events — run a scan to populate</p>
             </div>
           )}
         </div>
@@ -667,7 +671,7 @@ export const DashboardPage: React.FC = () => {
       <div className={CARD_P}>
         <div className="flex items-start justify-between mb-6">
           <div>
-            <p className="text-[10px] font-bold uppercase tracking-[0.13em] text-slate-500 mb-1">Risk Overview</p>
+            <p className="text-[10px] font-bold uppercase tracking-[0.13em] text-slate-300 mb-1">Risk Overview</p>
             <h2 className="text-[15px] font-semibold text-slate-200 font-tight">Repository Risk Posture</h2>
           </div>
           <button onClick={() => navigate('/scanner')}
@@ -679,11 +683,11 @@ export const DashboardPage: React.FC = () => {
         {/* Table */}
         <div className="rounded-xl border border-white/[0.05] overflow-hidden">
           {/* Header */}
-          <div className="grid grid-cols-12 gap-4 px-4 py-2.5 bg-slate-elevated border-b border-white/[0.05]">
+          <div className="grid grid-cols-12 gap-4 px-4 py-2.5 bg-slate-elevated/60 border-b border-white/[0.05]">
             {[['Repository','col-span-3'],['Risk Score','col-span-3'],['Crit','col-span-1'],
               ['High','col-span-1'],['Med','col-span-1'],['Last Scan','col-span-2'],['Status','col-span-1']
             ].map(([h, c]) => (
-              <div key={h} className={`${c} text-[9px] font-bold uppercase tracking-[0.13em] text-slate-600`}>{h}</div>
+              <div key={h} className={`${c} text-[9px] font-bold uppercase tracking-[0.13em] text-slate-300`}>{h}</div>
             ))}
           </div>
 
@@ -698,7 +702,7 @@ export const DashboardPage: React.FC = () => {
 
                 <div className="col-span-3 flex items-center gap-2.5">
                   <div className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: rc }} />
-                  <span className="text-[12px] font-semibold text-slate-400 font-mono truncate group-hover:text-slate-200 transition-colors">
+                  <span className="text-[12px] font-semibold text-slate-300 font-mono truncate group-hover:text-white transition-colors">
                     {r.name}
                   </span>
                 </div>
@@ -720,21 +724,21 @@ export const DashboardPage: React.FC = () => {
                 ].map((c, ci) => (
                   <div key={ci} className="col-span-1 flex items-center">
                     <span className="text-[13px] font-semibold"
-                      style={{ color: c.val > 0 ? c.color : '#1e293b' }}>
+                      style={{ color: c.val > 0 ? c.color : '#475569' }}>
                       {c.val}
                     </span>
                   </div>
                 ))}
 
                 <div className="col-span-2 flex items-center">
-                  <span className="text-[11px] text-slate-600 font-mono">{r.ago}</span>
+                  <span className="text-[11px] text-slate-400 font-mono">{r.ago}</span>
                 </div>
 
                 <div className="col-span-1 flex items-center">
                   <span className={`text-[9px] font-bold uppercase tracking-wide px-2 py-0.5 rounded-full border font-mono ${
                     r.st === 'Active'
                       ? 'text-emerald-400 bg-emerald-500/[0.1] border-emerald-500/25'
-                      : 'text-slate-600 bg-slate-800/30 border-slate-700/30'
+                      : 'text-slate-400 bg-slate-800/50 border-slate-700/50'
                   }`}>
                     {r.st}
                   </span>
@@ -749,7 +753,7 @@ export const DashboardPage: React.FC = () => {
       <div>
         <div className="flex items-start justify-between mb-4">
           <div>
-            <p className="text-[10px] font-bold uppercase tracking-[0.13em] text-slate-500 mb-1">AI-Powered</p>
+            <p className="text-[10px] font-bold uppercase tracking-[0.13em] text-slate-300 mb-1">AI-Powered</p>
             <h2 className="text-[15px] font-semibold text-slate-200 font-tight">Remediation Recommendations</h2>
           </div>
           <button onClick={() => navigate('/security')}
@@ -759,52 +763,58 @@ export const DashboardPage: React.FC = () => {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-          {recs.map((rec, i) => (
-            <div key={i}
-              onClick={() => navigate('/security')}
-              className="relative overflow-hidden rounded-2xl border border-white/[0.08] bg-slate-surface
-                shadow-card backdrop-blur-md p-6 cursor-pointer group
-                hover:border-white/[0.14] hover:bg-slate-elevated transition-all duration-200">
+          {(() => {
+            const shadowMap: Record<string, string> = {
+              critical: 'hover:shadow-[0_0_24px_-6px_rgba(239,68,68,0.16)] hover:border-red-500/30',
+              high: 'hover:shadow-[0_0_24px_-6px_rgba(249,115,22,0.16)] hover:border-orange-500/30',
+              medium: 'hover:shadow-[0_0_24px_-6px_rgba(234,179,8,0.12)] hover:border-yellow-500/30',
+              low: 'hover:shadow-[0_0_24px_-6px_rgba(59,130,246,0.16)] hover:border-blue-500/30',
+            }
+            return recs.map((rec, i) => (
+              <div key={i}
+                onClick={() => navigate('/security')}
+                className={`relative overflow-hidden rounded-2xl border border-white/[0.12] border-t-white/[0.22] bg-slate-elevated/95 p-6 cursor-pointer group transition-all duration-300 ${shadowMap[rec.sev] || ''}`}>
 
-              {/* Severity bar */}
-              <div className="absolute left-0 top-0 bottom-0 w-[3px] rounded-l-2xl"
-                style={{ backgroundColor: SEV[rec.sev] }} />
+                {/* Severity bar */}
+                <div className="absolute left-0 top-0 bottom-0 w-[3px] rounded-l-2xl"
+                  style={{ backgroundColor: SEV[rec.sev] }} />
 
-              <div className="pl-2 space-y-3">
-                {/* Priority + confidence */}
-                <div className="flex items-center justify-between">
-                  <span className="text-[9px] font-bold uppercase tracking-[0.13em] px-2 py-1 rounded-full border"
-                    style={{ color: SEV[rec.sev], backgroundColor: `${SEV[rec.sev]}12`, borderColor: `${SEV[rec.sev]}28` }}>
-                    {rec.sev}
-                  </span>
-                  <div className="flex items-center gap-1">
-                    <Zap size={9} className="text-indigo-400/50" />
-                    <span className="text-[10px] text-indigo-400/50 font-mono">{rec.confidence}%</span>
+                <div className="pl-2 space-y-3">
+                  {/* Priority + confidence */}
+                  <div className="flex items-center justify-between">
+                    <span className="text-[9px] font-bold uppercase tracking-[0.13em] px-2 py-1 rounded-full border"
+                      style={{ color: SEV[rec.sev], backgroundColor: `${SEV[rec.sev]}12`, borderColor: `${SEV[rec.sev]}28` }}>
+                      {rec.sev}
+                    </span>
+                    <div className="flex items-center gap-1">
+                      <Zap size={9} className="text-indigo-400/50" />
+                      <span className="text-[10px] text-indigo-400/50 font-mono">{rec.confidence}%</span>
+                    </div>
                   </div>
-                </div>
 
-                {/* Title */}
-                <h3 className="text-[14px] font-semibold text-slate-200 font-tight leading-snug
-                  group-hover:text-white transition-colors">
-                  {rec.title}
-                </h3>
+                  {/* Title */}
+                  <h3 className="text-[14px] font-semibold text-slate-200 font-tight leading-snug
+                    group-hover:text-white transition-colors">
+                    {rec.title}
+                  </h3>
 
-                {/* Description */}
-                <p className="text-[12px] text-slate-500 leading-relaxed line-clamp-2">
-                  {rec.desc}
-                </p>
+                  {/* Description */}
+                  <p className="text-[12px] text-slate-300 leading-relaxed line-clamp-2 font-medium">
+                    {rec.desc}
+                  </p>
 
-                {/* Footer */}
-                <div className="flex items-center justify-between pt-3 border-t border-white/[0.05]">
-                  <span className="text-[10px] text-slate-700 font-mono truncate max-w-[55%]">{rec.file}</span>
-                  <div className="flex items-center gap-1">
-                    <Clock size={9} className="text-slate-700" />
-                    <span className="text-[10px] text-slate-600 font-mono">{rec.effort}</span>
+                  {/* Footer */}
+                  <div className="flex items-center justify-between pt-3 border-t border-white/[0.05]">
+                    <span className="text-[10px] text-slate-400 font-mono truncate max-w-[55%]">{rec.file}</span>
+                    <div className="flex items-center gap-1">
+                      <Clock size={9} className="text-slate-400" />
+                      <span className="text-[10px] text-slate-300 font-mono font-medium">{rec.effort}</span>
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
-          ))}
+            ))
+          })()}
         </div>
       </div>
 
@@ -828,8 +838,8 @@ export const DashboardPage: React.FC = () => {
           <div className={`${CARD_P} space-y-3`}>
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-[10px] font-bold uppercase tracking-[0.13em] text-slate-500">Posture Score Trend</p>
-                <p className="text-[13px] font-semibold text-slate-300 mt-0.5">{label} · last {trendScans.length} scans</p>
+                <p className="text-[10px] font-bold uppercase tracking-[0.13em] text-slate-300">Posture Score Trend</p>
+                <p className="text-[13px] font-semibold text-slate-200 mt-0.5">{label} · last {trendScans.length} scans</p>
               </div>
               <div className="flex items-center gap-2">
                 <span className="text-[22px] font-black text-white font-tight">{latest.toFixed(0)}</span>
@@ -854,7 +864,7 @@ export const DashboardPage: React.FC = () => {
                 <circle key={i} cx={x} cy={ys[i]} r="3" fill={color} />
               ))}
             </svg>
-            <div className="flex items-center justify-between text-[10px] text-slate-600 font-mono">
+            <div className="flex items-center justify-between text-[10px] text-slate-400 font-mono">
               <span>{new Date(trendScans[0].scanned_at).toLocaleDateString()}</span>
               <span>{new Date(trendScans[trendScans.length-1].scanned_at).toLocaleDateString()}</span>
             </div>
@@ -867,8 +877,8 @@ export const DashboardPage: React.FC = () => {
         <div className="space-y-3">
           <div className="flex items-center gap-2 pt-1">
             <GitBranch size={14} className="text-indigo-400" />
-            <p className="text-[13px] font-semibold text-slate-300">Repository Overview</p>
-            <span className="text-[10px] text-slate-600 font-mono ml-1">{repoSummaries.length} repos scanned</span>
+            <p className="text-[13px] font-semibold text-slate-200">Repository Overview</p>
+            <span className="text-[10px] text-slate-400 font-mono ml-1">{repoSummaries.length} repos scanned</span>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {repoSummaries.map(repo => {
@@ -878,13 +888,13 @@ export const DashboardPage: React.FC = () => {
               const isActive = repo.session_id === currentSessionId
               return (
                 <div key={repo.repo_full_name}
-                  className={`${CARD_P} space-y-4 cursor-pointer hover:border-indigo-500/20 transition-all ${isActive ? 'border-indigo-500/30' : ''}`}
+                  className={`${CARD_P} space-y-4 cursor-pointer hover:border-indigo-500/40 hover:shadow-[0_0_24px_-6px_rgba(99,102,241,0.12)] transition-all ${isActive ? 'border-indigo-500/30' : ''}`}
                   onClick={() => navigate('/scanner')}>
                   {/* Repo name + active badge */}
                   <div className="flex items-start justify-between gap-2">
                     <div className="min-w-0">
-                      <p className="text-[11px] text-slate-500 font-mono truncate">{repo.repo_full_name.split('/')[0]}/</p>
-                      <p className="text-[13px] font-bold text-slate-200 truncate">{repo.repo_name}</p>
+                      <p className="text-[11px] text-slate-400 font-mono truncate">{repo.repo_full_name.split('/')[0]}/</p>
+                      <p className="text-[13px] font-bold text-slate-100 truncate">{repo.repo_name}</p>
                     </div>
                     <div className="flex items-center gap-1.5 shrink-0">
                       {isActive && <span className="text-[9px] font-bold text-indigo-400 border border-indigo-500/30 bg-indigo-500/10 rounded-full px-2 py-0.5">Active</span>}
@@ -894,7 +904,7 @@ export const DashboardPage: React.FC = () => {
                   {/* Score bar */}
                   <div className="space-y-1.5">
                     <div className="flex justify-between text-[10px]">
-                      <span className="text-slate-500 font-mono">Posture Score</span>
+                      <span className="text-slate-400 font-mono font-medium">Posture Score</span>
                       <span className="font-bold" style={{ color: sColor }}>{score.toFixed(0)}/100</span>
                     </div>
                     <div className="h-1.5 rounded-full bg-white/[0.05] overflow-hidden">
@@ -911,8 +921,8 @@ export const DashboardPage: React.FC = () => {
                       { label: 'L', count: repo.low_count,      color: '#3b82f6' },
                     ].map(({ label, count, color }) => (
                       <div key={label} className="rounded-lg bg-white/[0.03] border border-white/[0.05] py-1.5">
-                        <p className="text-[13px] font-black" style={{ color: count > 0 ? color : '#334155' }}>{count}</p>
-                        <p className="text-[9px] text-slate-600 font-bold">{label}</p>
+                        <p className="text-[13px] font-black" style={{ color: count > 0 ? color : '#475569' }}>{count}</p>
+                        <p className="text-[9px] text-slate-400 font-bold">{label}</p>
                       </div>
                     ))}
                   </div>
@@ -929,9 +939,9 @@ export const DashboardPage: React.FC = () => {
           <div className="flex items-center justify-between px-6 py-4 border-b border-white/[0.05]">
             <div className="flex items-center gap-2">
               <History size={14} className="text-indigo-400" />
-              <p className="text-[13px] font-semibold text-slate-200">Recent Scans</p>
+              <p className="text-[13px] font-semibold text-slate-100">Recent Scans</p>
             </div>
-            <span className="text-[10px] text-slate-600 font-mono">{recentScans.length} records</span>
+            <span className="text-[10px] text-slate-400 font-mono">{recentScans.length} records</span>
           </div>
           <div className="divide-y divide-white/[0.04]">
             {recentScans.map(scan => {
@@ -952,21 +962,21 @@ export const DashboardPage: React.FC = () => {
                   <div className="flex items-center gap-3 min-w-0">
                     <div className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: scoreColor }} />
                     <div className="min-w-0">
-                      <p className="text-[12px] font-semibold text-slate-200 truncate">{scan.repo_full_name}</p>
-                      <p className="text-[10px] text-slate-600 font-mono">{ago}</p>
+                      <p className="text-[12px] font-semibold text-slate-100 truncate">{scan.repo_full_name}</p>
+                      <p className="text-[10px] text-slate-400 font-mono">{ago}</p>
                     </div>
                   </div>
                   <div className="flex items-center gap-5 shrink-0 ml-4">
                     <div className="text-right hidden sm:block">
-                      <p className="text-[10px] text-slate-600 uppercase tracking-wider">Issues</p>
-                      <p className="text-[12px] font-bold text-slate-300">
+                      <p className="text-[10px] text-slate-400 uppercase tracking-wider font-semibold">Issues</p>
+                      <p className="text-[12px] font-bold text-slate-200">
                         {scan.critical_count > 0 && <span className="text-red-400">{scan.critical_count}C </span>}
                         {scan.high_count > 0 && <span className="text-orange-400">{scan.high_count}H </span>}
                         {scan.critical_count === 0 && scan.high_count === 0 && <span className="text-emerald-400">Clean</span>}
                       </p>
                     </div>
                     <div className="text-right">
-                      <p className="text-[10px] text-slate-600 uppercase tracking-wider">Score</p>
+                      <p className="text-[10px] text-slate-400 uppercase tracking-wider font-semibold">Score</p>
                       <p className="text-[14px] font-black" style={{ color: scoreColor }}>{score.toFixed(0)}</p>
                     </div>
                   </div>
