@@ -3,6 +3,7 @@ import { useAuthStore } from '@/store/authStore'
 import { useSettingsStore } from '@/store/settingsStore'
 import { useSessionStore } from '@/store/sessionStore'
 import { settingsService } from '@/services/settings'
+import { notificationsService } from '@/services/apis'
 import {
   User, Github, Cpu, Bell, SlidersHorizontal,
   Eye, EyeOff, CheckCircle2, XCircle, Loader2,
@@ -93,6 +94,7 @@ export const SettingsPage: React.FC = () => {
   const [ollamaMsg, setOllamaMsg]     = useState('')
   const [slackTest, setSlackTest]     = useState<TestState>('idle')
   const [slackMsg, setSlackMsg]       = useState('')
+  const [slackServerStatus, setSlackServerStatus] = useState<{ configured: boolean; channel: string } | null>(null)
 
   useEffect(() => {
     settingsService.get()
@@ -102,6 +104,13 @@ export const SettingsPage: React.FC = () => {
         if (!settings.slackWebhook && d.slackWebhook) settings.set({ slackWebhook: d.slackWebhook })
         if (d.ollamaUrl) settings.set({ ollamaUrl: d.ollamaUrl })
         if (d.ollamaModel) settings.set({ ollamaModel: d.ollamaModel })
+      })
+      .catch(() => {})
+
+    notificationsService.slackStatus()
+      .then(res => {
+        const d = (res.data as any).data || {}
+        setSlackServerStatus({ configured: d.configured, channel: d.channel || '#security-alerts' })
       })
       .catch(() => {})
   }, [])
@@ -142,10 +151,17 @@ export const SettingsPage: React.FC = () => {
   }
 
   const testSlack = async () => {
-    setSlackTest('loading'); setSlackMsg('Sending test message…')
+    setSlackTest('loading'); setSlackMsg('Sending test alert…')
     try {
-      await settingsService.testSlack(settings.slackWebhook)
-      setSlackTest('success'); setSlackMsg('Test message delivered to Slack')
+      await notificationsService.slackTest(settings.slackWebhook)
+      setSlackTest('success'); setSlackMsg('Test alert delivered to Slack')
+      // Refresh server status after a successful test
+      notificationsService.slackStatus()
+        .then(res => {
+          const d = (res.data as any).data || {}
+          setSlackServerStatus({ configured: d.configured, channel: d.channel || '#security-alerts' })
+        })
+        .catch(() => {})
     } catch {
       setSlackTest('error'); setSlackMsg('Webhook rejected — check the URL')
     }
@@ -288,6 +304,24 @@ export const SettingsPage: React.FC = () => {
               <Toggle checked={settings.enableSlackNotifications}
                 onChange={v => settings.set({ enableSlackNotifications: v })} />
             </div>
+
+            {/* Server-side env status */}
+            {slackServerStatus !== null && (
+              <div className={clsx(
+                'flex items-center gap-2 text-[10px] font-mono px-2.5 py-1.5 rounded-lg border w-fit',
+                slackServerStatus.configured
+                  ? 'text-emerald-400 border-emerald-500/20 bg-emerald-500/[0.07]'
+                  : 'text-slate-600 border-white/[0.06] bg-slate-950/40'
+              )}>
+                {slackServerStatus.configured
+                  ? <CheckCircle2 size={10} />
+                  : <XCircle size={10} />}
+                {slackServerStatus.configured
+                  ? `Server env set · ${slackServerStatus.channel}`
+                  : 'SLACK_WEBHOOK_URL not set in server env'}
+              </div>
+            )}
+
             {settings.enableSlackNotifications && (
               <div>
                 <label className={LABEL}>Webhook URL</label>
@@ -305,7 +339,7 @@ export const SettingsPage: React.FC = () => {
                   <button onClick={testSlack} disabled={!settings.slackWebhook || slackTest === 'loading'}
                     className="flex items-center gap-1.5 text-[11px] font-medium text-indigo-400/70 hover:text-indigo-400 transition-colors disabled:opacity-40">
                     <RefreshCw size={11} className={clsx(slackTest === 'loading' && 'animate-spin')} />
-                    Send test message
+                    Send test alert
                   </button>
                   <ConnectionBadge state={slackTest} message={slackMsg} />
                 </div>
