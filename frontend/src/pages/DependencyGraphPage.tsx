@@ -1,8 +1,8 @@
-import React, { useState, useEffect, useRef } from 'react'
+import React, { useState, useEffect, useRef, useCallback } from 'react'
 import { Link } from 'react-router-dom'
 import { useSessionStore } from '@/store/sessionStore'
 import { apisService } from '@/services/apis'
-import { GitBranch, RefreshCw, Terminal, AlertTriangle } from 'lucide-react'
+import { GitBranch, RefreshCw, Terminal, AlertTriangle, Maximize2 } from 'lucide-react'
 import clsx from 'clsx'
 
 const CARD = 'rounded-2xl border border-white/[0.08] bg-slate-surface shadow-card backdrop-blur-md'
@@ -15,8 +15,9 @@ const NODE_COLOR: Record<string, string> = {
 
 export const DependencyGraphPage: React.FC = () => {
   const { currentSessionId } = useSessionStore()
-  const svgRef = useRef<SVGSVGElement>(null)
-  const simRef = useRef<any>(null)
+  const svgRef  = useRef<SVGSVGElement>(null)
+  const simRef  = useRef<any>(null)
+  const zoomRef = useRef<any>(null)   // stores the d3.zoom instance for reset
 
   const [nodes,      setNodes]      = useState<any[]>([])
   const [edges,      setEdges]      = useState<any[]>([])
@@ -52,6 +53,18 @@ export const DependencyGraphPage: React.FC = () => {
     if (currentSessionId && !done) load()
   }, [currentSessionId])
 
+  // Reset zoom to fit — exposed so the header button can call it
+  const resetZoom = useCallback(() => {
+    if (!svgRef.current || !zoomRef.current) return
+    import('d3').then((d3) => {
+      const svg = d3.select(svgRef.current as SVGSVGElement)
+      svg.transition().duration(400).call(
+        zoomRef.current.transform,
+        d3.zoomIdentity
+      )
+    })
+  }, [])
+
   // D3 force simulation — reruns when data or filter changes
   useEffect(() => {
     if (!done || nodes.length === 0 || !svgRef.current) return
@@ -59,10 +72,12 @@ export const DependencyGraphPage: React.FC = () => {
     // Stop any previous simulation before starting a new one
     simRef.current?.stop()
 
-    let cleanup: (() => void) | undefined
+    // Abort flag — prevents stale Promise callbacks after cleanup
+    let aborted = false
+    let timeoutId: ReturnType<typeof setTimeout>
 
     import('d3').then((d3) => {
-      if (!svgRef.current) return
+      if (aborted || !svgRef.current) return
 
       const svg = d3.select(svgRef.current)
       svg.selectAll('*').remove()
@@ -79,19 +94,27 @@ export const DependencyGraphPage: React.FC = () => {
 
       // Zoom behaviour
       const zoom = d3.zoom<SVGSVGElement, unknown>()
-        .scaleExtent([0.1, 4])
+        .scaleExtent([0.08, 5])
         .on('zoom', (event) => { g.attr('transform', event.transform) })
       svg.call(zoom)
+      zoomRef.current = zoom   // expose for reset button
 
       const g = svg.append('g')
 
-      // Arrow marker
-      svg.append('defs').append('marker')
+      // Defs — arrow marker + glow filter
+      const defs = svg.append('defs')
+      defs.append('marker')
         .attr('id', 'arrow').attr('viewBox', '0 -5 10 10')
         .attr('refX', 18).attr('markerWidth', 6).attr('markerHeight', 6)
         .attr('orient', 'auto')
         .append('path').attr('d', 'M0,-5L10,0L0,5')
         .attr('fill', 'rgba(255,255,255,0.2)')
+
+      const filter = defs.append('filter').attr('id', 'glow')
+      filter.append('feGaussianBlur').attr('stdDeviation', 3).attr('result', 'coloredBlur')
+      const feMerge = filter.append('feMerge')
+      feMerge.append('feMergeNode').attr('in', 'coloredBlur')
+      feMerge.append('feMergeNode').attr('in', 'SourceGraphic')
 
       // Edges
       const link = g.append('g').selectAll('line')
@@ -105,6 +128,35 @@ export const DependencyGraphPage: React.FC = () => {
         .data(nodesData).join('g')
         .style('cursor', 'pointer')
         .on('click', (_event: any, d: any) => setSelected(d))
+        .on('mouseenter', function(_event: any, d: any) {
+          const color = NODE_COLOR[d.type] || '#64748b'
+          d3.select(this).select('circle')
+            .transition().duration(150)
+            .attr('stroke-width', 3)
+            .attr('stroke-opacity', 1)
+            .attr('fill-opacity', 1)
+            .attr('filter', 'url(#glow)')
+          // Highlight connected edges
+          link.transition().duration(150)
+            .attr('stroke', (l: any) =>
+              (l.source?.id ?? l.source) === d.id || (l.target?.id ?? l.target) === d.id
+                ? color : 'rgba(255,255,255,0.04)'
+            )
+            .attr('stroke-width', (l: any) =>
+              (l.source?.id ?? l.source) === d.id || (l.target?.id ?? l.target) === d.id ? 1.5 : 0.5
+            )
+        })
+        .on('mouseleave', function() {
+          d3.select(this).select('circle')
+            .transition().duration(200)
+            .attr('stroke-width', 1.5)
+            .attr('stroke-opacity', 0.5)
+            .attr('fill-opacity', 0.8)
+            .attr('filter', null)
+          link.transition().duration(200)
+            .attr('stroke', 'rgba(255,255,255,0.08)')
+            .attr('stroke-width', 1)
+        })
         .call(
           d3.drag<SVGGElement, any>()
             .on('start', (event: any, d: any) => {
@@ -123,10 +175,10 @@ export const DependencyGraphPage: React.FC = () => {
           const deg = linksData.filter((l: any) => l.source === d.id || l.target === d.id).length
           return Math.max(5, Math.min(14, 5 + deg * 1.5))
         })
-        .attr('fill',         (d: any) => NODE_COLOR[d.type] || '#64748b')
-        .attr('fill-opacity', 0.8)
-        .attr('stroke',       (d: any) => NODE_COLOR[d.type] || '#64748b')
-        .attr('stroke-width', 1.5)
+        .attr('fill',           (d: any) => NODE_COLOR[d.type] || '#64748b')
+        .attr('fill-opacity',   0.8)
+        .attr('stroke',         (d: any) => NODE_COLOR[d.type] || '#64748b')
+        .attr('stroke-width',   1.5)
         .attr('stroke-opacity', 0.5)
 
       node.append('text')
@@ -153,7 +205,8 @@ export const DependencyGraphPage: React.FC = () => {
       simRef.current = sim
 
       // Zoom to fit after sim settles
-      const t = setTimeout(() => {
+      timeoutId = setTimeout(() => {
+        if (aborted) return
         const bounds = (g.node() as SVGGElement | null)?.getBBox?.()
         if (bounds && bounds.width > 0 && svgRef.current) {
           const scale = Math.min(0.9, Math.min(W / bounds.width, H / bounds.height) * 0.85)
@@ -165,15 +218,17 @@ export const DependencyGraphPage: React.FC = () => {
           )
         }
       }, 1200)
-
-      cleanup = () => { clearTimeout(t); sim.stop() }
     })
 
-    return () => cleanup?.()
+    return () => {
+      aborted = true
+      clearTimeout(timeoutId)
+      simRef.current?.stop()
+    }
   }, [done, nodes, edges, filterType])
 
-  // Stop sim on unmount
-  useEffect(() => () => { simRef.current?.stop() }, [])
+  // Belt-and-suspenders: stop sim on unmount regardless of filter/data state
+  useEffect(() => () => { simRef.current?.stop(); zoomRef.current = null }, [])
 
   const types = ['all', ...new Set(nodes.map((n: any) => n.type))]
 
@@ -181,7 +236,7 @@ export const DependencyGraphPage: React.FC = () => {
     <div className="space-y-5 animate-fade-in pb-10 select-none">
 
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pt-1">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pt-1 flex-wrap">
         <div>
           <h1 className="text-[22px] font-extrabold text-white font-tight tracking-tight">Dependency Graph</h1>
           <p className="text-slate-500 text-[13px] mt-1.5">
@@ -190,19 +245,29 @@ export const DependencyGraphPage: React.FC = () => {
               : 'Scan a repository first to build the graph.'}
           </p>
         </div>
-        <button
-          onClick={load}
-          disabled={!currentSessionId || loading}
-          className={clsx(
-            'flex items-center gap-2 px-4 py-2 rounded-xl text-[12px] font-semibold transition-all disabled:opacity-40',
-            done
-              ? 'border border-white/[0.08] bg-slate-surface text-slate-400 hover:text-slate-200'
-              : 'bg-indigo-500 hover:bg-indigo-600 text-white shadow-sm shadow-indigo-500/30',
+        <div className="flex items-center gap-2">
+          {done && nodes.length > 0 && (
+            <button
+              onClick={resetZoom}
+              className="flex items-center gap-2 px-4 py-2 rounded-xl text-[12px] font-semibold transition-all border border-white/[0.08] bg-slate-surface text-slate-500 hover:text-slate-200"
+              title="Reset zoom to fit">
+              <Maximize2 size={13} /> Reset zoom
+            </button>
           )}
+          <button
+            onClick={load}
+            disabled={!currentSessionId || loading}
+            className={clsx(
+              'flex items-center gap-2 px-4 py-2 rounded-xl text-[12px] font-semibold transition-all disabled:opacity-40',
+              done
+                ? 'border border-white/[0.08] bg-slate-surface text-slate-400 hover:text-slate-200'
+                : 'bg-indigo-500 hover:bg-indigo-600 text-white shadow-sm shadow-indigo-500/30',
+            )}
         >
-          <RefreshCw size={13} className={clsx(loading && 'animate-spin')} />
-          {loading ? 'Building…' : done ? 'Rebuild' : 'Build graph'}
-        </button>
+            <RefreshCw size={13} className={clsx(loading && 'animate-spin')} />
+            {loading ? 'Building…' : done ? 'Rebuild' : 'Build graph'}
+          </button>
+        </div>
       </div>
 
       {/* No session */}
