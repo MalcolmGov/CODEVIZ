@@ -22,7 +22,7 @@ import 'vis-network/styles/vis-network.css'
 import { api } from '@/services/api'
 import clsx from 'clsx'
 
-const CARD = 'rounded-2xl border border-white/[0.08] border-t-white/[0.15] bg-slate-surface shadow-card backdrop-blur-md transition-all duration-300 hover:border-white/[0.14] hover:shadow-[0_0_24px_-6px_rgba(99,102,241,0.06)]'
+const CARD = 'rounded-2xl border border-white/[0.12] border-t-white/[0.22] bg-slate-elevated/90 shadow-card backdrop-blur-md transition-all duration-300 hover:border-white/[0.18] hover:shadow-[0_0_24px_-6px_rgba(99,102,241,0.1)]'
 
 // Inline parser for bold (**), inline code (`), and links ([text](url))
 const parseInlineMarkdown = (text: string) => {
@@ -335,7 +335,7 @@ export const ScannerPage: React.FC = () => {
     const paginatedData = filteredData.slice(page * itemsPerPage, (page + 1) * itemsPerPage)
 
     return (
-      <div className={clsx(CARD, 'p-6 bg-slate-surface/30 space-y-4')}>
+      <div className={clsx(CARD, 'p-6 space-y-4')}>
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 pb-2">
           <div>
             <h3 className="text-base font-bold text-slate-100 font-display">{title}</h3>
@@ -680,7 +680,7 @@ export const ScannerPage: React.FC = () => {
           </p>
         </div>
         
-        <div className={clsx(CARD, "p-6 bg-slate-surface/30 space-y-6")}>
+        <div className={clsx(CARD, "p-6 space-y-6")}>
           <ScanForm onScanComplete={handleScanComplete} />
           
           <div className="border-t border-slate-border/20 pt-4 space-y-3">
@@ -1004,7 +1004,7 @@ export const ScannerPage: React.FC = () => {
           <div className="grid grid-cols-12 gap-5">
 
             {/* Posture Score */}
-            <div className="col-span-12 lg:col-span-4 rounded-2xl border border-white/[0.08] border-t-white/[0.15] bg-gradient-to-br from-indigo-500/[0.02] to-slate-surface/30 shadow-card backdrop-blur-md p-6 flex flex-col hover:border-indigo-500/20 hover:shadow-[0_0_24px_-6px_rgba(99,102,241,0.12)] transition-all duration-300">
+            <div className="col-span-12 lg:col-span-4 rounded-2xl border border-white/[0.12] border-t-white/[0.22] bg-gradient-to-br from-indigo-500/[0.08] to-slate-elevated shadow-card backdrop-blur-md p-6 flex flex-col hover:border-indigo-500/35 hover:shadow-[0_0_24px_-6px_rgba(99,102,241,0.15)] transition-all duration-300">
               <div className="flex items-start justify-between mb-4">
                 <div>
                   <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-slate-400">Security Posture</p>
@@ -1068,18 +1068,18 @@ export const ScannerPage: React.FC = () => {
             {/* Threat Distribution */}
             <div className="col-span-12 lg:col-span-8 grid grid-cols-2 gap-4">
               {[
-                { key: 'critical', label: 'Critical',  count: critCount, icon: ShieldAlert,   desc: 'Immediate action required', bg: 'from-rose-500/[0.02] to-slate-surface/30 hover:from-rose-500/[0.06]', border: 'border-rose-500/10 hover:border-rose-500/30', shadow: 'hover:shadow-[0_0_24px_-6px_rgba(239,68,68,0.12)]' },
-                { key: 'high',     label: 'High',      count: highCount, icon: AlertTriangle,  desc: 'Address within 24 hours', bg: 'from-amber-500/[0.02] to-slate-surface/30 hover:from-amber-500/[0.06]', border: 'border-amber-500/10 hover:border-amber-500/30', shadow: 'hover:shadow-[0_0_24px_-6px_rgba(249,115,22,0.12)]' },
-                { key: 'medium',   label: 'Medium',    count: medCount,  icon: Info,           desc: 'Schedule for remediation', bg: 'from-yellow-500/[0.015] to-slate-surface/30 hover:from-yellow-500/[0.05]', border: 'border-yellow-500/10 hover:border-yellow-500/30', shadow: 'hover:shadow-[0_0_24px_-6px_rgba(234,179,8,0.08)]' },
-                { key: 'low',      label: 'Low',       count: lowCount,  icon: CheckCircle2,   desc: 'Monitor and track', bg: 'from-blue-500/[0.02] to-slate-surface/30 hover:from-blue-500/[0.06]', border: 'border-blue-500/10 hover:border-blue-500/30', shadow: 'hover:shadow-[0_0_24px_-6px_rgba(59,130,246,0.12)]' },
+                { key: 'critical', label: 'Critical',  count: critCount, icon: ShieldAlert,   desc: 'Immediate action required', bg: 'from-rose-500/[0.08] to-slate-elevated hover:from-rose-500/[0.14]', border: 'border-rose-500/25 hover:border-rose-500/45', shadow: 'hover:shadow-[0_0_24px_-6px_rgba(239,68,68,0.16)]' },
+                { key: 'high',     label: 'High',      count: highCount, icon: AlertTriangle,  desc: 'Address within 24 hours', bg: 'from-amber-500/[0.08] to-slate-elevated hover:from-amber-500/[0.14]', border: 'border-amber-500/25 hover:border-amber-500/45', shadow: 'hover:shadow-[0_0_24px_-6px_rgba(249,115,22,0.16)]' },
+                { key: 'medium',   label: 'Medium',    count: medCount,  icon: Info,           desc: 'Schedule for remediation', bg: 'from-yellow-500/[0.06] to-slate-elevated hover:from-yellow-500/[0.12]', border: 'border-yellow-500/20 hover:border-yellow-500/40', shadow: 'hover:shadow-[0_0_24px_-6px_rgba(234,179,8,0.12)]' },
+                { key: 'low',      label: 'Low',       count: lowCount,  icon: CheckCircle2,   desc: 'Monitor and track', bg: 'from-blue-500/[0.08] to-slate-elevated hover:from-blue-500/[0.14]', border: 'border-blue-500/25 hover:border-blue-500/45', shadow: 'hover:shadow-[0_0_24px_-6px_rgba(59,130,246,0.16)]' },
               ].map(s => (
                 <div key={s.key}
                   className={`relative overflow-hidden rounded-2xl border ${s.border} bg-gradient-to-br ${s.bg} ${s.shadow} backdrop-blur-md p-5 cursor-pointer transition-all duration-300`}>
-                  <div className="absolute left-0 top-3 bottom-3 w-[4px] rounded-r-lg"
+                  <div className="absolute left-0 top-3 bottom-3 w-[4.5px] rounded-r-lg"
                     style={{ backgroundColor: SEV_HEX[s.key], opacity: s.count > 0 ? 1 : 0.2 }} />
                   <div className="pl-3">
                     <div className="flex items-center justify-between mb-4">
-                      <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-slate-400">{s.label}</p>
+                      <p className="text-[10.5px] font-extrabold uppercase tracking-[0.14em] text-slate-100">{s.label}</p>
                       <div className="p-1.5 rounded-lg border"
                         style={{ backgroundColor: `${SEV_HEX[s.key]}14`, borderColor: `${SEV_HEX[s.key]}28` }}>
                         <s.icon size={13} style={{ color: SEV_HEX[s.key], opacity: s.count > 0 ? 1 : 0.3 }} />
@@ -1088,7 +1088,7 @@ export const ScannerPage: React.FC = () => {
                     <p className="text-[50px] font-black font-tight leading-none tracking-tight text-white">
                       {securityLoading ? '—' : s.count}
                     </p>
-                    <p className="text-[11px] text-slate-300 mt-2">{s.desc}</p>
+                    <p className="text-[11.5px] text-slate-200 mt-2 font-medium">{s.desc}</p>
                     {totalBugs > 0 && (
                       <div className="mt-3 w-full h-[2px] rounded-full bg-white/[0.05] overflow-hidden">
                         <div className="h-full rounded-full"
@@ -1358,7 +1358,7 @@ export const ScannerPage: React.FC = () => {
       id: 'chat',
       label: '💬 AI Chat',
       content: (
-        <div className={clsx(CARD, "flex flex-col h-[550px] bg-slate-surface/30 p-0 overflow-hidden")}>
+        <div className={clsx(CARD, "flex flex-col h-[550px] p-0 overflow-hidden")}>
           {/* Header */}
           <div className="flex justify-between items-center px-6 py-4 bg-slate-900/60 border-b border-slate-border/30">
             <div>
@@ -1536,7 +1536,7 @@ export const ScannerPage: React.FC = () => {
       id: 'structure',
       label: '🌳 Structure',
       content: (
-        <div className={clsx(CARD, "p-6 space-y-4 bg-slate-surface/30")}>
+        <div className={clsx(CARD, "p-6 space-y-4")}>
           <div>
             <h3 className="text-base font-bold text-slate-100 font-display">Directory Structure</h3>
             <p className="text-slate-400 text-xs mt-0.5">Static representation of repository directories.</p>
@@ -1557,7 +1557,7 @@ export const ScannerPage: React.FC = () => {
       label: `🔌 APIs (${apis.length})`,
       content: (
         <div className="space-y-4">
-          <div className={clsx(CARD, "bg-slate-surface/30 p-4")}>
+          <div className={clsx(CARD, "p-4")}>
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
               <div className="space-y-1">
                 <h4 className="text-sm font-bold text-slate-200 flex items-center gap-2">
@@ -1639,7 +1639,7 @@ export const ScannerPage: React.FC = () => {
       label: `🔑 Key Files (${keyFiles.length})`,
       content: (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className={clsx(CARD, "p-6 bg-slate-surface/30 max-h-[500px] overflow-y-auto")}>
+          <div className={clsx(CARD, "p-6 max-h-[500px] overflow-y-auto")}>
             <h3 className="text-base font-bold text-slate-100 font-display mb-4">Code Highlights</h3>
             <div className="space-y-2">
               {keyFiles.map((file: any, idx: number) => (
@@ -1662,7 +1662,7 @@ export const ScannerPage: React.FC = () => {
             </div>
           </div>
 
-          <div className={clsx(CARD, "p-6 lg:col-span-2 bg-slate-surface/30 flex flex-col")}>
+          <div className={clsx(CARD, "p-6 lg:col-span-2 flex flex-col")}>
             <div className="flex justify-between items-center mb-4 pb-3 border-b border-slate-border/30">
               <div>
                 <h3 className="text-base font-bold text-slate-100 font-display">Code Viewer</h3>
@@ -1943,7 +1943,7 @@ export const ScannerPage: React.FC = () => {
       label: '🛠️ Tech Stack',
       content: (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div className={clsx(CARD, "p-6 bg-slate-surface/30")}>
+          <div className={clsx(CARD, "p-6")}>
             <h3 className="text-sm font-bold text-slate-100 font-display mb-3">Languages</h3>
             <div className="flex flex-wrap gap-1.5">
               {techStack.languages?.length > 0 ? (
@@ -1953,7 +1953,7 @@ export const ScannerPage: React.FC = () => {
               ) : <span className="text-slate-500 italic text-xs">None detected</span>}
             </div>
           </div>
-          <div className={clsx(CARD, "p-6 bg-slate-surface/30")}>
+          <div className={clsx(CARD, "p-6")}>
             <h3 className="text-sm font-bold text-slate-100 font-display mb-3">Frameworks</h3>
             <div className="flex flex-wrap gap-1.5">
               {techStack.frameworks?.length > 0 ? (
@@ -1963,7 +1963,7 @@ export const ScannerPage: React.FC = () => {
               ) : <span className="text-slate-500 italic text-xs">None detected</span>}
             </div>
           </div>
-          <div className={clsx(CARD, "p-6 bg-slate-surface/30")}>
+          <div className={clsx(CARD, "p-6")}>
             <h3 className="text-sm font-bold text-slate-100 font-display mb-3">Databases</h3>
             <div className="flex flex-wrap gap-1.5">
               {techStack.databases?.length > 0 ? (
@@ -1981,7 +1981,7 @@ export const ScannerPage: React.FC = () => {
       label: '🏗️ Architecture',
       content: (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div className={clsx(CARD, "p-6 bg-slate-surface/30")}>
+          <div className={clsx(CARD, "p-6")}>
             <h3 className="text-sm font-bold text-slate-100 font-display mb-3">Backend Architecture Layers</h3>
             <div className="space-y-2">
               {architecture.layers?.length > 0 ? (
@@ -1991,7 +1991,7 @@ export const ScannerPage: React.FC = () => {
               ) : <div className="text-slate-500 italic text-xs">None detected</div>}
             </div>
           </div>
-          <div className={clsx(CARD, "p-6 bg-slate-surface/30")}>
+          <div className={clsx(CARD, "p-6")}>
             <h3 className="text-sm font-bold text-slate-100 font-display mb-3">Structural Patterns</h3>
             <div className="space-y-2">
               {architecture.patterns?.length > 0 ? (
@@ -2001,7 +2001,7 @@ export const ScannerPage: React.FC = () => {
               ) : <div className="text-slate-500 italic text-xs">None detected</div>}
             </div>
           </div>
-          <div className={clsx(CARD, "p-6 bg-slate-surface/30")}>
+          <div className={clsx(CARD, "p-6")}>
             <h3 className="text-sm font-bold text-slate-100 font-display mb-3">External Integrations</h3>
             <div className="space-y-2">
               {architecture.external_services?.length > 0 ? (
@@ -2019,11 +2019,11 @@ export const ScannerPage: React.FC = () => {
       label: '🎨 UX & Build',
       content: (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          <div className={clsx(CARD, "p-6 bg-slate-surface/30")}>
+          <div className={clsx(CARD, "p-6")}>
             <h4 className="text-xs text-slate-500 font-mono uppercase tracking-wider mb-2">Frontend Framework</h4>
             <div className="text-slate-200 font-bold font-mono text-sm">{uxArchitecture.frontend_framework || 'Not detected'}</div>
           </div>
-          <div className={clsx(CARD, "p-6 bg-slate-surface/30")}>
+          <div className={clsx(CARD, "p-6")}>
             <h4 className="text-xs text-slate-500 font-mono uppercase tracking-wider mb-2">Styling Libraries</h4>
             <div className="flex flex-wrap gap-1.5">
               {uxArchitecture.styling?.length > 0 ? (
@@ -2033,7 +2033,7 @@ export const ScannerPage: React.FC = () => {
               ) : <span className="text-slate-500 italic text-xs">None detected</span>}
             </div>
           </div>
-          <div className={clsx(CARD, "p-6 bg-slate-surface/30")}>
+          <div className={clsx(CARD, "p-6")}>
             <h4 className="text-xs text-slate-500 font-mono uppercase tracking-wider mb-2">State Management</h4>
             <div className="flex flex-wrap gap-1.5">
               {uxArchitecture.state_management?.length > 0 ? (
@@ -2043,7 +2043,7 @@ export const ScannerPage: React.FC = () => {
               ) : <span className="text-slate-500 italic text-xs">None detected</span>}
             </div>
           </div>
-          <div className={clsx(CARD, "p-6 bg-slate-surface/30")}>
+          <div className={clsx(CARD, "p-6")}>
             <h4 className="text-xs text-slate-500 font-mono uppercase tracking-wider mb-2">Build Tools</h4>
             <div className="flex flex-wrap gap-1.5">
               {uxArchitecture.build_tools?.length > 0 ? (
@@ -2110,7 +2110,7 @@ export const ScannerPage: React.FC = () => {
               <>
                 {/* Composite Score Hero */}
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                  <div className={clsx(CARD, 'lg:col-span-1 flex flex-col items-center justify-center py-10 border', bgMap[riskProfile.composite.color] || 'bg-slate-surface/30 border-white/[0.08]')}>
+                  <div className={clsx(CARD, 'lg:col-span-1 flex flex-col items-center justify-center py-10 border', bgMap[riskProfile.composite.color] || 'bg-slate-elevated border-white/[0.12]')}>
                     <div className="text-7xl font-black font-display tracking-tight">
                       <span className={colorMap[riskProfile.composite.color] || 'text-slate-100'}>
                         {riskProfile.composite.score.toFixed(0)}
@@ -2137,7 +2137,7 @@ export const ScannerPage: React.FC = () => {
                   </div>
 
                   {/* Radar Chart */}
-                  <div className={clsx(CARD, "p-6 lg:col-span-2 bg-slate-surface/30 flex items-center justify-center")}>
+                  <div className={clsx(CARD, "p-6 lg:col-span-2 flex items-center justify-center")}>
                     <svg viewBox="0 0 280 280" width="280" height="280">
                       {/* Grid rings */}
                       {[0.25, 0.5, 0.75, 1].map(frac => (
@@ -2175,7 +2175,7 @@ export const ScannerPage: React.FC = () => {
                 {/* Dimension Breakdown */}
                 <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
                   {riskProfile.dimensions.map(dim => (
-                    <div key={dim.name} className={clsx(CARD, "p-6 bg-slate-surface/30 space-y-4")}>
+                    <div key={dim.name} className={clsx(CARD, "p-6 space-y-4")}>
                       <div className="flex items-center justify-between">
                         <div>
                           <h4 className="font-bold text-slate-100 font-display text-sm">{dim.name}</h4>
