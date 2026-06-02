@@ -72,6 +72,7 @@ def register_blueprints(app):
         settings_bp,
         performance_bp,
         threats_bp,  # noqa: F401
+        remediation_bp,
     )
 
     app.register_blueprint(chat_bp, url_prefix='/api/chat')
@@ -86,6 +87,7 @@ def register_blueprints(app):
     app.register_blueprint(settings_bp, url_prefix='/api/settings')
     app.register_blueprint(performance_bp, url_prefix='/api/performance')
     app.register_blueprint(threats_bp, url_prefix='/api/threats')
+    app.register_blueprint(remediation_bp, url_prefix='/api/remediation')
 
     print("✅ Blueprints registered")
 

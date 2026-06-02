@@ -14,6 +14,7 @@ import { ReportsPage } from '@/pages/ReportsPage'
 import { PerformancePage } from '@/pages/PerformancePage'
 import { ThreatPage } from '@/pages/ThreatPage'
 import { DependenciesPage } from '@/pages/DependenciesPage'
+import { RemediationPage } from '@/pages/RemediationPage'
 import { useAuthStore } from '@/store/authStore'
 import { initializeAuth } from '@/store/authStore'
 
@@ -51,6 +52,7 @@ export function App() {
                     <Route path="/performance" element={<PerformancePage />} />
                     <Route path="/threats" element={<ThreatPage />} />
                     <Route path="/dependencies" element={<DependenciesPage />} />
+                    <Route path="/remediation" element={<RemediationPage />} />
                     <Route path="/settings" element={<SettingsPage />} />
                   </Routes>
                 </MainLayout>
