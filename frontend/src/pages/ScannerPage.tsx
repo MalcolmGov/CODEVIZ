@@ -10,7 +10,7 @@ import { useBugsStore } from '@/store/bugsStore'
 import { useRefactoringStore } from '@/store/refactoringStore'
 import { chatService } from '@/services/chat'
 import { scoringService, RiskProfile } from '@/services/scoring'
-import { securityService } from '@/services/security'
+import { securityService, cveService } from '@/services/security'
 import { refactoringService } from '@/services/refactoring'
 import {
   Terminal, ShieldCheck, Cpu, Code2, Server, Globe, Shield,
@@ -181,6 +181,14 @@ export const ScannerPage: React.FC = () => {
   const { opportunities, setOpportunities } = useRefactoringStore()
   const [securityLoading, setSecurityLoading] = useState(false)
   const [refactorLoading, setRefactorLoading] = useState(false)
+
+  // CVE scan state
+  const [cveResults, setCveResults]   = useState<any[]>([])
+  const [cveSummary, setCveSummary]   = useState<any>(null)
+  const [cveScanned, setCveScanned]   = useState(0)
+  const [cveAffected, setCveAffected] = useState(0)
+  const [cveLoading, setCveLoading]   = useState(false)
+  const [cveRan, setCveRan]           = useState(false)
 
   // Scroll to bottom of chat when messages change or tab changes to chat
   useEffect(() => {
@@ -1099,6 +1107,43 @@ export const ScannerPage: React.FC = () => {
             </div>
           </div>
 
+          {/* ── 2b. CVE Supply Chain Summary (shown after scan) ───────────────── */}
+          {cveRan && cveSummary && (cveResults.length > 0) && (
+            <div className="rounded-2xl border border-white/[0.08] bg-slate-surface shadow-card p-4">
+              <div className="flex flex-wrap items-center justify-between gap-4">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 rounded-xl bg-amber-500/[0.08] border border-amber-500/20">
+                    <Package size={15} className="text-amber-400" />
+                  </div>
+                  <div>
+                    <p className="text-[9px] font-bold uppercase tracking-[0.13em] text-slate-600">Supply Chain</p>
+                    <p className="text-slate-300 text-[13px] font-semibold font-tight">
+                      {cveResults.length} CVEs in {cveAffected} packages
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2 flex-wrap">
+                  {(['critical','high','medium','low'] as const).map(sev => {
+                    const SEV_HEX_OV: Record<string, string> = { critical:'#ef4444', high:'#f97316', medium:'#eab308', low:'#3b82f6' }
+                    const count = cveSummary[sev] || 0
+                    if (!count) return null
+                    return (
+                      <div key={sev} className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border"
+                        style={{ borderColor: `${SEV_HEX_OV[sev]}25`, backgroundColor: `${SEV_HEX_OV[sev]}10` }}>
+                        <span className="text-[16px] font-black font-tight" style={{ color: SEV_HEX_OV[sev] }}>{count}</span>
+                        <span className="text-[9px] uppercase tracking-wider" style={{ color: SEV_HEX_OV[sev], opacity: 0.7 }}>{sev}</span>
+                      </div>
+                    )
+                  })}
+                  <button onClick={() => setCurrentTab('dependencies')}
+                    className="text-[11px] text-indigo-400/60 hover:text-indigo-400 font-medium transition-colors flex items-center gap-1">
+                    View details <ChevronRight size={11} />
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* ── 3. Top Findings + AI Recommendations ─────────────────────────── */}
           <div className="grid grid-cols-12 gap-5">
 
@@ -1652,7 +1697,252 @@ export const ScannerPage: React.FC = () => {
     {
       id: 'dependencies',
       label: `📚 Deps (${dependencies.length})`,
-      content: renderExplorer('dependencies', 'Manifest Dependencies', 'Project modules parsed from lockfiles and requirements.', dependencies, dependenciesColumns, ['package', 'type'])
+      content: (() => {
+        const SEV_HEX_CVE: Record<string, string> = {
+          critical: '#ef4444', high: '#f97316', medium: '#eab308', low: '#3b82f6',
+        }
+        const runCveScan = async () => {
+          if (!sessionId || cveLoading) return
+          setCveLoading(true)
+          try {
+            const res = await cveService.scan(sessionId)
+            const d = (res.data as any).data
+            setCveResults(d.vulnerabilities || [])
+            setCveSummary(d.summary || {})
+            setCveScanned(d.scanned || 0)
+            setCveAffected(d.affected || 0)
+            setCveRan(true)
+          } catch {
+            setCveRan(true)
+          } finally {
+            setCveLoading(false)
+          }
+        }
+
+        return (
+          <div className="space-y-5">
+            {/* Header + scan button */}
+            <div className="rounded-2xl border border-white/[0.08] bg-slate-surface shadow-card p-5">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div>
+                  <p className="text-[10px] font-bold uppercase tracking-[0.13em] text-slate-600 mb-1">
+                    Supply Chain Security
+                  </p>
+                  <h2 className="text-[15px] font-semibold text-slate-200 font-tight">
+                    Dependency CVE Scan
+                  </h2>
+                  <p className="text-[12px] text-slate-500 mt-0.5">
+                    {dependencies.length} packages detected · powered by{' '}
+                    <span className="text-indigo-400/70 font-mono">osv.dev</span>
+                  </p>
+                </div>
+                <div className="flex flex-wrap items-center gap-3">
+                  {cveRan && cveSummary && (
+                    <div className="flex items-center gap-2">
+                      {[
+                        { key: 'critical', label: 'Critical' },
+                        { key: 'high',     label: 'High'     },
+                        { key: 'medium',   label: 'Medium'   },
+                        { key: 'low',      label: 'Low'      },
+                      ].map(s => (
+                        cveSummary[s.key] > 0 && (
+                          <div key={s.key}
+                            className="text-center px-3 py-1.5 rounded-lg border"
+                            style={{ borderColor: `${SEV_HEX_CVE[s.key]}28`, backgroundColor: `${SEV_HEX_CVE[s.key]}10` }}>
+                            <p className="text-[18px] font-black font-tight leading-none" style={{ color: SEV_HEX_CVE[s.key] }}>
+                              {cveSummary[s.key]}
+                            </p>
+                            <p className="text-[9px] uppercase tracking-wider mt-0.5" style={{ color: SEV_HEX_CVE[s.key], opacity: 0.7 }}>
+                              {s.label}
+                            </p>
+                          </div>
+                        )
+                      ))}
+                    </div>
+                  )}
+                  <button
+                    onClick={runCveScan}
+                    disabled={cveLoading || !sessionId}
+                    className={clsx(
+                      'flex items-center gap-2 px-4 py-2 rounded-xl text-[12px] font-semibold transition-all duration-200',
+                      cveRan
+                        ? 'border border-white/[0.08] bg-slate-elevated text-slate-400 hover:text-slate-200 hover:border-white/[0.14]'
+                        : 'bg-indigo-500 hover:bg-indigo-600 text-white shadow-sm shadow-indigo-500/30',
+                      'disabled:opacity-40'
+                    )}>
+                    {cveLoading
+                      ? <><RefreshCw size={13} className="animate-spin" /> Scanning OSV…</>
+                      : cveRan
+                      ? <><RefreshCw size={13} /> Rescan</>
+                      : <><ShieldAlert size={13} /> Scan for CVEs</>}
+                  </button>
+                </div>
+              </div>
+
+              {/* Scan meta */}
+              {cveRan && (
+                <div className="flex items-center gap-4 mt-4 pt-4 border-t border-white/[0.05] text-[11px] text-slate-600 font-mono">
+                  <span>{cveScanned} packages scanned</span>
+                  <span>·</span>
+                  <span>{cveResults.length} CVEs found</span>
+                  <span>·</span>
+                  <span>{cveAffected} packages affected</span>
+                </div>
+              )}
+            </div>
+
+            {/* CVE results table */}
+            {cveRan && cveResults.length > 0 && (
+              <div className="rounded-2xl border border-white/[0.08] bg-slate-surface shadow-card overflow-hidden">
+                {/* Table header */}
+                <div className="grid grid-cols-12 gap-3 px-5 py-3 bg-slate-elevated border-b border-white/[0.06]">
+                  {[
+                    ['Package',   'col-span-2'],
+                    ['Version',   'col-span-1'],
+                    ['CVE ID',    'col-span-3'],
+                    ['Severity',  'col-span-2'],
+                    ['CVSS',      'col-span-1'],
+                    ['Fix',       'col-span-2'],
+                    ['',          'col-span-1'],
+                  ].map(([h, c]) => (
+                    <div key={h} className={`${c} text-[9px] font-bold uppercase tracking-[0.13em] text-slate-600`}>{h}</div>
+                  ))}
+                </div>
+
+                {/* Rows */}
+                <div className="divide-y divide-white/[0.04] max-h-[540px] overflow-y-auto scrollbar-none">
+                  {cveResults.map((v: any, i: number) => (
+                    <div key={i}
+                      className="grid grid-cols-12 gap-3 px-5 py-3.5 hover:bg-white/[0.025] transition-colors group">
+
+                      {/* Package */}
+                      <div className="col-span-2 flex items-center">
+                        <div className="flex items-center gap-2 min-w-0">
+                          <div className="w-1.5 h-1.5 rounded-full shrink-0"
+                            style={{ backgroundColor: SEV_HEX_CVE[v.severity] || '#64748b' }} />
+                          <span className="text-[12px] font-semibold text-slate-300 font-mono truncate">
+                            {v.package}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Version */}
+                      <div className="col-span-1 flex items-center">
+                        <span className="text-[11px] text-slate-600 font-mono truncate">
+                          {v.version || '—'}
+                        </span>
+                      </div>
+
+                      {/* CVE ID */}
+                      <div className="col-span-3 flex items-center">
+                        <span className="text-[11px] font-mono text-slate-400 truncate" title={v.title}>
+                          {v.cve_id || v.osv_id || '—'}
+                        </span>
+                      </div>
+
+                      {/* Severity badge */}
+                      <div className="col-span-2 flex items-center">
+                        <span className="text-[9px] font-bold uppercase tracking-wider px-2 py-1 rounded-full border"
+                          style={{
+                            color: SEV_HEX_CVE[v.severity] || '#64748b',
+                            backgroundColor: `${SEV_HEX_CVE[v.severity] || '#64748b'}12`,
+                            borderColor: `${SEV_HEX_CVE[v.severity] || '#64748b'}28`,
+                          }}>
+                          {v.severity}
+                        </span>
+                      </div>
+
+                      {/* CVSS Score */}
+                      <div className="col-span-1 flex items-center">
+                        <span className="text-[12px] font-bold font-mono"
+                          style={{ color: v.cvss_score ? SEV_HEX_CVE[v.severity] : '#475569' }}>
+                          {v.cvss_score ?? '—'}
+                        </span>
+                      </div>
+
+                      {/* Fix available */}
+                      <div className="col-span-2 flex items-center">
+                        {v.fixed_in ? (
+                          <span className="text-[10px] text-emerald-400 font-mono bg-emerald-500/[0.08] px-2 py-0.5 rounded border border-emerald-500/20 truncate">
+                            → {v.fixed_in}
+                          </span>
+                        ) : (
+                          <span className="text-[10px] text-slate-700 font-mono">No fix</span>
+                        )}
+                      </div>
+
+                      {/* Details link */}
+                      <div className="col-span-1 flex items-center justify-end">
+                        <a href={v.details_url} target="_blank" rel="noopener noreferrer"
+                          className="text-[10px] text-indigo-400/50 hover:text-indigo-400 font-mono transition-colors"
+                          onClick={e => e.stopPropagation()}>
+                          OSV ↗
+                        </a>
+                      </div>
+
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Empty state after scan */}
+            {cveRan && cveResults.length === 0 && (
+              <div className="rounded-2xl border border-white/[0.08] bg-slate-surface shadow-card p-10 text-center">
+                <CheckCircle2 size={24} className="text-emerald-400 mx-auto mb-3" />
+                <p className="text-slate-300 text-[14px] font-semibold font-tight">No CVEs found</p>
+                <p className="text-slate-600 text-[12px] mt-1">
+                  All {cveScanned} scanned packages appear clean in the OSV database.
+                </p>
+              </div>
+            )}
+
+            {/* Pre-scan state */}
+            {!cveRan && (
+              <div className="rounded-2xl border border-dashed border-white/[0.07] p-10 text-center">
+                <ShieldAlert size={22} className="text-slate-700 mx-auto mb-3" />
+                <p className="text-slate-600 text-[13px] font-medium">Click "Scan for CVEs" to check all {dependencies.length} packages</p>
+                <p className="text-slate-700 text-[11px] mt-1 font-mono">
+                  Queries osv.dev · free · no API key required · covers PyPI, npm, and more
+                </p>
+              </div>
+            )}
+
+            {/* Raw dependency list below (always visible) */}
+            <div className="rounded-2xl border border-white/[0.08] bg-slate-surface shadow-card p-5">
+              <p className="text-[10px] font-bold uppercase tracking-[0.13em] text-slate-600 mb-3">
+                All dependencies ({dependencies.length})
+              </p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 max-h-[320px] overflow-y-auto scrollbar-none">
+                {dependencies.map((d: any, i: number) => {
+                  const isAffected = cveRan && cveResults.some((v: any) => d.package?.includes(v.package))
+                  return (
+                    <div key={i} className={clsx(
+                      'flex items-center gap-2.5 px-3 py-2 rounded-xl transition-colors',
+                      isAffected ? 'bg-rose-500/[0.06] border border-rose-500/20' : 'hover:bg-white/[0.025]'
+                    )}>
+                      <span className={clsx(
+                        'text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded border font-mono shrink-0',
+                        d.type === 'python'
+                          ? 'text-blue-400 bg-blue-500/10 border-blue-500/20'
+                          : d.type === 'npm_dev'
+                          ? 'text-slate-500 bg-slate-800/30 border-slate-700/30'
+                          : 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20'
+                      )}>
+                        {d.type === 'python' ? 'py' : d.type === 'npm_dev' ? 'dev' : 'npm'}
+                      </span>
+                      <span className="text-[11px] text-slate-400 font-mono truncate flex-1">{d.package}</span>
+                      {isAffected && (
+                        <span className="w-1.5 h-1.5 rounded-full bg-rose-400 shrink-0" title="CVE found" />
+                      )}
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+          </div>
+        )
+      })()
     },
     {
       id: 'tech_stack',
@@ -2035,21 +2325,39 @@ export const ScannerPage: React.FC = () => {
             })}
           </div>
 
-          {/* Sub-tabs — only when the active group has more than one tab */}
+          {/* Sub-tabs — underline style for small groups, wrapping pills for large */}
           {subTabs.length > 1 && (
-            <div className="flex gap-0 border-b border-white/[0.06] mt-4 overflow-x-auto scrollbar-none">
-              {subTabs.map(tab => (
-                <button key={tab.id} onClick={() => setCurrentTab(tab.id)}
-                  className={clsx(
-                    'px-4 py-2 text-[12px] font-medium border-b-2 -mb-px transition-colors whitespace-nowrap shrink-0',
-                    currentTab === tab.id
-                      ? 'border-indigo-500 text-indigo-400'
-                      : 'border-transparent text-slate-500 hover:text-slate-300'
-                  )}>
-                  {tab.label}
-                </button>
-              ))}
-            </div>
+            subTabs.length <= 4 ? (
+              /* Underline tabs — Security group (2 tabs) */
+              <div className="flex gap-0 border-b border-white/[0.06] mt-4">
+                {subTabs.map(tab => (
+                  <button key={tab.id} onClick={() => setCurrentTab(tab.id)}
+                    className={clsx(
+                      'px-4 py-2 text-[12px] font-medium border-b-2 -mb-px transition-colors whitespace-nowrap shrink-0',
+                      currentTab === tab.id
+                        ? 'border-indigo-500 text-indigo-400'
+                        : 'border-transparent text-slate-500 hover:text-slate-300'
+                    )}>
+                    {tab.label}
+                  </button>
+                ))}
+              </div>
+            ) : (
+              /* Wrapping pills — Technical group (many tabs) */
+              <div className="flex flex-wrap gap-1.5 mt-4 p-3 rounded-2xl border border-white/[0.06] bg-slate-elevated">
+                {subTabs.map(tab => (
+                  <button key={tab.id} onClick={() => setCurrentTab(tab.id)}
+                    className={clsx(
+                      'px-3 py-1.5 rounded-lg text-[11px] font-medium transition-all duration-150',
+                      currentTab === tab.id
+                        ? 'bg-indigo-500/20 border border-indigo-500/30 text-indigo-400'
+                        : 'border border-white/[0.06] text-slate-500 hover:text-slate-300 hover:border-white/[0.12] hover:bg-white/[0.03]'
+                    )}>
+                    {tab.label}
+                  </button>
+                ))}
+              </div>
+            )
           )}
 
           {/* Active tab content */}

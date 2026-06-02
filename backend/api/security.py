@@ -350,3 +350,140 @@ def auto_stage():
             
     except Exception as e:
         return format_error_response(str(e))[0], 500
+
+
+# ── CVE lookup via OSV.dev (free, no API key) ─────────────────────────────
+
+def _parse_dep(dep: dict):
+    """Parse package name, version, and OSV ecosystem from a dependency dict."""
+    import re
+    pkg      = dep.get('package', '')
+    dep_type = dep.get('type', 'npm')
+
+    if dep_type == 'python':
+        m        = re.match(r'^([A-Za-z0-9._-]+)\s*[>=<!^~,\s]*([0-9][^\s,;]*)?', pkg)
+        name     = m.group(1) if m else pkg.split('[')[0]
+        version  = m.group(2) if m and m.group(2) else ''
+        ecosystem = 'PyPI'
+    else:
+        if pkg.startswith('@') and pkg.count('@') > 1:
+            idx      = pkg.rindex('@')
+            name, version = pkg[:idx], pkg[idx+1:].lstrip('^~>=')
+        elif '@' in pkg:
+            parts    = pkg.split('@', 1)
+            name, version = parts[0], parts[1].lstrip('^~>=')
+        else:
+            name, version = pkg, ''
+        ecosystem = 'npm'
+
+    return name.strip(), version.strip(), ecosystem
+
+
+def _get_fixed_version(osv_vuln: dict) -> str:
+    for affected in osv_vuln.get('affected', []):
+        for rng in affected.get('ranges', []):
+            for event in rng.get('events', []):
+                if 'fixed' in event:
+                    return event['fixed']
+    return ''
+
+
+def _severity_from_osv(osv_vuln: dict):
+    """Return (severity_str, cvss_score) from an OSV vulnerability."""
+    for sev in osv_vuln.get('severity', []):
+        if sev.get('type') in ('CVSS_V3', 'CVSS_V2'):
+            try:
+                score = float(sev.get('score', 0))
+                if score >= 9.0:   return 'critical', score
+                if score >= 7.0:   return 'high', score
+                if score >= 4.0:   return 'medium', score
+                return 'low', score
+            except (ValueError, TypeError):
+                pass
+    # Fallback to database_specific
+    db_sev = osv_vuln.get('database_specific', {}).get('severity', '').lower()
+    if db_sev in ('critical', 'high', 'medium', 'low'):
+        return db_sev, None
+    return 'low', None
+
+
+@security_bp.route('/cve-scan/<session_id>', methods=['POST'])
+def scan_cve(session_id):
+    """
+    Batch CVE lookup for all dependencies in a session using the OSV API.
+    Free endpoint — no API key required.
+    """
+    try:
+        import requests as req
+        from api.chat import repo_chats
+
+        if session_id not in repo_chats:
+            return format_error_response('Invalid session ID')[0], 404
+
+        chat    = repo_chats[session_id]
+        ctx     = chat.context if hasattr(chat, 'context') else {}
+        raw_deps = ctx.get('dependencies', [])
+
+        if not raw_deps:
+            return format_success_response({
+                'vulnerabilities': [], 'scanned': 0, 'affected': 0,
+                'summary': {'critical': 0, 'high': 0, 'medium': 0, 'low': 0},
+            }, 'No dependencies found')[0], 200
+
+        # Parse + build OSV batch queries (cap at 150 packages)
+        parsed  = [_parse_dep(d) for d in raw_deps[:150]]
+        queries = []
+        for name, version, ecosystem in parsed:
+            q = {'package': {'name': name, 'ecosystem': ecosystem}}
+            if version and version[0].isdigit():
+                q['version'] = version
+            queries.append(q)
+
+        # OSV batch query
+        osv_resp = req.post(
+            'https://api.osv.dev/v1/querybatch',
+            json={'queries': queries},
+            timeout=25,
+        )
+        if osv_resp.status_code != 200:
+            return format_error_response(f'OSV API error: {osv_resp.status_code}')[0], 502
+
+        results_raw = osv_resp.json().get('results', [])
+
+        SEV_ORDER = {'critical': 0, 'high': 1, 'medium': 2, 'low': 3}
+        vulns     = []
+        counts    = {'critical': 0, 'high': 0, 'medium': 0, 'low': 0}
+
+        for i, (name, version, ecosystem) in enumerate(parsed):
+            result = results_raw[i] if i < len(results_raw) else {}
+            for osv_vuln in result.get('vulns', [])[:3]:
+                severity, cvss = _severity_from_osv(osv_vuln)
+                counts[severity] = counts.get(severity, 0) + 1
+
+                aliases = osv_vuln.get('aliases', [])
+                cve_id  = next((a for a in aliases if a.startswith('CVE-')), osv_vuln.get('id', ''))
+
+                vulns.append({
+                    'package':     name,
+                    'version':     version,
+                    'ecosystem':   ecosystem,
+                    'cve_id':      cve_id,
+                    'osv_id':      osv_vuln.get('id', ''),
+                    'title':       (osv_vuln.get('summary') or 'Vulnerability detected')[:140],
+                    'severity':    severity,
+                    'cvss_score':  round(cvss, 1) if cvss else None,
+                    'fixed_in':    _get_fixed_version(osv_vuln),
+                    'details_url': f"https://osv.dev/vulnerability/{osv_vuln.get('id', '')}",
+                })
+
+        vulns.sort(key=lambda v: SEV_ORDER.get(v['severity'], 4))
+
+        return format_success_response({
+            'vulnerabilities': vulns,
+            'summary': counts,
+            'scanned': len(parsed),
+            'affected': len({v['package'] for v in vulns}),
+        }, f'CVE scan complete — {len(vulns)} vulnerabilities in {len({v["package"] for v in vulns})} packages')[0], 200
+
+    except Exception as e:
+        return format_error_response(str(e))[0], 500

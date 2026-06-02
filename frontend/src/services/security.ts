@@ -27,3 +27,8 @@ export const securityService = {
   autoStage: (sessionId: string, bugs: any[]) =>
     api.post('/security/auto-stage', { session_id: sessionId, bugs }),
 }
+// Appended:
+export const cveService = {
+  scan: (sessionId: string) =>
+    api.post(`/security/cve-scan/${sessionId}`, {}),
+}
