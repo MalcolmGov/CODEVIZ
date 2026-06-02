@@ -6,20 +6,37 @@ import { Table } from '@/components/common/Table'
 import { Badge } from '@/components/common/Badge'
 import { useSessionStore } from '@/store/sessionStore'
 import { useBugsStore } from '@/store/bugsStore'
+import { useRefactoringStore } from '@/store/refactoringStore'
 import { scoringService, RiskProfile } from '@/services/scoring'
+import { refactoringService } from '@/services/refactoring'
 import { Shield, BarChart3, RefreshCw, Terminal, CheckCircle2, ChevronRight, Activity, Trophy } from 'lucide-react'
 
 export const DashboardPage: React.FC = () => {
   const navigate = useNavigate()
   const { currentSessionId, sessionData } = useSessionStore()
   const { bugs } = useBugsStore()
+  const { opportunities, setOpportunities } = useRefactoringStore()
   const [riskProfile, setRiskProfile] = useState<RiskProfile | null>(null)
+  const [refactorLoading, setRefactorLoading] = useState(false)
 
   useEffect(() => {
     if (!currentSessionId) return
     scoringService.getScore(currentSessionId)
       .then(res => setRiskProfile((res.data as any).data))
       .catch(() => {})
+  }, [currentSessionId])
+
+  // Lazy-load refactoring opportunities if we have a session but the store is empty
+  useEffect(() => {
+    if (!currentSessionId || opportunities.length > 0) return
+    setRefactorLoading(true)
+    refactoringService.getOpportunities(currentSessionId)
+      .then(res => {
+        const opps = (res.data as any)?.data?.opportunities || []
+        setOpportunities(opps)
+      })
+      .catch(() => {})
+      .finally(() => setRefactorLoading(false))
   }, [currentSessionId])
 
   const criticalBugs = bugs.filter(b => b.severity === 'critical' || b.severity === 'high').length
@@ -29,12 +46,25 @@ export const DashboardPage: React.FC = () => {
     ? `${riskProfile.composite.score.toFixed(0)}% ${riskProfile.composite.grade}`
     : currentSessionId ? '—' : '100%'
 
+  // Derive a short display name from the scanned repo path.
+  // GitHub URLs  → last 2 segments → "MalcolmGov/CODEVIZ"
+  // Local paths  → last 1 segment  → "codeviz"
+  const repoDisplayName = (() => {
+    const p = sessionData?.repo_path
+    if (!p) return null
+    const parts = p.split('/').filter(Boolean)
+    if (p.includes('github.com') && parts.length >= 2) {
+      return parts.slice(-2).join('/')
+    }
+    return parts[parts.length - 1] || null
+  })()
+
   const stats = [
-    { 
-      label: 'Repositories Scanned', 
-      value: currentSessionId ? '1' : '0', 
-      icon: Terminal, 
-      desc: 'Active developer environments',
+    {
+      label: 'Repositories Scanned',
+      value: currentSessionId ? '1' : '0',
+      icon: Terminal,
+      desc: repoDisplayName ? repoDisplayName : 'Active developer environments',
       cardClass: 'border-indigo-500/20 dark:border-indigo-500/40 hover:border-indigo-500/40 dark:hover:border-indigo-500/60 bg-gradient-to-br from-indigo-50/60 via-indigo-50/20 to-slate-surface dark:from-indigo-950/60 dark:via-indigo-900/30 dark:to-slate-950/40 shadow-md dark:shadow-lg shadow-indigo-500/5 dark:shadow-indigo-500/20 hover:shadow-lg dark:hover:shadow-indigo-500/30',
       iconClass: 'text-indigo-600 dark:text-indigo-300 bg-indigo-500/10 dark:bg-indigo-500/30 border-indigo-500/20 dark:border-indigo-400/40',
       glowClass: 'bg-indigo-500/10 dark:bg-indigo-500/30 blur-3xl',
@@ -50,11 +80,13 @@ export const DashboardPage: React.FC = () => {
       glowClass: 'bg-rose-500/10 dark:bg-rose-500/30 blur-3xl',
       valClass: 'bg-gradient-to-r from-rose-600 via-rose-500 to-rose-700 dark:from-rose-100 dark:via-rose-200 dark:to-rose-300 text-transparent bg-clip-text drop-shadow-[0_2px_8px_rgba(244,63,94,0.15)] dark:drop-shadow-[0_2px_8px_rgba(244,63,94,0.3)]'
     },
-    { 
-      label: 'Refactor Opportunities', 
-      value: currentSessionId ? '8' : '0', 
-      icon: RefreshCw, 
-      desc: 'Redundancies & quality issues',
+    {
+      label: 'Refactor Opportunities',
+      value: !currentSessionId ? '0' : refactorLoading ? '—' : String(opportunities.length),
+      icon: RefreshCw,
+      desc: opportunities.length > 0
+        ? `${opportunities.length} refactor suggestion${opportunities.length === 1 ? '' : 's'} ready`
+        : 'Redundancies & quality issues',
       cardClass: 'border-amber-500/20 dark:border-amber-500/40 hover:border-amber-500/40 dark:hover:border-amber-500/60 bg-gradient-to-br from-amber-50/60 via-amber-50/20 to-slate-surface dark:from-amber-950/60 dark:via-amber-900/30 dark:to-slate-950/40 shadow-md dark:shadow-lg shadow-amber-500/5 dark:shadow-amber-500/20 hover:shadow-lg dark:hover:shadow-amber-500/30',
       iconClass: 'text-amber-600 dark:text-amber-300 bg-amber-500/10 dark:bg-amber-500/30 border-amber-500/20 dark:border-amber-400/40',
       glowClass: 'bg-amber-500/10 dark:bg-amber-500/30 blur-3xl',
