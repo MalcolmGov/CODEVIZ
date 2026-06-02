@@ -49,21 +49,20 @@ def create_session():
         temp_path = None
         
         if repo_input.startswith('http') or 'github.com' in repo_input:
-            mock_repos = {
-                'MalcolmGov/CODEVIZ': '/Users/malcolmgovender/.gemini/antigravity-ide/scratch/codeviz',
-                'MalcolmGov/coastal-clean': '/Users/malcolmgovender/.gemini/antigravity-ide/scratch/coastal-clean',
-                'MalcolmGov/SwifterWallet': '/Users/malcolmgovender/.gemini/antigravity-ide/scratch/SwifterWallet',
-                'MalcolmGov/intelligencehub': '/Users/malcolmgovender/.gemini/antigravity-ide/scratch/intelligencehub'
-            }
-            
+            # Optional: local path overrides from env (comma-separated "owner/repo=/local/path" pairs)
+            # e.g. LOCAL_REPO_OVERRIDES="MalcolmGov/CODEVIZ=/home/user/codeviz"
+            import os as _os
             matched_local = None
-            for key, val in mock_repos.items():
-                if key.lower() in repo_input.lower():
-                    import os
-                    if os.path.exists(val):
-                        matched_local = val
-                        break
-            
+            overrides_env = _os.getenv('LOCAL_REPO_OVERRIDES', '')
+            if overrides_env:
+                for pair in overrides_env.split(','):
+                    pair = pair.strip()
+                    if '=' in pair:
+                        key, val = pair.split('=', 1)
+                        if key.lower().strip() in repo_input.lower() and _os.path.exists(val.strip()):
+                            matched_local = val.strip()
+                            break
+
             if matched_local:
                 actual_path = matched_local
             else:
@@ -74,7 +73,7 @@ def create_session():
                     token = auth_header.split(' ')[1]
                 if token and token.startswith('mock_'):
                     token = None
-                    
+
                 scanner = GitHubScanner(token=token)
                 branch = data.get('branch', 'main')
                 temp_path = scanner.clone_repo(repo_input, branch)

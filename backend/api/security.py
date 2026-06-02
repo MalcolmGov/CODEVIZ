@@ -52,12 +52,23 @@ def scan_security(session_id):
                         except Exception:
                             pass
         
-        # Convert to dict
-        bugs_data = [bug.to_dict() if hasattr(bug, 'to_dict') else bug for bug in bugs]
+        # Convert to dict and normalise severity (strip emoji prefix from enum values)
+        def _norm_sev(s: str) -> str:
+            s = str(s).lower()
+            for lvl in ('critical', 'high', 'medium', 'low'):
+                if lvl in s:
+                    return lvl
+            return 'low'
+
+        bugs_data = []
+        for bug in bugs:
+            d = bug.to_dict() if hasattr(bug, 'to_dict') else dict(bug)
+            d['severity'] = _norm_sev(d.get('severity', ''))
+            bugs_data.append(d)
 
         # Calculate summary
-        critical = len([b for b in bugs_data if 'CRITICAL' in str(b.get('severity', ''))])
-        high = len([b for b in bugs_data if 'HIGH' in str(b.get('severity', ''))])
+        critical = len([b for b in bugs_data if b.get('severity') == 'critical'])
+        high = len([b for b in bugs_data if b.get('severity') == 'high'])
 
         # ── Store in session context so Threats / Dashboard can reuse ──────
         try:

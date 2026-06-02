@@ -193,14 +193,26 @@ export const DashboardPage: React.FC = () => {
       .finally(() => setSummaryLoading(false))
   }, [currentSessionId])
 
-  // ── Derived counts ─────────────────────────────────────────────────────
-  const critCount  = bugs.filter(b => b.severity === 'critical').length
-  const highCount  = bugs.filter(b => b.severity === 'high').length
-  const medCount   = bugs.filter(b => b.severity === 'medium').length
-  const lowCount   = bugs.filter(b => !b.severity || b.severity === 'low').length
+  // ── Derived counts — normalise severity (handles emoji-prefix from legacy API) ──
+  const normSev = (s?: string) => {
+    if (!s) return 'low'
+    const l = s.toLowerCase()
+    if (l.includes('critical')) return 'critical'
+    if (l.includes('high'))     return 'high'
+    if (l.includes('medium'))   return 'medium'
+    return 'low'
+  }
+  const critCount  = bugs.filter(b => normSev(b.severity) === 'critical').length
+  const highCount  = bugs.filter(b => normSev(b.severity) === 'high').length
+  const medCount   = bugs.filter(b => normSev(b.severity) === 'medium').length
+  const lowCount   = bugs.filter(b => normSev(b.severity) === 'low').length
   const totalBugs  = bugs.length
 
-  const postureScore = riskProfile?.composite.score ?? (currentSessionId ? null : 100)
+  // ── Posture score — use risk profile if available, else derive from real bug counts ──
+  const computedScore = bugs.length > 0
+    ? Math.max(0, Math.min(100, 100 - (critCount * 20) - (highCount * 8) - (medCount * 3) - (lowCount * 1)))
+    : null
+  const postureScore = riskProfile?.composite.score ?? computedScore ?? (currentSessionId ? null : 100)
   const scoreColor   = postureScore == null ? SEV.info
     : postureScore >= 80 ? SEV.clean
     : postureScore >= 60 ? SEV.medium
@@ -425,8 +437,10 @@ export const DashboardPage: React.FC = () => {
           },
           {
             label: 'Compliance Score',
-            value: riskProfile ? `${riskProfile.composite.score.toFixed(0)}%` : currentSessionId ? '—' : '100%',
-            sub: riskProfile ? `Grade ${riskProfile.composite.grade} · ${riskProfile.composite.label}` : 'OWASP · SOC 2 · GDPR · PCI-DSS',
+            value: postureScore != null ? `${postureScore.toFixed(0)}%` : currentSessionId ? '—' : '100%',
+            sub: postureScore != null
+              ? (postureScore >= 80 ? 'Grade A · Strong' : postureScore >= 60 ? 'Grade B · Moderate' : postureScore >= 40 ? 'Grade C · Elevated risk' : 'Grade D · Critical risk')
+              : 'OWASP · SOC 2 · GDPR · PCI-DSS',
             Icon: CheckCircle2,
             accent: postureScore != null ? scoreColor : SEV.clean,
             nav: '/compliance',
