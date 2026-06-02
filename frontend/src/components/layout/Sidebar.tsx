@@ -1,6 +1,6 @@
 import React from 'react'
 import { Link, useLocation } from 'react-router-dom'
-import { BarChart3, Shield, RefreshCw, Settings, Home, User, Terminal, ShieldCheck, FileText, Gauge, Skull, Package, Wrench, FlaskConical } from 'lucide-react'
+import { BarChart3, Shield, RefreshCw, Settings, Home, User, Terminal, ShieldCheck, FileText, Gauge, Skull, Package, Wrench, FlaskConical, Network, Globe } from 'lucide-react'
 import clsx from 'clsx'
 
 interface SidebarProps {
@@ -13,8 +13,10 @@ const menuItems = [
   { icon: BarChart3,   label: 'Scanner',     href: '/scanner' },
   { icon: Shield,      label: 'Security',    href: '/security' },
   { icon: Skull,       label: 'Threats',     href: '/threats' },
-  { icon: Package,     label: 'Dependencies', href: '/dependencies' },
-  { icon: Wrench,      label: 'Remediation',   href: '/remediation' },
+  { icon: Package,     label: 'Dependencies',     href: '/dependencies' },
+  { icon: Network,     label: 'Dep. Graph',       href: '/dependency-graph' },
+  { icon: Globe,       label: 'API Analyzer',     href: '/api-analyzer' },
+  { icon: Wrench,      label: 'Remediation',      href: '/remediation' },
   { icon: FlaskConical, label: 'Code Smells',  href: '/code-smells' },
   { icon: ShieldCheck, label: 'Compliance',  href: '/compliance' },
   { icon: FileText,    label: 'Reports',     href: '/reports' },

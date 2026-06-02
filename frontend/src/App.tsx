@@ -16,6 +16,8 @@ import { ThreatPage } from '@/pages/ThreatPage'
 import { DependenciesPage } from '@/pages/DependenciesPage'
 import { RemediationPage } from '@/pages/RemediationPage'
 import { CodeSmellsPage } from '@/pages/CodeSmellsPage'
+import { ApiAnalyzerPage } from '@/pages/ApiAnalyzerPage'
+import { DependencyGraphPage } from '@/pages/DependencyGraphPage'
 import { useAuthStore } from '@/store/authStore'
 import { initializeAuth } from '@/store/authStore'
 
@@ -55,6 +57,8 @@ export function App() {
                     <Route path="/dependencies" element={<DependenciesPage />} />
                     <Route path="/remediation" element={<RemediationPage />} />
                     <Route path="/code-smells" element={<CodeSmellsPage />} />
+                    <Route path="/api-analyzer" element={<ApiAnalyzerPage />} />
+                    <Route path="/dependency-graph" element={<DependencyGraphPage />} />
                     <Route path="/settings" element={<SettingsPage />} />
                   </Routes>
                 </MainLayout>

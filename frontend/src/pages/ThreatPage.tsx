@@ -63,9 +63,9 @@ function KillChain({ chain, onSelect, selected }: {
       onClick={onSelect}
       className={clsx(
         CARD, 'p-5 cursor-pointer transition-all duration-200',
-        selected ? 'ring-1 ring-inset' : 'hover:border-white/[0.14]',
+        selected ? '' : 'hover:border-white/[0.14]',
       )}
-      style={selected ? { ringColor: sevColor } : {}}
+      style={selected ? { boxShadow: `inset 0 0 0 1px ${sevColor}` } : {}}
     >
       {/* Header */}
       <div className="flex items-start justify-between mb-4">
