@@ -40,7 +40,7 @@ def init_extensions(app):
     migrate.init_app(app, db)
     
     # CORS for frontend communication
-    CORS(app, origins=["http://localhost:3000", "http://localhost:5173"])
+    CORS(app, origins=[r"http://localhost:\d+", r"http://127.0.0.1:\d+"], supports_credentials=True)
     
     # Session
     init_session(app)
