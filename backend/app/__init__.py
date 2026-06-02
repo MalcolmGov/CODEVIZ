@@ -86,6 +86,9 @@ def register_blueprints(app):
         remediation_bp,
         smells_bp,
         dashboard_bp,
+        notifications_bp,
+        apis_bp,
+        history_bp,
     )
 
     app.register_blueprint(chat_bp, url_prefix='/api/chat')
@@ -103,6 +106,9 @@ def register_blueprints(app):
     app.register_blueprint(remediation_bp, url_prefix='/api/remediation')
     app.register_blueprint(smells_bp, url_prefix='/api/smells')
     app.register_blueprint(dashboard_bp, url_prefix='/api/dashboard')
+    app.register_blueprint(notifications_bp, url_prefix='/api/notifications')
+    app.register_blueprint(apis_bp, url_prefix='/api/apis')
+    app.register_blueprint(history_bp, url_prefix='/api/history')
 
     print("✅ Blueprints registered")
 

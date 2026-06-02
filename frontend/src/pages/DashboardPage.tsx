@@ -6,10 +6,11 @@ import { useRefactoringStore } from '@/store/refactoringStore'
 import { scoringService, RiskProfile } from '@/services/scoring'
 import { refactoringService } from '@/services/refactoring'
 import { dashboardService } from '@/services/dashboard'
+import { historyService, ScanRecord } from '@/services/history'
 import {
   Shield, ShieldAlert, AlertTriangle, CheckCircle2, Info,
   Clock, GitBranch, Zap, ChevronRight, Activity,
-  ArrowUpRight, Terminal, Gauge, Skull, FlaskConical,
+  ArrowUpRight, Terminal, Gauge, Skull, FlaskConical, History,
 } from 'lucide-react'
 
 // ─── Severity palette — used ONLY for security state ──────────────────────
@@ -167,6 +168,8 @@ export const DashboardPage: React.FC = () => {
   const [stamp]                               = useState(() => new Date())
   const [liveSummary, setLiveSummary]         = useState<any>(null)
   const [summaryLoading, setSummaryLoading]   = useState(false)
+  const [recentScans, setRecentScans]         = useState<ScanRecord[]>([])
+  const [trendScans, setTrendScans]           = useState<ScanRecord[]>([])
 
   useEffect(() => {
     if (!currentSessionId) return
@@ -192,6 +195,22 @@ export const DashboardPage: React.FC = () => {
       .catch(() => {})
       .finally(() => setSummaryLoading(false))
   }, [currentSessionId])
+
+  // ── Scan history ──────────────────────────────────────────────────────────
+  useEffect(() => {
+    historyService.recent(10)
+      .then(res => setRecentScans((res.data as any)?.data?.scans || []))
+      .catch(() => {})
+  }, [currentSessionId])
+
+  useEffect(() => {
+    const repoPath = sessionData?.repo_path || ''
+    const repoName = repoPath.split('/').filter(Boolean).pop()
+    if (!repoName) return
+    historyService.repoHistory(repoName, 20)
+      .then(res => setTrendScans((res.data as any)?.data?.scans || []))
+      .catch(() => {})
+  }, [sessionData])
 
   // ── Derived counts — normalise severity (handles emoji-prefix from legacy API) ──
   const normSev = (s?: string) => {
@@ -778,6 +797,114 @@ export const DashboardPage: React.FC = () => {
           ))}
         </div>
       </div>
+
+      {/* ── Posture Score Trend ───────────────────────────────────────────── */}
+      {trendScans.length >= 2 && (() => {
+        const W = 600, H = 80, PAD = 16
+        const scores = trendScans.map(s => s.posture_score)
+        const minS   = Math.min(...scores)
+        const maxS   = Math.max(...scores)
+        const range  = Math.max(maxS - minS, 10)
+        const xs     = trendScans.map((_, i) => PAD + (i / (trendScans.length - 1)) * (W - PAD * 2))
+        const ys     = scores.map(s => H - PAD - ((s - minS) / range) * (H - PAD * 2))
+        const path   = xs.map((x, i) => `${i === 0 ? 'M' : 'L'}${x.toFixed(1)},${ys[i].toFixed(1)}`).join(' ')
+        const latest = scores[scores.length - 1]
+        const prev   = scores[scores.length - 2]
+        const delta  = latest - prev
+        const color  = delta >= 0 ? '#22c55e' : '#ef4444'
+        const label  = trendScans[0]?.repo_name || 'Repo'
+
+        return (
+          <div className={`${CARD_P} space-y-3`}>
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-[10px] font-bold uppercase tracking-[0.13em] text-slate-500">Posture Score Trend</p>
+                <p className="text-[13px] font-semibold text-slate-300 mt-0.5">{label} · last {trendScans.length} scans</p>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-[22px] font-black text-white font-tight">{latest.toFixed(0)}</span>
+                <span className={`text-[11px] font-bold ${delta >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                  {delta >= 0 ? '▲' : '▼'} {Math.abs(delta).toFixed(1)}
+                </span>
+              </div>
+            </div>
+            <svg viewBox={`0 0 ${W} ${H}`} className="w-full" style={{ height: 80 }}>
+              {/* Area fill */}
+              <defs>
+                <linearGradient id="trendGrad" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor={color} stopOpacity="0.15" />
+                  <stop offset="100%" stopColor={color} stopOpacity="0" />
+                </linearGradient>
+              </defs>
+              <path d={`${path} L${xs[xs.length-1].toFixed(1)},${H} L${xs[0].toFixed(1)},${H} Z`}
+                fill="url(#trendGrad)" />
+              <path d={path} fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+              {/* Data points */}
+              {xs.map((x, i) => (
+                <circle key={i} cx={x} cy={ys[i]} r="3" fill={color} />
+              ))}
+            </svg>
+            <div className="flex items-center justify-between text-[10px] text-slate-600 font-mono">
+              <span>{new Date(trendScans[0].scanned_at).toLocaleDateString()}</span>
+              <span>{new Date(trendScans[trendScans.length-1].scanned_at).toLocaleDateString()}</span>
+            </div>
+          </div>
+        )
+      })()}
+
+      {/* ── Recent Scans Table ────────────────────────────────────────────── */}
+      {recentScans.length > 0 && (
+        <div className={CARD}>
+          <div className="flex items-center justify-between px-6 py-4 border-b border-white/[0.05]">
+            <div className="flex items-center gap-2">
+              <History size={14} className="text-indigo-400" />
+              <p className="text-[13px] font-semibold text-slate-200">Recent Scans</p>
+            </div>
+            <span className="text-[10px] text-slate-600 font-mono">{recentScans.length} records</span>
+          </div>
+          <div className="divide-y divide-white/[0.04]">
+            {recentScans.map(scan => {
+              const score = scan.posture_score
+              const scoreColor = score >= 80 ? '#22c55e' : score >= 60 ? '#eab308' : score >= 40 ? '#f97316' : '#ef4444'
+              const ago = (() => {
+                const diff = Date.now() - new Date(scan.scanned_at).getTime()
+                const m = Math.floor(diff / 60000)
+                const h = Math.floor(m / 60)
+                const d = Math.floor(h / 24)
+                if (d > 0) return `${d}d ago`
+                if (h > 0) return `${h}h ago`
+                if (m > 0) return `${m}m ago`
+                return 'just now'
+              })()
+              return (
+                <div key={scan.id} className="flex items-center justify-between px-6 py-3 hover:bg-white/[0.02] transition-colors">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: scoreColor }} />
+                    <div className="min-w-0">
+                      <p className="text-[12px] font-semibold text-slate-200 truncate">{scan.repo_full_name}</p>
+                      <p className="text-[10px] text-slate-600 font-mono">{ago}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-5 shrink-0 ml-4">
+                    <div className="text-right hidden sm:block">
+                      <p className="text-[10px] text-slate-600 uppercase tracking-wider">Issues</p>
+                      <p className="text-[12px] font-bold text-slate-300">
+                        {scan.critical_count > 0 && <span className="text-red-400">{scan.critical_count}C </span>}
+                        {scan.high_count > 0 && <span className="text-orange-400">{scan.high_count}H </span>}
+                        {scan.critical_count === 0 && scan.high_count === 0 && <span className="text-emerald-400">Clean</span>}
+                      </p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-[10px] text-slate-600 uppercase tracking-wider">Score</p>
+                      <p className="text-[14px] font-black" style={{ color: scoreColor }}>{score.toFixed(0)}</p>
+                    </div>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      )}
 
     </div>
   )

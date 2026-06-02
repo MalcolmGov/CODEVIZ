@@ -5,6 +5,7 @@ import { chatService } from '@/services/chat'
 import { repositoriesService, GitHubRepository } from '@/services/repositories'
 import { reportsService, Schedule } from '@/services/reports'
 import { authService } from '@/services/auth'
+import { historyService } from '@/services/history'
 import {
   Search, CheckSquare, Square, Clock, Zap, Calendar,
   Mail, Trash2, Play, Plus, ChevronDown, Globe, Lock,
@@ -172,6 +173,10 @@ export const ScanForm: React.FC<{ onScanComplete: (sessionId: string) => void }>
       const path = (repo as any).local_path || repo.clone_url
       const sessionId = await createSession(path)
       await chatService.scan(sessionId)
+      // Persist a snapshot to history (fire-and-forget — don't block the UI)
+      historyService.record(sessionId, {
+        repo_full_name: repo.full_name,
+      }).catch(() => { /* history save failure is non-critical */ })
       onScanComplete(sessionId)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Scan failed')
