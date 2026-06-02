@@ -171,6 +171,16 @@ export const DashboardPage: React.FC = () => {
   const [recentScans, setRecentScans]         = useState<ScanRecord[]>([])
   const [trendScans, setTrendScans]           = useState<ScanRecord[]>([])
 
+  // Derive per-repo summary from recent scans (latest scan per repo)
+  const repoSummaries = React.useMemo(() => {
+    const map = new Map<string, ScanRecord>()
+    // recentScans is newest-first — first occurrence = latest scan per repo
+    for (const s of recentScans) {
+      if (!map.has(s.repo_full_name)) map.set(s.repo_full_name, s)
+    }
+    return Array.from(map.values())
+  }, [recentScans])
+
   useEffect(() => {
     if (!currentSessionId) return
     scoringService.getScore(currentSessionId)
@@ -851,6 +861,67 @@ export const DashboardPage: React.FC = () => {
           </div>
         )
       })()}
+
+      {/* ── Multi-Repo Comparison ────────────────────────────────────────── */}
+      {repoSummaries.length > 1 && (
+        <div className="space-y-3">
+          <div className="flex items-center gap-2 pt-1">
+            <GitBranch size={14} className="text-indigo-400" />
+            <p className="text-[13px] font-semibold text-slate-300">Repository Overview</p>
+            <span className="text-[10px] text-slate-600 font-mono ml-1">{repoSummaries.length} repos scanned</span>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {repoSummaries.map(repo => {
+              const score  = repo.posture_score
+              const sColor = score >= 80 ? '#22c55e' : score >= 60 ? '#eab308' : score >= 40 ? '#f97316' : '#ef4444'
+              const grade  = score >= 90 ? 'A' : score >= 80 ? 'B' : score >= 70 ? 'C' : score >= 60 ? 'D' : 'F'
+              const isActive = repo.session_id === currentSessionId
+              return (
+                <div key={repo.repo_full_name}
+                  className={`${CARD_P} space-y-4 cursor-pointer hover:border-indigo-500/20 transition-all ${isActive ? 'border-indigo-500/30' : ''}`}
+                  onClick={() => navigate('/scanner')}>
+                  {/* Repo name + active badge */}
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0">
+                      <p className="text-[11px] text-slate-500 font-mono truncate">{repo.repo_full_name.split('/')[0]}/</p>
+                      <p className="text-[13px] font-bold text-slate-200 truncate">{repo.repo_name}</p>
+                    </div>
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      {isActive && <span className="text-[9px] font-bold text-indigo-400 border border-indigo-500/30 bg-indigo-500/10 rounded-full px-2 py-0.5">Active</span>}
+                      <span className="text-[13px] font-black" style={{ color: sColor }}>{grade}</span>
+                    </div>
+                  </div>
+                  {/* Score bar */}
+                  <div className="space-y-1.5">
+                    <div className="flex justify-between text-[10px]">
+                      <span className="text-slate-500 font-mono">Posture Score</span>
+                      <span className="font-bold" style={{ color: sColor }}>{score.toFixed(0)}/100</span>
+                    </div>
+                    <div className="h-1.5 rounded-full bg-white/[0.05] overflow-hidden">
+                      <div className="h-full rounded-full transition-all duration-700"
+                        style={{ width: `${score}%`, backgroundColor: sColor }} />
+                    </div>
+                  </div>
+                  {/* Issue counts */}
+                  <div className="grid grid-cols-4 gap-1 text-center">
+                    {[
+                      { label: 'C', count: repo.critical_count, color: '#ef4444' },
+                      { label: 'H', count: repo.high_count,     color: '#f97316' },
+                      { label: 'M', count: repo.medium_count,   color: '#eab308' },
+                      { label: 'L', count: repo.low_count,      color: '#3b82f6' },
+                    ].map(({ label, count, color }) => (
+                      <div key={label} className="rounded-lg bg-white/[0.03] border border-white/[0.05] py-1.5">
+                        <p className="text-[13px] font-black" style={{ color: count > 0 ? color : '#334155' }}>{count}</p>
+                        <p className="text-[9px] text-slate-600 font-bold">{label}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      )}
 
       {/* ── Recent Scans Table ────────────────────────────────────────────── */}
       {recentScans.length > 0 && (
