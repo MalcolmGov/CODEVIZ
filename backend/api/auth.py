@@ -17,23 +17,31 @@ def github_login():
         client_id = os.getenv("GITHUB_CLIENT_ID", "")
         if not client_id:
             return format_error_response('GitHub OAuth not configured')[0], 400
-        
+
+        # Accept frontend_url from the request so the OAuth redirect always
+        # lands on whatever port the dev server is actually running on.
+        frontend_url = (
+            request.args.get('frontend_url')
+            or os.getenv("FRONTEND_URL", "http://localhost:5173")
+        )
+        session['frontend_url'] = frontend_url
+
         redirect_uri = os.getenv(
             "GITHUB_REDIRECT_URI",
             "http://localhost:8000/api/auth/github/callback"
         )
-        
+
         github_auth_url = (
             f"https://github.com/login/oauth/authorize?"
             f"client_id={client_id}&"
             f"redirect_uri={redirect_uri}&"
             f"scope=repo"
         )
-        
+
         return format_success_response({
             'auth_url': github_auth_url
         })[0], 200
-        
+
     except Exception as e:
         return format_error_response(str(e))[0], 500
 
@@ -87,15 +95,22 @@ def github_callback():
             print(f"[AUTH] Using mock token: {token}")
         
         session['github_token'] = token
-        
-        frontend_url = os.getenv("FRONTEND_URL", "http://localhost:5173")
+
+        # Use the frontend_url stored during /github/login (captures the real port)
+        frontend_url = (
+            session.get('frontend_url')
+            or os.getenv("FRONTEND_URL", "http://localhost:5173")
+        )
         redirect_url = f"{frontend_url}/login?token={token}"
         print(f"[AUTH] Redirecting to: {redirect_url}")
         return redirect(redirect_url)
-        
+
     except Exception as e:
         print(f"[AUTH] Callback error: {e}")
-        frontend_url = os.getenv("FRONTEND_URL", "http://localhost:5173")
+        frontend_url = (
+            session.get('frontend_url')
+            or os.getenv("FRONTEND_URL", "http://localhost:5173")
+        )
         return redirect(f'{frontend_url}/login?error={str(e)[:50]}')
 
 

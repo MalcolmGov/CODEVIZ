@@ -87,7 +87,10 @@ export const ScanForm: React.FC<{ onScanComplete: (sessionId: string) => void }>
           setSelectedScanRepo(list[0].id)
         }
       })
-      .catch(() => {})
+      .catch((err) => {
+        const msg = err?.response?.data?.message || err?.message || 'Failed to load repositories'
+        setError(`Repos: ${msg}`)
+      })
       .finally(() => setLoadingRepos(false))
     fetchSchedules()
   }, [])
@@ -233,6 +236,33 @@ export const ScanForm: React.FC<{ onScanComplete: (sessionId: string) => void }>
             {loadingRepos ? (
               <div className="flex items-center gap-2 text-slate-500 text-sm py-2">
                 <RefreshCw size={14} className="animate-spin" /> Loading repos…
+              </div>
+            ) : repos.length === 0 ? (
+              <div className="flex items-center gap-3 py-2">
+                <select value="custom" onChange={() => {}} className={inputCls}>
+                  <option value="custom">📁 Custom path / URL…</option>
+                </select>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setLoadingRepos(true)
+                    setError(undefined)
+                    repositoriesService.listGitHubRepos()
+                      .then(res => {
+                        const list = res.data.data?.repositories || []
+                        setRepos(list)
+                        if (list.length > 0) setSelectedScanRepo(list[0].id)
+                      })
+                      .catch((err) => {
+                        const msg = err?.response?.data?.message || err?.message || 'Failed to load repositories'
+                        setError(`Repos: ${msg}`)
+                      })
+                      .finally(() => setLoadingRepos(false))
+                  }}
+                  className="flex items-center gap-1.5 text-xs text-indigo-400 hover:text-indigo-300 border border-indigo-500/30 rounded-lg px-3 py-2 transition-colors whitespace-nowrap"
+                >
+                  <RefreshCw size={12} /> Retry
+                </button>
               </div>
             ) : (
               <select
