@@ -8,7 +8,7 @@ inefficient algorithms, blocking I/O, and more.
 
 from flask import request
 from . import performance_bp
-from utils import format_success_response, format_error_response
+from utils import format_success_response, format_error_response, get_repo_path
 
 try:
     from core.performance_analyzer_legacy import PerformanceAnalyzer, PerformanceSeverity
@@ -43,7 +43,7 @@ def scan_performance(session_id):
             return format_error_response('Performance analyser not available')[0], 503
 
         chat = repo_chats[session_id]
-        repo_path = chat.repo_path if hasattr(chat, 'repo_path') else None
+        repo_path = get_repo_path(chat)
 
         if not repo_path:
             return format_error_response('No repository path for this session')[0], 400
@@ -106,7 +106,7 @@ def get_issue_detail(session_id, issue_id):
             return format_error_response('Performance analyser not available')[0], 503
 
         chat = repo_chats[session_id]
-        repo_path = chat.repo_path if hasattr(chat, 'repo_path') else None
+        repo_path = get_repo_path(chat)
         if not repo_path:
             return format_error_response('No repo path')[0], 400
 

@@ -7,7 +7,7 @@ magic numbers, high complexity, unused variables) as a REST endpoint.
 
 from flask import request
 from . import smells_bp
-from utils import format_success_response, format_error_response
+from utils import format_success_response, format_error_response, get_repo_path
 
 try:
     from core.code_smell_detector_legacy import CodeSmellDetector
@@ -38,7 +38,7 @@ def scan_smells(session_id):
             return format_error_response('Code smell detector not available')[0], 503
 
         chat      = repo_chats[session_id]
-        repo_path = getattr(chat, 'repo_path', None)
+        repo_path = get_repo_path(chat)
         if not repo_path:
             return format_error_response('No repository path for this session')[0], 400
 

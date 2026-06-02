@@ -64,3 +64,24 @@ def get_file_size_mb(path):
     """Get file size in MB"""
     import os
     return os.path.getsize(path) / (1024 * 1024)
+
+
+def get_repo_path(chat):
+    """
+    Safely extract repo_path from either a RepositoryChat object or a dict stub.
+    Returns a string path or None.
+    """
+    if hasattr(chat, 'repo_path'):
+        return str(chat.repo_path) if chat.repo_path else None
+    if isinstance(chat, dict):
+        return chat.get('repo_path') or None
+    return None
+
+
+def get_session_context(chat) -> dict:
+    """Extract context dict from either a RepositoryChat object or a dict stub."""
+    if hasattr(chat, 'context') and isinstance(chat.context, dict):
+        return chat.context
+    if isinstance(chat, dict):
+        return chat.get('context', {})
+    return {}

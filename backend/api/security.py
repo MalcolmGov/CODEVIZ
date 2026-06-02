@@ -54,11 +54,23 @@ def scan_security(session_id):
         
         # Convert to dict
         bugs_data = [bug.to_dict() if hasattr(bug, 'to_dict') else bug for bug in bugs]
-        
+
         # Calculate summary
         critical = len([b for b in bugs_data if 'CRITICAL' in str(b.get('severity', ''))])
         high = len([b for b in bugs_data if 'HIGH' in str(b.get('severity', ''))])
-        
+
+        # ── Store in session context so Threats / Dashboard can reuse ──────
+        try:
+            if hasattr(chat, 'context') and isinstance(chat.context, dict):
+                chat.context['security_issues'] = bugs_data
+            elif isinstance(chat, dict):
+                chat.setdefault('context', {})['security_issues'] = bugs_data
+            # Also persist to DB cache
+            from core.session_store import cache_result
+            cache_result(session_id, 'security', bugs_data)
+        except Exception:
+            pass
+
         return format_success_response({
             'session_id': session_id,
             'bugs': bugs_data,

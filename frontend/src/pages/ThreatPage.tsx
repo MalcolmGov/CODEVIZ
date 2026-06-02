@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { useSessionStore } from '@/store/sessionStore'
+import { useBugsStore } from '@/store/bugsStore'
 import { threatsService } from '@/services/threats'
 import { AskAIButton } from '@/components/common/AskAIButton'
 import {
@@ -270,6 +271,7 @@ function HeatMap({ cells }: { cells: any[] }) {
 // ── Main page ──────────────────────────────────────────────────────────────
 export const ThreatPage: React.FC = () => {
   const { currentSessionId } = useSessionStore()
+  const { bugs } = useBugsStore()
   const [chains, setChains]     = useState<any[]>([])
   const [heatMap, setHeatMap]   = useState<any[]>([])
   const [metrics, setMetrics]   = useState<any>(null)
@@ -282,7 +284,8 @@ export const ThreatPage: React.FC = () => {
     setLoading(true)
     setSelected(null)
     try {
-      const res = await threatsService.simulate(currentSessionId)
+      // Pass already-scanned bugs so backend doesn't need to re-scan
+      const res = await threatsService.simulate(currentSessionId, bugs)
       const d   = (res.data as any).data
       setChains(d.chains || [])
       setHeatMap(d.heat_map || [])

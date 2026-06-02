@@ -5,9 +5,10 @@ Consumes security scan results from a session and chains vulnerabilities
 into realistic MITRE ATT&CK-aligned kill chains with impact heat map data.
 """
 
+import os
 from flask import request
 from . import threats_bp
-from utils import format_success_response, format_error_response
+from utils import format_success_response, format_error_response, get_repo_path, get_session_context
 
 # ── MITRE ATT&CK stage definitions ────────────────────────────────────────
 STAGES = [
@@ -229,21 +230,54 @@ def simulate_threats(session_id):
         if session_id not in repo_chats:
             return format_error_response('Invalid session ID')[0], 404
 
-        chat    = repo_chats[session_id]
-        context = getattr(chat, 'context', {})
+        chat      = repo_chats[session_id]
+        context   = get_session_context(chat)
+        repo_path = get_repo_path(chat)
 
-        # Try to reuse cached security results first
+        # 1. Check session context (populated by security scan endpoint)
         security_issues = context.get('security_issues', [])
 
-        # If no cached results, run the scanner now
+        # 2. Check DB cache (survives backend restart)
         if not security_issues:
             try:
+                from core.session_store import get_cached
+                security_issues = get_cached(session_id, 'security') or []
+            except Exception:
+                pass
+
+        # 3. Accept bugs passed directly from frontend in request body
+        if not security_issues:
+            body = request.get_json(silent=True) or {}
+            security_issues = body.get('bugs', [])
+
+        # 4. Last resort — walk all file types (not just *.py)
+        if not security_issues and repo_path:
+            try:
                 from core.security_detector_legacy import SecurityBugDetector
-                repo_path = chat.repo_path if hasattr(chat, 'repo_path') else None
-                if repo_path:
-                    detector = SecurityBugDetector()
-                    bugs, _  = detector.scan_files(str(repo_path))
-                    security_issues = [b.to_dict() for b in bugs]
+                detector = SecurityBugDetector()
+                bugs = []
+                for root, dirs, files in os.walk(repo_path):
+                    dirs[:] = [d for d in dirs if d not in
+                                ('.git', 'node_modules', '__pycache__', 'dist', 'build', 'venv')]
+                    for file in files:
+                        if file.endswith(('.py', '.ts', '.tsx', '.js', '.jsx')):
+                            fp = os.path.join(root, file)
+                            try:
+                                with open(fp, 'r', errors='ignore') as f:
+                                    code = f.read()
+                                rel = os.path.relpath(fp, repo_path)
+                                bugs.extend(detector.scan_code(code, rel))
+                            except Exception:
+                                pass
+                security_issues = [b.to_dict() if hasattr(b, 'to_dict') else b for b in bugs]
+                # Store for next time
+                if security_issues:
+                    context['security_issues'] = security_issues
+                    try:
+                        from core.session_store import cache_result
+                        cache_result(session_id, 'security', security_issues)
+                    except Exception:
+                        pass
             except Exception:
                 pass
 

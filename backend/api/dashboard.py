@@ -7,7 +7,7 @@ Falls back to cached results if available; runs fresh scans if not.
 
 from flask import request
 from . import dashboard_bp
-from utils import format_success_response, format_error_response
+from utils import format_success_response, format_error_response, get_repo_path, get_session_context
 
 
 def _norm_sev(s: str) -> str:
@@ -40,9 +40,8 @@ def get_summary(session_id):
             return format_error_response('Invalid session ID')[0], 404
 
         chat      = repo_chats[session_id]
-        repo_path = getattr(chat, 'repo_path', None) or (
-            chat.get('repo_path') if isinstance(chat, dict) else None
-        )
+        context   = get_session_context(chat)
+        repo_path = get_repo_path(chat)
         repo_name = (repo_path or '').rstrip('/').split('/')[-1] if repo_path else 'Unknown'
 
         summary = {
@@ -54,12 +53,35 @@ def get_summary(session_id):
 
         # ── Security ──────────────────────────────────────────────────────
         try:
-            from core.security_detector_legacy import SecurityBugDetector
-            detector = SecurityBugDetector()
-            bugs, _  = detector.scan_files(str(repo_path)) if repo_path else ([], None)
-            sec_sevs = _count_by_severity([b.to_dict() for b in bugs])
+            import os as _os
+            # Prefer cached security results (populated by /api/security/scan)
+            sec_bugs = (
+                context.get('security_issues')
+                or get_cached(session_id, 'security')
+            )
+            if not sec_bugs and repo_path:
+                # Fresh walk covering all file types
+                from core.security_detector_legacy import SecurityBugDetector
+                detector = SecurityBugDetector()
+                raw_bugs = []
+                for root, dirs, files in _os.walk(repo_path):
+                    dirs[:] = [d for d in dirs if d not in
+                                ('.git', 'node_modules', '__pycache__', 'dist', 'build', 'venv')]
+                    for file in files:
+                        if file.endswith(('.py', '.ts', '.tsx', '.js', '.jsx')):
+                            fp = _os.path.join(root, file)
+                            try:
+                                with open(fp, 'r', errors='ignore') as f:
+                                    code = f.read()
+                                rel = _os.path.relpath(fp, repo_path)
+                                raw_bugs.extend(detector.scan_code(code, rel))
+                            except Exception:
+                                pass
+                sec_bugs = [b.to_dict() if hasattr(b, 'to_dict') else b for b in raw_bugs]
+            sec_bugs = sec_bugs or []
+            sec_sevs = _count_by_severity(sec_bugs)
             summary['sections']['security'] = {
-                'total':    len(bugs),
+                'total':    len(sec_bugs),
                 'critical': sec_sevs['critical'],
                 'high':     sec_sevs['high'],
                 'medium':   sec_sevs['medium'],

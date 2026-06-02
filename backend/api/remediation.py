@@ -7,7 +7,7 @@ RemediationEngine (apply fixes + open PR, requires GITHUB_TOKEN).
 
 from flask import request
 from . import remediation_bp
-from utils import format_success_response, format_error_response
+from utils import format_success_response, format_error_response, get_repo_path
 
 try:
     from core.remediation_legacy import RemediationDetector
@@ -79,7 +79,7 @@ def scan_remediation(session_id):
             return format_error_response('Remediation detector not available')[0], 503
 
         chat = repo_chats[session_id]
-        repo_path = getattr(chat, 'repo_path', None)
+        repo_path = get_repo_path(chat)
         if not repo_path:
             return format_error_response('No repository path for this session')[0], 400
 
@@ -123,7 +123,7 @@ def preview_fix(session_id):
         category = body.get('category', '')
 
         chat      = repo_chats[session_id]
-        repo_path = getattr(chat, 'repo_path', None)
+        repo_path = get_repo_path(chat)
         if not repo_path:
             return format_error_response('No repository path')[0], 400
 
@@ -177,7 +177,7 @@ def create_pr(session_id):
         branch = body.get('branch', 'main')
 
         from core.remediation_legacy import RemediationEngine, RemediationDetector
-        repo_path_local = getattr(chat, 'repo_path', None)
+        repo_path_local = get_repo_path(chat)
         detected = {}
         if repo_path_local and DETECTOR_AVAILABLE:
             detected = RemediationDetector().detect_all_issues(str(repo_path_local))

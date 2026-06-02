@@ -1,5 +1,7 @@
 import { api } from './api'
 
 export const threatsService = {
-  simulate: (sessionId: string) => api.post(`/threats/simulate/${sessionId}`, {}),
+  // Pass existing bugs so backend skips re-scanning
+  simulate: (sessionId: string, bugs: any[] = []) =>
+    api.post(`/threats/simulate/${sessionId}`, { bugs }),
 }
