@@ -2,15 +2,16 @@ import React from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   Shield, RefreshCw, CheckCircle2, Activity, Cpu,
-  Layers, ArrowRight, FileCode2, ShieldAlert,
-  MessageSquare, Sparkles, ArrowUpRight, Github, ExternalLink,
-  Skull, Package, Zap, Gauge, FlaskConical, Globe, Wrench,
-  Network, Lock, Eye, GitPullRequest, BarChart3, Bell,
-  Server, ChevronRight,
+  Layers, ArrowRight, ShieldAlert,
+  Sparkles, ArrowUpRight, Github, ExternalLink,
+  Skull, Package, Zap, Gauge, FlaskConical, Wrench,
+  Lock, Eye, GitPullRequest, Bell,
+  Server, ChevronRight, Clock,
 } from 'lucide-react'
 import clsx from 'clsx'
 
-const CARD = 'rounded-2xl border border-white/[0.08] bg-slate-surface shadow-card backdrop-blur-md'
+const CARD = 'rounded-3xl border border-white/[0.12] border-t-white/[0.22] bg-slate-elevated/95 shadow-card backdrop-blur-md transition-all duration-300'
+const CARD_P = `${CARD} p-6`
 
 const GITHUB_REPO    = 'https://github.com/MalcolmGov/CODEVIZ'
 const CONTACT_EMAIL  = 'mailto:malcolmgov24@gmail.com?subject=CodeViz%20Enterprise%20Enquiry'
@@ -56,6 +57,7 @@ export const LandingPage: React.FC = () => {
       title: 'Zero Data Exfiltration',
       desc: 'CodeViz runs entirely on-premise using Ollama. Your source code never touches an external server. Air-gap compatible for regulated environments.',
       badge: 'Privacy-first',
+      shadow: 'hover:shadow-[0_0_24px_-6px_rgba(99,102,241,0.16)] hover:border-indigo-500/30 border-indigo-500/10'
     },
     {
       icon: GitPullRequest,
@@ -63,6 +65,7 @@ export const LandingPage: React.FC = () => {
       title: 'Find → Fix → Ship in One Tool',
       desc: 'No context switching. CodeViz detects an issue, generates a patch, opens a GitHub PR, and schedules a re-scan — all from one platform.',
       badge: 'End-to-end',
+      shadow: 'hover:shadow-[0_0_24px_-6px_rgba(34,197,94,0.16)] hover:border-emerald-500/30 border-emerald-500/10'
     },
     {
       icon: Skull,
@@ -70,6 +73,7 @@ export const LandingPage: React.FC = () => {
       title: 'Threat Actor Simulation',
       desc: 'The only code analysis platform that maps your vulnerabilities to real MITRE ATT&CK kill chains — showing exactly how an attacker would exploit your code.',
       badge: 'Industry-first',
+      shadow: 'hover:shadow-[0_0_24px_-6px_rgba(239,68,68,0.16)] hover:border-red-500/30 border-red-500/10'
     },
   ]
 
@@ -92,6 +96,21 @@ export const LandingPage: React.FC = () => {
     { name: 'Engineering Team', price: '$199',   period: true,  desc: 'For collaborative teams and engineering workflows.',       features: ['20 repositories', 'Team dashboards', 'Slack alerting', 'Custom security policies', 'Priority support'],                              btnText: 'Get Team',      popular: false },
     { name: 'Enterprise',       price: 'Custom', period: false, desc: 'On-premise deployability and dedicated infrastructure.',   features: ['Unlimited repos', 'Air-gapped LLM deployment', 'SSO/SAML', 'Dedicated SLA', 'Audit trail + compliance exports'],                     btnText: 'Contact Sales', popular: false },
   ]
+
+  const getFeatureGlow = (title: string, badge: string) => {
+    const t = title.toLowerCase()
+    const b = badge.toLowerCase()
+    if (t.includes('security') || t.includes('threat') || b.includes('mitre') || b.includes('accuracy')) {
+      return 'hover:shadow-[0_0_24px_-6px_rgba(239,68,68,0.16)] hover:border-red-500/30 border-red-500/10'
+    }
+    if (t.includes('performance') || t.includes('regression')) {
+      return 'hover:shadow-[0_0_24px_-6px_rgba(249,115,22,0.16)] hover:border-orange-500/30 border-orange-500/10'
+    }
+    if (t.includes('refactoring') || t.includes('smell') || b.includes('quality') || b.includes('ai engine')) {
+      return 'hover:shadow-[0_0_24px_-6px_rgba(168,85,247,0.16)] hover:border-purple-500/30 border-purple-500/10'
+    }
+    return 'hover:shadow-[0_0_24px_-6px_rgba(99,102,241,0.16)] hover:border-indigo-500/30 border-indigo-500/10'
+  }
 
   return (
     <div className="min-h-screen bg-[#030712] text-slate-100 relative overflow-hidden select-none font-sans scroll-smooth">
@@ -145,57 +164,81 @@ export const LandingPage: React.FC = () => {
         </div>
       </header>
 
-      {/* ── HERO ─────────────────────────────────────────────────────────── */}
-      <section className="relative pt-20 pb-16 px-6 max-w-7xl mx-auto text-center space-y-8">
-        <div className="inline-flex items-center gap-2 bg-indigo-500/10 border border-indigo-500/20 px-3.5 py-1 rounded-full text-xs font-bold text-indigo-400">
-          <Sparkles size={12} />
-          <span>13-DIMENSION AI CODE ANALYSIS — ON-PREMISE, ZERO CLOUD</span>
+      {/* ── HERO (Dual Column Redesign with 3D Image) ──────────────────── */}
+      <section className="relative pt-16 pb-20 px-6 max-w-7xl mx-auto">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
+          {/* Left Hero Column */}
+          <div className="lg:col-span-7 text-left space-y-6">
+            <div className="inline-flex items-center gap-2 bg-indigo-500/10 border border-indigo-500/20 px-3.5 py-1 rounded-full text-xs font-bold text-indigo-400">
+              <Sparkles size={12} />
+              <span>13-DIMENSION AI CODE ANALYSIS — ON-PREMISE, ZERO CLOUD</span>
+            </div>
+
+            <h1 className="text-4xl sm:text-5xl md:text-6xl font-black font-display tracking-tight text-transparent bg-clip-text bg-gradient-to-b from-white via-slate-100 to-slate-300 leading-none">
+              The AI Security Platform <br />
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 via-purple-400 to-pink-500">
+                That Fixes What It Finds
+              </span>
+            </h1>
+
+            <p className="text-slate-300 text-base sm:text-lg font-medium leading-relaxed max-w-2xl">
+              Security, performance, threats, compliance, and code quality — analysed simultaneously.
+              AI-generated fixes shipped as PRs. Your code never leaves your machine.
+            </p>
+
+            <div className="flex flex-col sm:flex-row justify-start items-center gap-4 pt-2">
+              <button
+                onClick={() => navigate('/login')}
+                className="w-full sm:w-auto flex items-center justify-center gap-2 px-8 py-3.5 rounded-xl text-[14px] font-bold bg-indigo-500 hover:bg-indigo-600 text-white transition-all shadow-lg shadow-indigo-500/20 hover:scale-[1.02] active:scale-[0.98]"
+              >
+                Start Scanning Now <ArrowRight className="ml-2" size={18} />
+              </button>
+              <button onClick={() => scrollTo('loop')}
+                className="w-full sm:w-auto px-6 py-3.5 text-sm font-bold border border-slate-border/50 hover:bg-slate-900/30 rounded-xl transition-all text-slate-300 hover:text-slate-100">
+                See How It Works
+              </button>
+            </div>
+          </div>
+
+          {/* Right Hero Column - 3D Visual Asset */}
+          <div className="lg:col-span-5 relative group">
+            <div className="absolute -inset-2 bg-gradient-to-tr from-indigo-500 via-purple-500 to-emerald-500 rounded-3xl blur-2xl opacity-20 group-hover:opacity-30 transition duration-1000" />
+            <div className="relative rounded-2xl border border-white/[0.12] border-t-white/[0.22] bg-[#080d19]/90 shadow-2xl p-1 overflow-hidden">
+              <img 
+                src="/images/hero-visual.png" 
+                alt="CodeViz AI Cyber Shield active protection dashboard" 
+                className="w-full h-auto rounded-xl object-cover hover:scale-[1.02] transition-transform duration-500"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-[#080d19]/60 via-transparent to-transparent pointer-events-none" />
+            </div>
+          </div>
         </div>
+      </section>
 
-        <h1 className="text-4xl sm:text-6xl md:text-7xl font-black font-display tracking-tight text-transparent bg-clip-text bg-gradient-to-b from-white via-slate-100 to-slate-400 max-w-5xl mx-auto leading-none">
-          The AI Security Platform <br />
-          <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 via-purple-400 to-pink-500">
-            That Fixes What It Finds
-          </span>
-        </h1>
-
-        <p className="text-slate-400 text-base sm:text-xl font-medium max-w-3xl mx-auto leading-relaxed">
-          Security, performance, threats, compliance, and code quality — analysed simultaneously.
-          AI-generated fixes shipped as PRs. Your code never leaves your machine.
-        </p>
-
-        <div className="flex flex-col sm:flex-row justify-center items-center gap-4 pt-4">
-          <button
-            onClick={() => navigate('/login')}
-            className="w-full sm:w-auto flex items-center justify-center gap-2 px-8 py-3 rounded-xl text-[14px] font-bold bg-indigo-500 hover:bg-indigo-600 text-white transition-all shadow-lg shadow-indigo-500/20"
-          >
-            Start Scanning Now <ArrowRight className="ml-2" size={18} />
-          </button>
-          <button onClick={() => scrollTo('loop')}
-            className="w-full sm:w-auto px-6 py-3 text-sm font-bold border border-slate-border/50 hover:bg-slate-900/30 rounded-xl transition-all text-slate-300 hover:text-slate-100">
-            See How It Works
-          </button>
+      {/* ── TERMINAL LIVE PREVIEW ────────────────────────────────────────── */}
+      <section className="py-12 px-6 max-w-5xl mx-auto space-y-6">
+        <div className="text-center space-y-2">
+          <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-indigo-400">ANALYSIS CONSOLE</p>
+          <h2 className="text-2xl font-extrabold text-white font-display">Witness Local AI Code Analysis in Real Time</h2>
         </div>
-
-        {/* Terminal preview */}
-        <div className="pt-10 max-w-5xl mx-auto relative group">
-          <div className="absolute -inset-1 bg-gradient-to-r from-indigo-500 via-purple-500 to-emerald-500 rounded-2xl blur-xl opacity-20 group-hover:opacity-30 transition duration-1000" />
-          <div className={clsx(CARD, "overflow-hidden relative shadow-2xl p-0.5 bg-slate-surface/30")}>
-            <div className="bg-[#0b0f19] rounded-xl overflow-hidden border border-slate-border/30">
+        <div className="relative group">
+          <div className="absolute -inset-1 bg-gradient-to-r from-indigo-500 via-purple-500 to-emerald-500 rounded-2xl blur-xl opacity-20 group-hover:opacity-35 transition duration-1000" />
+          <div className="overflow-hidden relative shadow-2xl rounded-3xl border border-white/[0.12] border-t-white/[0.22] p-0.5 bg-[#0b0f19]/90">
+            <div className="bg-[#0b0f19] rounded-xl overflow-hidden">
               <div className="flex items-center justify-between px-4 py-3 bg-[#070b13] border-b border-slate-border/30">
                 <div className="flex items-center gap-1.5">
                   <div className="w-3 h-3 rounded-full bg-rose-500/80" />
                   <div className="w-3 h-3 rounded-full bg-amber-500/80" />
                   <div className="w-3 h-3 rounded-full bg-emerald-500/80" />
                 </div>
-                <div className="text-[10px] font-mono text-slate-500 bg-slate-900/50 px-3 py-1 rounded border border-slate-border/20">
+                <div className="text-[10px] font-mono text-slate-400 bg-slate-900/50 px-3 py-1 rounded border border-slate-border/20">
                   codeviz — 13-dimension analysis engine
                 </div>
                 <div className="w-10" />
               </div>
-              <div className="p-6 text-left font-mono text-xs text-slate-300 space-y-3 max-h-[340px] overflow-y-auto bg-[#040810]/90">
+              <div className="p-6 text-left font-mono text-xs text-slate-300 space-y-3 max-h-[340px] overflow-y-auto bg-[#040810]/95">
                 <div className="flex gap-2 text-indigo-400"><span>$</span><span>codeviz scan --repo=github.com/acme/api-service --all-dimensions</span></div>
-                <div className="text-slate-500">🔍 Initialising 13-dimension analysis engine (on-premise Ollama)...</div>
+                <div className="text-slate-400">🔍 Initialising 13-dimension analysis engine (on-premise Ollama)...</div>
                 <div className="text-emerald-400">✓ Scanned 2,847 files · 94,120 LOC in 1m 43s</div>
                 <div className="grid grid-cols-2 gap-x-8 gap-y-1 text-[11px] mt-2 text-slate-400">
                   <span>├── Security vulns found:      <span className="text-red-400 font-bold">12 (3 critical)</span></span>
@@ -205,7 +248,7 @@ export const LandingPage: React.FC = () => {
                   <span>├── Code smells:               <span className="text-yellow-400 font-bold">31</span></span>
                   <span>└── Compliance gaps (SOC 2):   <span className="text-amber-400 font-bold">6</span></span>
                 </div>
-                <div className="text-slate-500 mt-2">🤖 Generating AI remediation patches (HITL mode)...</div>
+                <div className="text-slate-400 mt-2">🤖 Generating AI remediation patches (HITL mode)...</div>
                 <div className="text-indigo-400 bg-indigo-950/30 border border-indigo-500/20 p-3 rounded-lg flex items-start gap-3 mt-2">
                   <Activity size={14} className="text-indigo-400 mt-0.5 animate-pulse" />
                   <div>
@@ -221,27 +264,27 @@ export const LandingPage: React.FC = () => {
       </section>
 
       {/* ── STATS BANNER ─────────────────────────────────────────────────── */}
-      <section className="bg-slate-surface/10 border-y border-slate-border/20 py-10 px-6">
+      <section className="bg-[#070b13] border-y border-slate-border/20 py-10 px-6 shadow-lg">
         <div className="max-w-7xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
           {stats.map((stat, i) => (
-            <div key={i} className="space-y-1">
+            <div key={i} className="space-y-1 p-4 rounded-2xl border border-white/[0.04] bg-white/[0.01]">
               <p className="text-4xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-indigo-300 via-purple-300 to-pink-400 font-display">
                 {stat.value}
               </p>
-              <p className="text-xs font-semibold text-slate-300 font-display uppercase tracking-wider">{stat.label}</p>
-              <p className="text-[10px] text-slate-500 font-mono">{stat.desc}</p>
+              <p className="text-xs font-bold text-slate-200 font-display uppercase tracking-wider">{stat.label}</p>
+              <p className="text-[11px] text-slate-400 font-mono mt-1">{stat.desc}</p>
             </div>
           ))}
         </div>
       </section>
 
-      {/* ── PLATFORM FEATURES ────────────────────────────────────────────── */}
+      {/* ── PLATFORM FEATURES (Redesigned visual cards & glows) ──────────── */}
       <section id="features" className="py-20 px-6 max-w-7xl mx-auto space-y-12">
         <div className="text-center space-y-3">
           <h2 className="text-3xl md:text-5xl font-black font-display tracking-tight text-slate-100">
             The Complete Code Intelligence Platform
           </h2>
-          <p className="text-slate-400 text-sm md:text-base max-w-2xl mx-auto">
+          <p className="text-slate-300 text-sm md:text-base max-w-2xl mx-auto font-medium">
             13 analysis engines running simultaneously. Every scan covers security, performance, threats,
             quality, dependencies, and compliance — not just one dimension.
           </p>
@@ -250,20 +293,24 @@ export const LandingPage: React.FC = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
           {features.map((feat, i) => {
             const Icon = feat.icon
+            const glowClass = getFeatureGlow(feat.title, feat.badge)
             return (
               <div key={i} onClick={() => navigate(feat.href)}
-                className={clsx(CARD, "hover:border-indigo-500/30 p-6 flex flex-col justify-between hover:-translate-y-1 bg-slate-surface/30 cursor-pointer transition-all duration-300 group")}>
+                className={clsx(
+                  "rounded-2xl border bg-slate-elevated/95 p-6 flex flex-col justify-between hover:-translate-y-1 cursor-pointer transition-all duration-300 group",
+                  glowClass
+                )}>
                 <div className="space-y-4">
                   <div className="flex justify-between items-center">
                     <div className="p-2.5 rounded-lg bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 group-hover:bg-indigo-500/20 group-hover:text-indigo-300 transition-colors">
                       <Icon size={20} />
                     </div>
-                    <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full border border-slate-border/60 text-slate-400 bg-slate-900/50">
+                    <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full border border-white/[0.08] text-slate-300 bg-slate-900/50">
                       {feat.badge}
                     </span>
                   </div>
                   <h3 className="text-base font-bold text-slate-100 font-display">{feat.title}</h3>
-                  <p className="text-slate-400 text-xs leading-relaxed font-medium">{feat.desc}</p>
+                  <p className="text-slate-300 text-xs leading-relaxed font-medium">{feat.desc}</p>
                 </div>
                 <div className="mt-4 flex items-center gap-1 text-[11px] font-semibold text-indigo-400 opacity-0 group-hover:opacity-100 transition-opacity">
                   Try it <ArrowRight size={11} />
@@ -275,7 +322,7 @@ export const LandingPage: React.FC = () => {
       </section>
 
       {/* ── HOW IT WORKS ─────────────────────────────────────────────────── */}
-      <section id="loop" className="py-20 px-6 bg-slate-surface/10 border-y border-slate-border/20">
+      <section id="loop" className="py-20 px-6 bg-[#060a12]/60 border-y border-slate-border/20">
         <div className="max-w-7xl mx-auto space-y-12">
           <div className="text-center space-y-3">
             <div className="inline-flex items-center gap-2 bg-emerald-500/10 border border-emerald-500/20 px-3 py-0.5 rounded-full text-[10px] font-bold text-emerald-400">
@@ -284,7 +331,7 @@ export const LandingPage: React.FC = () => {
             <h2 className="text-3xl md:text-5xl font-black font-display tracking-tight text-slate-100">
               Find It. Fix It. Ship It. Monitor It.
             </h2>
-            <p className="text-slate-400 text-sm max-w-xl mx-auto">
+            <p className="text-slate-300 text-sm max-w-xl mx-auto font-medium">
               No other platform closes the full loop — from first scan to merged PR to ongoing monitoring — in a single tool.
             </p>
           </div>
@@ -303,7 +350,7 @@ export const LandingPage: React.FC = () => {
                     </div>
                     <div className="text-[9px] font-bold text-indigo-400/60 font-mono tracking-widest">{s.step}</div>
                     <p className="text-sm font-bold text-slate-200 font-display">{s.label}</p>
-                    <p className="text-[11px] text-slate-500 leading-snug">{s.desc}</p>
+                    <p className="text-[11px] text-slate-400 leading-snug font-medium">{s.desc}</p>
                   </div>
                 )
               })}
@@ -325,7 +372,7 @@ export const LandingPage: React.FC = () => {
           <h2 className="text-3xl md:text-5xl font-black font-display tracking-tight text-slate-100">
             Why CodeViz Wins
           </h2>
-          <p className="text-slate-400 text-sm max-w-xl mx-auto">
+          <p className="text-slate-300 text-sm max-w-xl mx-auto font-medium">
             Three capabilities no competitor offers. Any one of them alone would be a product — together they're a moat.
           </p>
         </div>
@@ -334,7 +381,10 @@ export const LandingPage: React.FC = () => {
           {moats.map((m, i) => {
             const Icon = m.icon
             return (
-              <div key={i} className="rounded-2xl border border-white/[0.07] bg-slate-surface/30 p-8 space-y-5 relative overflow-hidden group hover:border-white/[0.12] transition-all">
+              <div key={i} className={clsx(
+                "rounded-2xl border p-8 space-y-5 relative overflow-hidden group transition-all duration-300",
+                m.shadow
+              )}>
                 <div className="absolute -top-8 -right-8 w-32 h-32 rounded-full blur-2xl opacity-10 group-hover:opacity-20 transition-opacity"
                   style={{ backgroundColor: m.color }} />
                 <div className="p-3 rounded-xl border w-fit" style={{ color: m.color, borderColor: `${m.color}30`, backgroundColor: `${m.color}10` }}>
@@ -344,17 +394,17 @@ export const LandingPage: React.FC = () => {
                   <span className="text-[9px] font-bold uppercase tracking-widest font-mono mb-2 block" style={{ color: m.color }}>{m.badge}</span>
                   <h3 className="text-lg font-extrabold text-slate-100 font-display leading-tight">{m.title}</h3>
                 </div>
-                <p className="text-slate-400 text-[13px] leading-relaxed">{m.desc}</p>
+                <p className="text-slate-300 text-[13px] leading-relaxed font-medium">{m.desc}</p>
               </div>
             )
           })}
         </div>
       </section>
 
-      {/* ── MITRE ATT&CK SPOTLIGHT ───────────────────────────────────────── */}
+      {/* ── MITRE ATT&CK SPOTLIGHT (Redesigned with 3D Image) ─────────────── */}
       <section className="py-20 px-6 bg-gradient-to-b from-red-950/10 to-transparent border-y border-red-900/20">
         <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-          <div className="space-y-6">
+          <div className="space-y-6 text-left">
             <div className="inline-flex items-center gap-2 bg-red-500/10 border border-red-500/20 px-3 py-0.5 rounded-full text-[10px] font-bold text-red-400">
               <Skull size={10} /> INDUSTRY-FIRST CAPABILITY
             </div>
@@ -362,7 +412,7 @@ export const LandingPage: React.FC = () => {
               Threat Actor <br />
               <span className="text-transparent bg-clip-text bg-gradient-to-r from-red-400 to-orange-400">Kill Chain Simulation</span>
             </h2>
-            <p className="text-slate-400 text-sm leading-relaxed">
+            <p className="text-slate-300 text-sm leading-relaxed font-medium">
               CodeViz maps your detected vulnerabilities to the MITRE ATT&CK framework — showing you exactly which
               tactics, techniques, and procedures (TTPs) a real threat actor would use to exploit your codebase.
             </p>
@@ -375,7 +425,7 @@ export const LandingPage: React.FC = () => {
               ].map((pt, i) => (
                 <div key={i} className="flex items-start gap-2.5">
                   <CheckCircle2 size={14} className="text-red-400 mt-0.5 shrink-0" />
-                  <span className="text-[13px] text-slate-300">{pt}</span>
+                  <span className="text-[13px] text-slate-300 font-medium">{pt}</span>
                 </div>
               ))}
             </div>
@@ -385,46 +435,79 @@ export const LandingPage: React.FC = () => {
             </button>
           </div>
 
-          {/* Kill chain visual */}
-          <div className="rounded-2xl border border-red-900/30 bg-[#0a0505] p-6 space-y-3 font-mono text-xs">
-            <div className="flex items-center gap-2 text-red-400 font-bold mb-4">
-              <Skull size={14} /> MITRE ATT&CK Kill Chain — Active Threat Path
-            </div>
-            {[
-              { phase: 'Initial Access',   tactic: 'T1190 · Exploit Public-Facing Application',  file: 'UserController.search()',    sev: 'CRITICAL' },
-              { phase: 'Execution',        tactic: 'T1059 · Command & Scripting Interpreter',     file: 'shell_utils.execute()',      sev: 'HIGH'     },
-              { phase: 'Persistence',      tactic: 'T1098 · Account Manipulation',               file: 'AuthService.createToken()',  sev: 'HIGH'     },
-              { phase: 'Exfiltration',     tactic: 'T1041 · Exfiltration Over C2 Channel',       file: 'DataExport.send()',          sev: 'CRITICAL' },
-            ].map((row, i) => (
-              <div key={i} className="flex flex-col gap-1 py-2.5 border-b border-red-900/20 last:border-0">
-                <div className="flex items-center justify-between">
-                  <span className="text-[9px] font-bold uppercase tracking-widest text-red-500/60">{row.phase}</span>
-                  <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded ${row.sev === 'CRITICAL' ? 'bg-red-500/20 text-red-400' : 'bg-orange-500/20 text-orange-400'}`}>{row.sev}</span>
-                </div>
-                <span className="text-slate-300 text-[11px]">{row.tactic}</span>
-                <span className="text-slate-600 text-[10px]">→ {row.file}</span>
+          {/* Kill chain visual column */}
+          <div className="flex flex-col gap-5 text-left">
+            {/* 3D Threat simulation visual */}
+            <div className="relative group">
+              <div className="absolute -inset-1 bg-gradient-to-tr from-red-500 to-orange-500 rounded-2xl blur-lg opacity-25 group-hover:opacity-35 transition duration-1000" />
+              <div className="relative rounded-2xl border border-red-900/40 bg-[#0c0606] overflow-hidden shadow-2xl">
+                <img 
+                  src="/images/threat-simulation.png" 
+                  alt="3D cybersecurity threat simulation kill chain graphic" 
+                  className="w-full h-[220px] object-cover hover:scale-[1.02] transition-transform duration-500"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-[#0a0505] via-transparent to-transparent pointer-events-none" />
               </div>
-            ))}
+            </div>
+
+            {/* Kill chain list */}
+            <div className="rounded-2xl border border-red-900/30 bg-[#0a0505]/90 p-6 space-y-3 font-mono text-xs shadow-xl">
+              <div className="flex items-center gap-2 text-red-400 font-bold mb-2">
+                <Skull size={14} /> MITRE ATT&CK Kill Chain — Active Threat Path
+              </div>
+              {[
+                { phase: 'Initial Access',   tactic: 'T1190 · Exploit Public-Facing Application',  file: 'UserController.search()',    sev: 'CRITICAL' },
+                { phase: 'Execution',        tactic: 'T1059 · Command & Scripting Interpreter',     file: 'shell_utils.execute()',      sev: 'HIGH'     },
+                { phase: 'Persistence',      tactic: 'T1098 · Account Manipulation',               file: 'AuthService.createToken()',  sev: 'HIGH'     },
+                { phase: 'Exfiltration',     tactic: 'T1041 · Exfiltration Over C2 Channel',       file: 'DataExport.send()',          sev: 'CRITICAL' },
+              ].map((row, i) => (
+                <div key={i} className="flex flex-col gap-1 py-2 border-b border-red-900/20 last:border-0">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[9px] font-bold uppercase tracking-widest text-red-500/60">{row.phase}</span>
+                    <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded ${row.sev === 'CRITICAL' ? 'bg-red-500/20 text-red-400' : 'bg-orange-500/20 text-orange-400'}`}>{row.sev}</span>
+                  </div>
+                  <span className="text-slate-200 text-[11px] font-medium">{row.tactic}</span>
+                  <span className="text-slate-400 text-[10px]">→ {row.file}</span>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       </section>
 
-      {/* ── ON-PREMISE PRIVACY ───────────────────────────────────────────── */}
+      {/* ── ON-PREMISE PRIVACY (Redesigned with 3D Server graphic) ───────── */}
       <section className="py-20 px-6 max-w-7xl mx-auto">
-        <div className="rounded-2xl border border-indigo-500/10 bg-gradient-to-br from-indigo-500/[0.05] to-transparent p-10 md:p-14">
-          <div className="max-w-4xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-10 items-center">
-            <div className="space-y-5">
+        <div className="rounded-3xl border border-indigo-500/10 bg-gradient-to-br from-[#0c0f1c] via-[#080b14] to-transparent p-8 md:p-12 shadow-2xl relative overflow-hidden group">
+          <div className="absolute top-0 right-0 w-[400px] h-[400px] bg-indigo-500/5 rounded-full blur-[100px] pointer-events-none" />
+          
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center text-left">
+            {/* Column 1: Copy (5/12 width) */}
+            <div className="lg:col-span-5 space-y-5">
               <div className="inline-flex items-center gap-2 bg-indigo-500/10 border border-indigo-500/20 px-3 py-0.5 rounded-full text-[10px] font-bold text-indigo-400">
                 <Lock size={10} /> PRIVACY BY ARCHITECTURE
               </div>
-              <h2 className="text-3xl font-black font-display tracking-tight text-slate-100">
+              <h2 className="text-3xl font-black font-display tracking-tight text-slate-100 leading-tight">
                 Your Code Never Leaves Your Machine
               </h2>
-              <p className="text-slate-400 text-sm leading-relaxed">
+              <p className="text-slate-300 text-sm leading-relaxed font-medium">
                 CodeViz runs its AI engine entirely on-premise via Ollama. No API calls to OpenAI, Anthropic, or any cloud LLM. Your source code, secrets, and business logic stay local — always.
               </p>
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+
+            {/* Column 2: 3D Image (3/12 width) */}
+            <div className="lg:col-span-3 relative group">
+              <div className="absolute -inset-1 bg-gradient-to-tr from-indigo-500 to-purple-600 rounded-2xl blur-lg opacity-20 group-hover:opacity-30 transition duration-1000" />
+              <div className="relative rounded-2xl border border-white/[0.12] border-t-white/[0.22] bg-[#0c0f1c] overflow-hidden shadow-xl">
+                <img 
+                  src="/images/privacy-server.png" 
+                  alt="CodeViz 3D local secure on-premise hardware server lock" 
+                  className="w-full h-auto object-cover hover:scale-[1.03] transition-transform duration-500"
+                />
+              </div>
+            </div>
+
+            {/* Column 3: Features (4/12 width) */}
+            <div className="lg:col-span-4 grid grid-cols-1 gap-3">
               {[
                 { icon: Server, label: 'On-premise LLM',       desc: 'Ollama runs locally, no cloud dependency' },
                 { icon: Lock,   label: 'Air-gap compatible',   desc: 'Works in isolated enterprise environments' },
@@ -433,13 +516,13 @@ export const LandingPage: React.FC = () => {
               ].map((item, i) => {
                 const Icon = item.icon
                 return (
-                  <div key={i} className="flex items-start gap-3 p-4 rounded-xl border border-white/[0.06] bg-slate-surface/20">
+                  <div key={i} className="flex items-start gap-3 p-4 rounded-xl border border-white/[0.08] bg-slate-elevated/95 shadow-md hover:border-white/[0.14] transition-all">
                     <div className="p-1.5 rounded-lg bg-indigo-500/10 text-indigo-400 shrink-0">
                       <Icon size={14} />
                     </div>
                     <div>
                       <p className="text-[12px] font-bold text-slate-200">{item.label}</p>
-                      <p className="text-[10px] text-slate-500 mt-0.5">{item.desc}</p>
+                      <p className="text-[10px] text-slate-400 mt-0.5 font-medium">{item.desc}</p>
                     </div>
                   </div>
                 )
@@ -449,10 +532,10 @@ export const LandingPage: React.FC = () => {
         </div>
       </section>
 
-      {/* ── DEPENDENCY NETWORK ───────────────────────────────────────────── */}
+      {/* ── DEPENDENCY NETWORK (Interactive SVG) ─────────────────────────── */}
       <section id="graph" className="py-20 px-6 max-w-7xl mx-auto space-y-12">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-          <div className="space-y-6">
+          <div className="space-y-6 text-left">
             <div className="inline-flex items-center gap-2 bg-purple-500/10 border border-purple-500/20 px-3 py-0.5 rounded-full text-[10px] font-bold text-purple-400">
               <Activity size={10} /> VISUAL CODE MESH
             </div>
@@ -462,7 +545,7 @@ export const LandingPage: React.FC = () => {
                 Dependency Network
               </span>
             </h2>
-            <p className="text-slate-400 text-sm leading-relaxed">
+            <p className="text-slate-300 text-sm leading-relaxed font-medium">
               See exactly how your codebase is wired. Force-directed graph shows every import relationship — drag nodes, zoom in, click to inspect. Spot circular dependencies and high-coupling hotspots at a glance.
             </p>
             <div className="space-y-3">
@@ -473,8 +556,8 @@ export const LandingPage: React.FC = () => {
               ].map((item, idx) => (
                 <div key={idx} className="flex items-center gap-3">
                   <CheckCircle2 size={16} className="text-emerald-400 flex-shrink-0" />
-                  <span className="text-xs text-slate-300 font-semibold">{item.title}</span>
-                  <span className="text-[10px] text-slate-500 font-mono ml-auto">{item.value}</span>
+                  <span className="text-xs text-slate-200 font-semibold">{item.title}</span>
+                  <span className="text-[10px] text-slate-400 font-mono ml-auto">{item.value}</span>
                 </div>
               ))}
             </div>
@@ -511,22 +594,22 @@ export const LandingPage: React.FC = () => {
         </div>
       </section>
 
-      {/* ── COMPARISON TABLE ─────────────────────────────────────────────── */}
+      {/* ── COMPARISON TABLE (High fidelity & solid background) ──────────── */}
       <section id="compare" className="py-20 px-6 max-w-7xl mx-auto space-y-12">
         <div className="text-center space-y-3">
           <h2 className="text-3xl md:text-5xl font-black font-display tracking-tight text-slate-100">
             Built to Outperform
           </h2>
-          <p className="text-slate-400 text-sm max-w-xl mx-auto">
+          <p className="text-slate-300 text-sm max-w-xl mx-auto font-medium">
             The only platform that combines security, performance, threat intelligence, and automated remediation — on your infrastructure.
           </p>
         </div>
 
-        <div className={clsx(CARD, "overflow-hidden p-0 border-l-4 border-l-indigo-500 bg-slate-surface/30")}>
+        <div className="rounded-3xl border border-white/[0.12] border-t-white/[0.22] overflow-hidden p-0 border-l-4 border-l-indigo-500 bg-slate-elevated/95 shadow-2xl">
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse text-xs md:text-sm">
               <thead>
-                <tr className="border-b border-slate-border/50 bg-[#070b13]/60 text-slate-400 font-semibold font-display">
+                <tr className="border-b border-white/[0.08] bg-[#070b13]/80 text-slate-200 font-semibold font-display">
                   <th className="p-4 font-bold">Capability</th>
                   <th className="p-4 text-indigo-400 font-black">CodeViz</th>
                   <th className="p-4">SonarQube</th>
@@ -534,14 +617,14 @@ export const LandingPage: React.FC = () => {
                   <th className="p-4">Snyk</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-border/30 font-medium text-slate-300">
+              <tbody className="divide-y divide-white/[0.06] font-medium text-slate-300">
                 {comparisons.map((row, idx) => (
-                  <tr key={idx} className="hover:bg-slate-900/20 transition-colors">
-                    <td className="p-4 font-display font-bold text-slate-200">{row.name}</td>
+                  <tr key={idx} className="hover:bg-white/[0.015] transition-colors">
+                    <td className="p-4 font-display font-bold text-slate-100">{row.name}</td>
                     <td className="p-4"><span className="text-emerald-400 font-bold text-base">✓</span></td>
-                    <td className="p-4 text-slate-500">{row.sonar  ? <span className="text-slate-400">✓</span> : <span className="text-slate-700">—</span>}</td>
-                    <td className="p-4 text-slate-500">{row.github ? <span className="text-slate-400">✓</span> : <span className="text-slate-700">—</span>}</td>
-                    <td className="p-4 text-slate-500">{row.snyk   ? <span className="text-slate-400">✓</span> : <span className="text-slate-700">—</span>}</td>
+                    <td className="p-4 text-slate-500">{row.sonar  ? <span className="text-slate-300">✓</span> : <span className="text-white/10">—</span>}</td>
+                    <td className="p-4 text-slate-500">{row.github ? <span className="text-slate-300">✓</span> : <span className="text-white/10">—</span>}</td>
+                    <td className="p-4 text-slate-500">{row.snyk   ? <span className="text-slate-300">✓</span> : <span className="text-white/10">—</span>}</td>
                   </tr>
                 ))}
               </tbody>
@@ -551,23 +634,23 @@ export const LandingPage: React.FC = () => {
       </section>
 
       {/* ── USE CASES ────────────────────────────────────────────────────── */}
-      <section className="py-20 bg-slate-surface/10 border-y border-slate-border/20 px-6">
+      <section className="py-20 bg-[#060a12]/60 border-y border-slate-border/20 px-6">
         <div className="max-w-7xl mx-auto space-y-12">
           <div className="text-center space-y-3">
             <h2 className="text-3xl md:text-4xl font-black font-display tracking-tight text-slate-100">
               Built for the Entire Pipeline
             </h2>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5 text-left">
             {[
               { title: 'Developer Teams',      points: ['Catch bugs before review', 'AI refactoring suggestions', 'Auto-generated PRs', 'Code smell reports'] },
               { title: 'Security Teams',        points: ['MITRE ATT&CK mapping', 'CVE dependency scanning', 'OWASP / SOC 2 compliance', 'Exportable audit trails'] },
               { title: 'Engineering Managers', points: ['Multi-dimensional posture score', 'Performance regression tracking', 'Scheduled scan reports', 'Slack alerting on drift'] },
               { title: 'Enterprise',           points: ['On-premise LLM, zero cloud', 'Air-gap compatible', 'SSO / SAML integration', 'Custom security policies'] },
             ].map((uc, i) => (
-              <div key={i} className={clsx(CARD, "bg-slate-surface/30 p-5 space-y-4")}>
+              <div key={i} className="rounded-2xl border border-white/[0.08] border-t-white/[0.14] bg-slate-elevated/95 p-5 space-y-4 shadow-md">
                 <h3 className="text-sm font-bold text-indigo-400 font-display uppercase tracking-wider">{uc.title}</h3>
-                <ul className="space-y-2 text-xs text-slate-400 font-medium">
+                <ul className="space-y-2 text-xs text-slate-300 font-medium">
                   {uc.points.map((p, idx) => (
                     <li key={idx} className="flex items-start gap-2">
                       <ChevronRight size={12} className="text-indigo-400 mt-0.5 shrink-0" />
@@ -581,20 +664,25 @@ export const LandingPage: React.FC = () => {
         </div>
       </section>
 
-      {/* ── PRICING ──────────────────────────────────────────────────────── */}
+      {/* ── PRICING (Sleek cards & glows) ────────────────────────────────── */}
       <section id="pricing" className="py-20 px-6 max-w-7xl mx-auto space-y-12">
         <div className="text-center space-y-3">
           <h2 className="text-3xl md:text-5xl font-black font-display tracking-tight text-slate-100">
             Predictable Pricing, Infinite Scale
           </h2>
-          <p className="text-slate-400 text-sm max-w-xl mx-auto">
+          <p className="text-slate-300 text-sm max-w-xl mx-auto font-medium">
             Every plan includes all 13 analysis dimensions. No feature gating by tier.
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5 text-left">
           {pricing.map((plan, i) => (
-            <div key={i} className={clsx(CARD, "p-6 flex flex-col justify-between space-y-5 relative overflow-hidden bg-slate-surface/30", plan.popular ? 'border-indigo-500/60 ring-2 ring-indigo-500/10' : '')}>
+            <div key={i} className={clsx(
+              "rounded-3xl border p-6 flex flex-col justify-between space-y-5 relative overflow-hidden bg-slate-elevated/95 transition-all duration-300 shadow-xl",
+              plan.popular 
+                ? 'border-indigo-500/50 shadow-[0_0_30px_-5px_rgba(99,102,241,0.2)] hover:border-indigo-500/70' 
+                : 'border-white/[0.12] border-t-white/[0.22] hover:border-white/[0.18]'
+            )}>
               {plan.popular && (
                 <div className="absolute top-0 right-0 bg-indigo-500 text-white font-bold text-[10px] tracking-wide uppercase px-3 py-1 rounded-bl-lg">
                   Most Popular
@@ -603,13 +691,13 @@ export const LandingPage: React.FC = () => {
               <div className="space-y-4">
                 <div>
                   <h3 className="text-base font-extrabold text-slate-200 font-display">{plan.name}</h3>
-                  <p className="text-[11px] text-slate-500 mt-1">{plan.desc}</p>
+                  <p className="text-[11px] text-slate-400 mt-1 font-medium">{plan.desc}</p>
                 </div>
                 <div className="flex items-baseline gap-1">
                   <span className="text-3xl font-black font-display text-slate-100">{plan.price}</span>
-                  {plan.period && <span className="text-slate-500 text-xs">/ month</span>}
+                  {plan.period && <span className="text-slate-400 text-xs">/ month</span>}
                 </div>
-                <ul className="space-y-2 border-t border-slate-border/20 pt-4 text-xs text-slate-400 font-medium">
+                <ul className="space-y-2 border-t border-white/[0.08] pt-4 text-xs text-slate-300 font-medium">
                   {plan.features.map((feat, idx) => (
                     <li key={idx} className="flex items-center gap-2">
                       <CheckCircle2 size={12} className="text-indigo-400 flex-shrink-0" />
@@ -620,7 +708,7 @@ export const LandingPage: React.FC = () => {
               </div>
               {plan.btnText === 'Contact Sales' ? (
                 <a href={CONTACT_EMAIL}
-                  className="block w-full text-center px-4 py-2.5 rounded-xl border border-slate-border/50 text-slate-300 hover:bg-slate-800/40 text-sm font-semibold transition-all">
+                  className="block w-full text-center px-4 py-2.5 rounded-xl border border-white/[0.12] text-slate-300 hover:bg-[#070b13]/40 text-sm font-semibold transition-all">
                   Contact Sales
                 </a>
               ) : (
@@ -630,7 +718,7 @@ export const LandingPage: React.FC = () => {
                     "flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-[12px] font-semibold w-full transition-all disabled:opacity-40",
                     plan.popular
                       ? "bg-indigo-500 hover:bg-indigo-600 text-white"
-                      : "border border-white/[0.08] text-slate-400 hover:text-slate-200 hover:border-white/[0.14]"
+                      : "border border-white/[0.08] text-slate-300 hover:text-slate-100 hover:border-white/[0.14]"
                   )}
                 >
                   {plan.btnText}
@@ -643,12 +731,12 @@ export const LandingPage: React.FC = () => {
 
       {/* ── CTA BANNER ───────────────────────────────────────────────────── */}
       <section className="py-20 px-6 max-w-5xl mx-auto text-center relative group">
-        <div className="absolute -inset-1 bg-gradient-to-r from-indigo-500 via-purple-500 to-emerald-500 rounded-2xl blur-2xl opacity-10 group-hover:opacity-20 transition duration-1000" />
-        <div className={clsx(CARD, "bg-slate-surface/30 backdrop-blur-xl p-10 md:p-16 space-y-6 relative z-10 overflow-hidden")}>
-          <h2 className="text-3xl md:text-5xl font-black font-display tracking-tight text-slate-100 max-w-2xl mx-auto">
+        <div className="absolute -inset-1 bg-gradient-to-r from-indigo-500 via-purple-500 to-emerald-500 rounded-3xl blur-2xl opacity-10 group-hover:opacity-20 transition duration-1000" />
+        <div className="rounded-3xl border border-white/[0.12] border-t-white/[0.22] bg-[#0c0f1c]/90 backdrop-blur-xl p-10 md:p-16 space-y-6 relative z-10 overflow-hidden shadow-2xl">
+          <h2 className="text-3xl md:text-5xl font-black font-display tracking-tight text-slate-100 max-w-2xl mx-auto leading-none">
             Ready to Automate Your Security & Reviews?
           </h2>
-          <p className="text-slate-400 text-sm md:text-base max-w-xl mx-auto leading-relaxed">
+          <p className="text-slate-300 text-sm md:text-base max-w-xl mx-auto leading-relaxed font-medium">
             13 analysis dimensions. On-premise AI. Automated PRs. Threat actor simulation. All in one platform.
           </p>
           <div className="pt-4 flex flex-col sm:flex-row justify-center items-center gap-3">
@@ -667,8 +755,8 @@ export const LandingPage: React.FC = () => {
       </section>
 
       {/* ── FOOTER ───────────────────────────────────────────────────────── */}
-      <footer className="border-t border-slate-border/20 py-12 px-6 text-xs text-slate-500">
-        <div className="max-w-7xl mx-auto grid grid-cols-1 sm:grid-cols-3 gap-8 mb-10">
+      <footer className="border-t border-slate-border/20 py-12 px-6 text-xs text-slate-400">
+        <div className="max-w-7xl mx-auto grid grid-cols-1 sm:grid-cols-3 gap-8 mb-10 text-left">
           <div className="space-y-3">
             <div className="flex items-center gap-2">
               <div className="w-6 h-6 rounded-md bg-indigo-500/20 border border-indigo-500/30 flex items-center justify-center text-indigo-400">
@@ -676,15 +764,15 @@ export const LandingPage: React.FC = () => {
               </div>
               <span className="font-extrabold tracking-tight text-slate-300">Code<span className="text-indigo-400 font-medium">Viz</span></span>
             </div>
-            <p className="text-slate-600 leading-relaxed">AI-powered code analysis, security scanning, and automated remediation. On-premise. No cloud dependency.</p>
+            <p className="text-slate-400 leading-relaxed font-medium">AI-powered code analysis, security scanning, and automated remediation. On-premise. No cloud dependency.</p>
             <a href={GITHUB_REPO} target="_blank" rel="noopener noreferrer"
-              className="inline-flex items-center gap-1.5 text-slate-500 hover:text-slate-300 transition-colors">
+              className="inline-flex items-center gap-1.5 text-slate-400 hover:text-slate-200 transition-colors">
               <Github size={13} /> Open source on GitHub
             </a>
           </div>
 
           <div className="space-y-3">
-            <p className="text-slate-400 font-semibold uppercase tracking-wider text-[10px]">Platform</p>
+            <p className="text-slate-300 font-semibold uppercase tracking-wider text-[10px]">Platform</p>
             {[
               { label: 'Scanner',          path: '/scanner'          },
               { label: 'Security',         path: '/security'         },
@@ -695,27 +783,29 @@ export const LandingPage: React.FC = () => {
               { label: 'API Analyzer',     path: '/api-analyzer'     },
             ].map(({ label, path }) => (
               <button key={path} onClick={() => navigate(path)}
-                className="block text-slate-600 hover:text-slate-300 transition-colors text-left">{label}</button>
+                className="block text-slate-400 hover:text-slate-200 transition-colors text-left font-medium">{label}</button>
             ))}
           </div>
 
           <div className="space-y-3">
-            <p className="text-slate-400 font-semibold uppercase tracking-wider text-[10px]">Links</p>
-            <button onClick={() => scrollTo('features')} className="block text-slate-600 hover:text-slate-300 transition-colors text-left">Platform</button>
-            <button onClick={() => scrollTo('loop')}     className="block text-slate-600 hover:text-slate-300 transition-colors text-left">How It Works</button>
-            <button onClick={() => scrollTo('moats')}    className="block text-slate-600 hover:text-slate-300 transition-colors text-left">Why CodeViz</button>
-            <button onClick={() => scrollTo('pricing')}  className="block text-slate-600 hover:text-slate-300 transition-colors text-left">Pricing</button>
-            <button onClick={() => scrollTo('compare')}  className="block text-slate-600 hover:text-slate-300 transition-colors text-left">Comparison</button>
-            <a href={CONTACT_EMAIL} className="block text-slate-600 hover:text-slate-300 transition-colors">Contact Sales</a>
-            <button onClick={() => navigate('/login')} className="block text-slate-600 hover:text-slate-300 transition-colors text-left">Sign In</button>
+            <p className="text-slate-300 font-semibold uppercase tracking-wider text-[10px]">Links</p>
+            <button onClick={() => scrollTo('features')} className="block text-slate-400 hover:text-slate-200 transition-colors text-left font-medium">Platform</button>
+            <button onClick={() => scrollTo('loop')}     className="block text-slate-400 hover:text-slate-200 transition-colors text-left font-medium">How It Works</button>
+            <button onClick={() => scrollTo('moats')}    className="block text-slate-400 hover:text-slate-200 transition-colors text-left font-medium">Why CodeViz</button>
+            <button onClick={() => scrollTo('pricing')}  className="block text-slate-400 hover:text-slate-200 transition-colors text-left font-medium">Pricing</button>
+            <button onClick={() => scrollTo('compare')}  className="block text-slate-400 hover:text-slate-200 transition-colors text-left font-medium">Comparison</button>
+            <a href={CONTACT_EMAIL} className="block text-slate-400 hover:text-slate-200 transition-colors font-medium">Contact Sales</a>
+            <button onClick={() => navigate('/login')} className="block text-slate-400 hover:text-slate-200 transition-colors text-left font-medium">Sign In</button>
           </div>
         </div>
 
-        <div className="max-w-7xl mx-auto border-t border-slate-border/20 pt-6 flex flex-col sm:flex-row justify-between items-center gap-2">
+        <div className="max-w-7xl mx-auto border-t border-white/[0.08] pt-6 flex flex-col sm:flex-row justify-between items-center gap-2">
           <p>© {new Date().getFullYear()} CodeViz Platform. Your code stays yours.</p>
-          <p className="font-mono text-slate-700">v1.0.0 · on-premise</p>
+          <p className="font-mono text-slate-600">v1.0.0 · on-premise</p>
         </div>
       </footer>
     </div>
   )
 }
+
+export default LandingPage
