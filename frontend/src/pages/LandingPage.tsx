@@ -544,7 +544,7 @@ export const LandingPage: React.FC = () => {
                     <div className={clsx("absolute -top-16 -right-16 w-32 h-32 rounded-full blur-3xl opacity-0 group-hover:opacity-30 transition-opacity duration-500 pointer-events-none -z-10", s.orbBg)} />
 
                     {/* Dynamic 3D Image header */}
-                    <div className="w-full h-28 rounded-2xl overflow-hidden border border-white/[0.04] mb-4 relative bg-[#070b13]">
+                    <div className="w-full h-36 rounded-2xl overflow-hidden border border-white/[0.04] mb-4 relative bg-[#070b13]">
                       <img 
                         src={s.image} 
                         alt={s.label} 
