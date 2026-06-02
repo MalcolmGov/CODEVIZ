@@ -2,12 +2,18 @@ import React from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Button } from '@/components/common/Button'
 import { Card } from '@/components/common/Card'
-import { 
-  Shield, BarChart3, RefreshCw, Terminal, CheckCircle2, 
-  ChevronRight, Activity, Cpu, Code2, Server, Globe, 
-  Layers, Package, ArrowRight, FileCode2, ShieldAlert, 
-  MessageSquare, Sparkles, AlertCircle, ArrowUpRight, HelpCircle
+import {
+  Shield, RefreshCw, CheckCircle2, Activity, Cpu,
+  Layers, ArrowRight, FileCode2, ShieldAlert,
+  MessageSquare, Sparkles, ArrowUpRight, Github, ExternalLink,
 } from 'lucide-react'
+
+const GITHUB_REPO = 'https://github.com/MalcolmGov/CODEVIZ'
+const CONTACT_EMAIL = 'mailto:malcolmgov24@gmail.com?subject=CodeViz%20Enterprise%20Enquiry'
+
+const scrollTo = (id: string) => {
+  document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+}
 
 export const LandingPage: React.FC = () => {
   const navigate = useNavigate()
@@ -24,38 +30,44 @@ export const LandingPage: React.FC = () => {
       icon: Cpu,
       title: 'Repository Scanner',
       desc: 'Static AST indexing and multi-language support (Python, JS/TS, Go, Java) with real-time session progress logs.',
-      badge: 'Real-time'
+      badge: 'Real-time',
+      href: '/scanner',
     },
     {
       icon: ShieldAlert,
       title: 'Security Analysis',
       desc: 'CVE detection, OWASP mapping, SQLi/XSS prevention, and hardcoded secret scanning with high confidence scoring.',
-      badge: '94% Accuracy'
+      badge: '94% Accuracy',
+      href: '/security',
     },
     {
       icon: RefreshCw,
       title: 'Intelligent Refactoring',
       desc: 'AI-driven suggestions for complexity reduction, duplication removal, type-safety additions, and modern code syntax.',
-      badge: 'AI Engine'
+      badge: 'AI Engine',
+      href: '/refactoring',
     },
     {
       icon: FileCode2,
       title: 'Automated PR Generation',
       desc: 'One-click GitHub pull request creation with detailed summaries explaining the changes, risks, and testing guidelines.',
-      badge: 'Automated'
+      badge: 'Automated',
+      href: '/refactoring',
     },
     {
       icon: MessageSquare,
       title: 'AI Code Chat Companion',
       desc: 'Context-aware interactive conversational interface. Ask questions like "What does this do?" or "How can I improve this?".',
-      badge: 'Context-Aware'
+      badge: 'Context-Aware',
+      href: '/scanner',
     },
     {
       icon: Layers,
       title: 'Compliance & Risk Scoring',
       desc: 'PCI-DSS validation, SOC2 readiness, HIPAA validation, and business impact score maps compiled dynamically.',
-      badge: 'Enterprise'
-    }
+      badge: 'Enterprise',
+      href: '/compliance',
+    },
   ]
 
   const comparisons = [
@@ -124,10 +136,21 @@ export const LandingPage: React.FC = () => {
           </div>
 
           <nav className="hidden md:flex items-center gap-6 text-sm font-semibold text-slate-400">
-            <a href="#features" className="hover:text-slate-200 transition-colors">Features</a>
-            <a href="#graph" className="hover:text-slate-200 transition-colors">Dependency Visualizer</a>
-            <a href="#pricing" className="hover:text-slate-200 transition-colors">Pricing</a>
-            <a href="#compare" className="hover:text-slate-200 transition-colors">Comparison</a>
+            {[
+              { label: 'Features',               id: 'features' },
+              { label: 'Dependency Visualizer',  id: 'graph'    },
+              { label: 'Pricing',                id: 'pricing'  },
+              { label: 'Comparison',             id: 'compare'  },
+            ].map(({ label, id }) => (
+              <button key={id} onClick={() => scrollTo(id)}
+                className="hover:text-slate-200 transition-colors cursor-pointer">
+                {label}
+              </button>
+            ))}
+            <a href={GITHUB_REPO} target="_blank" rel="noopener noreferrer"
+              className="hover:text-slate-200 transition-colors flex items-center gap-1">
+              <Github size={14} /> GitHub
+            </a>
           </nav>
 
           <div className="flex items-center gap-3">
@@ -260,7 +283,9 @@ export const LandingPage: React.FC = () => {
           {features.map((feat, i) => {
             const Icon = feat.icon
             return (
-              <Card key={i} className="bg-slate-surface/30 border-slate-border/40 hover:border-indigo-500/30 p-6 flex flex-col justify-between hover:-translate-y-0.5 transition-all duration-300 group">
+              <Card key={i}
+                onClick={() => navigate(feat.href)}
+                className="bg-slate-surface/30 border-slate-border/40 hover:border-indigo-500/30 p-6 flex flex-col justify-between hover:-translate-y-0.5 transition-all duration-300 group cursor-pointer">
                 <div className="space-y-4">
                   <div className="flex justify-between items-center">
                     <div className="p-2.5 rounded-lg bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 group-hover:bg-indigo-500/20 group-hover:text-indigo-300 transition-colors">
@@ -272,6 +297,9 @@ export const LandingPage: React.FC = () => {
                   </div>
                   <h3 className="text-lg font-bold text-slate-100 font-display">{feat.title}</h3>
                   <p className="text-slate-400 text-xs leading-relaxed font-medium">{feat.desc}</p>
+                </div>
+                <div className="mt-4 flex items-center gap-1 text-[11px] font-semibold text-indigo-400 opacity-0 group-hover:opacity-100 transition-opacity">
+                  Try it <ArrowRight size={11} />
                 </div>
               </Card>
             )
@@ -300,7 +328,7 @@ export const LandingPage: React.FC = () => {
               {[
                 { title: 'Interactive drag & zoom physics controls', value: 'forceAtlas2Based solver' },
                 { title: 'Type-grouped Node accent colors', value: 'APIs, Classes, & Functions' },
-                { title: 'Seamless ES Module bundling', value: 'Zero external CDN dependancy errors' },
+                { title: 'Seamless ES Module bundling', value: 'Zero external CDN dependency errors' },
               ].map((item, idx) => (
                 <div key={idx} className="flex items-center gap-3">
                   <CheckCircle2 size={16} className="text-emerald-400 flex-shrink-0" />
@@ -309,6 +337,12 @@ export const LandingPage: React.FC = () => {
                 </div>
               ))}
             </div>
+            <button
+              onClick={() => navigate('/dependency-graph')}
+              className="inline-flex items-center gap-2 mt-2 px-5 py-2.5 rounded-xl border border-purple-500/30 bg-purple-500/10 text-purple-300 text-sm font-semibold hover:bg-purple-500/20 transition-all"
+            >
+              <ExternalLink size={14} /> Try it live in your repo
+            </button>
           </div>
 
           {/* Interactive Mock Graph */}
@@ -505,14 +539,21 @@ export const LandingPage: React.FC = () => {
                 </ul>
               </div>
 
-              <Button 
-                onClick={() => navigate('/login')} 
-                variant={plan.popular ? 'primary' : 'secondary'} 
-                size="md"
-                className="w-full justify-center"
-              >
-                {plan.btnText}
-              </Button>
+              {plan.btnText === 'Contact Sales' ? (
+                <a href={CONTACT_EMAIL}
+                  className="block w-full text-center px-4 py-2.5 rounded-xl border border-slate-border/50 text-slate-300 hover:bg-slate-800/40 hover:text-slate-100 text-sm font-semibold transition-all">
+                  Contact Sales
+                </a>
+              ) : (
+                <Button
+                  onClick={() => navigate('/login')}
+                  variant={plan.popular ? 'primary' : 'secondary'}
+                  size="md"
+                  className="w-full justify-center"
+                >
+                  {plan.btnText}
+                </Button>
+              )}
             </Card>
           ))}
         </div>
@@ -540,30 +581,77 @@ export const LandingPage: React.FC = () => {
             >
               Get Started with GitHub <ArrowUpRight className="ml-1" size={16} />
             </Button>
-            <button
-              onClick={() => navigate('/login')}
-              className="w-full sm:w-auto px-6 py-3 text-xs font-bold border border-slate-border/50 hover:bg-slate-900/30 rounded-xl transition-all text-slate-300 hover:text-slate-100 font-mono"
+            <a
+              href={GITHUB_REPO}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="w-full sm:w-auto flex items-center justify-center gap-2 px-6 py-3 text-xs font-bold border border-slate-border/50 hover:bg-slate-900/30 rounded-xl transition-all text-slate-300 hover:text-slate-100 font-mono"
             >
-              sandbox_v1.0.0_release
-            </button>
+              <Github size={13} /> View on GitHub
+            </a>
           </div>
         </Card>
       </section>
 
       {/* Footer */}
-      <footer className="border-t border-slate-border/20 py-10 px-6 text-center text-xs text-slate-500 space-y-4">
-        <div className="max-w-7xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-4">
-          <div className="flex items-center gap-2">
-            <div className="w-6 h-6 rounded-md bg-indigo-500/20 border border-indigo-500/30 flex items-center justify-center text-indigo-400 shadow-sm">
-              <Shield size={12} />
+      <footer className="border-t border-slate-border/20 py-12 px-6 text-xs text-slate-500">
+        <div className="max-w-7xl mx-auto grid grid-cols-1 sm:grid-cols-3 gap-8 mb-10">
+          {/* Brand */}
+          <div className="space-y-3">
+            <div className="flex items-center gap-2">
+              <div className="w-6 h-6 rounded-md bg-indigo-500/20 border border-indigo-500/30 flex items-center justify-center text-indigo-400">
+                <Shield size={12} />
+              </div>
+              <span className="font-extrabold tracking-tight text-slate-300">
+                Code<span className="text-indigo-400 font-medium">Viz</span>
+              </span>
             </div>
-            <span className="font-extrabold tracking-tight text-slate-300">
-              Code<span className="text-indigo-400 font-medium">Viz</span>
-            </span>
+            <p className="text-slate-600 leading-relaxed">
+              AI-powered code analysis, security scanning, and automated remediation for modern engineering teams.
+            </p>
+            <a href={GITHUB_REPO} target="_blank" rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 text-slate-500 hover:text-slate-300 transition-colors">
+              <Github size={13} /> Open source on GitHub
+            </a>
           </div>
-          <p className="font-medium">
-            © {new Date().getFullYear()} CodeViz Platform. Monitor securely.
-          </p>
+
+          {/* Platform */}
+          <div className="space-y-3">
+            <p className="text-slate-400 font-semibold uppercase tracking-wider text-[10px]">Platform</p>
+            {[
+              { label: 'Scanner',         path: '/scanner'          },
+              { label: 'Security',        path: '/security'         },
+              { label: 'Refactoring',     path: '/refactoring'      },
+              { label: 'Compliance',      path: '/compliance'       },
+              { label: 'Dependency Graph', path: '/dependency-graph' },
+              { label: 'API Analyzer',    path: '/api-analyzer'     },
+            ].map(({ label, path }) => (
+              <button key={path} onClick={() => navigate(path)}
+                className="block text-slate-600 hover:text-slate-300 transition-colors text-left">
+                {label}
+              </button>
+            ))}
+          </div>
+
+          {/* Links */}
+          <div className="space-y-3">
+            <p className="text-slate-400 font-semibold uppercase tracking-wider text-[10px]">Links</p>
+            <button onClick={() => scrollTo('features')}
+              className="block text-slate-600 hover:text-slate-300 transition-colors text-left">Features</button>
+            <button onClick={() => scrollTo('pricing')}
+              className="block text-slate-600 hover:text-slate-300 transition-colors text-left">Pricing</button>
+            <button onClick={() => scrollTo('compare')}
+              className="block text-slate-600 hover:text-slate-300 transition-colors text-left">Comparison</button>
+            <a href={CONTACT_EMAIL}
+              className="block text-slate-600 hover:text-slate-300 transition-colors">Contact Sales</a>
+            <button onClick={() => navigate('/login')}
+              className="block text-slate-600 hover:text-slate-300 transition-colors text-left">Sign In</button>
+          </div>
+        </div>
+
+        <div className="max-w-7xl mx-auto border-t border-slate-border/20 pt-6 flex flex-col sm:flex-row justify-between items-center gap-2">
+          <p>© {new Date().getFullYear()} CodeViz Platform. Monitor securely.</p>
+          <p className="font-mono text-slate-700">v1.0.0</p>
         </div>
       </footer>
     </div>
