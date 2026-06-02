@@ -22,7 +22,7 @@ import 'vis-network/styles/vis-network.css'
 import { api } from '@/services/api'
 import clsx from 'clsx'
 
-const CARD = 'rounded-2xl border border-white/[0.08] bg-slate-surface shadow-card backdrop-blur-md'
+const CARD = 'rounded-2xl border border-white/[0.08] border-t-white/[0.15] bg-slate-surface shadow-card backdrop-blur-md transition-all duration-300 hover:border-white/[0.14] hover:shadow-[0_0_24px_-6px_rgba(99,102,241,0.06)]'
 
 // Inline parser for bold (**), inline code (`), and links ([text](url))
 const parseInlineMarkdown = (text: string) => {
@@ -1004,7 +1004,7 @@ export const ScannerPage: React.FC = () => {
           <div className="grid grid-cols-12 gap-5">
 
             {/* Posture Score */}
-            <div className={`col-span-12 lg:col-span-4 ${CARD} p-6 flex flex-col`}>
+            <div className="col-span-12 lg:col-span-4 rounded-2xl border border-white/[0.08] border-t-white/[0.15] bg-gradient-to-br from-indigo-500/[0.02] to-slate-surface/30 shadow-card backdrop-blur-md p-6 flex flex-col hover:border-indigo-500/20 hover:shadow-[0_0_24px_-6px_rgba(99,102,241,0.12)] transition-all duration-300">
               <div className="flex items-start justify-between mb-4">
                 <div>
                   <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-slate-400">Security Posture</p>
@@ -1068,14 +1068,14 @@ export const ScannerPage: React.FC = () => {
             {/* Threat Distribution */}
             <div className="col-span-12 lg:col-span-8 grid grid-cols-2 gap-4">
               {[
-                { key: 'critical', label: 'Critical',  count: critCount, icon: ShieldAlert,   desc: 'Immediate action required' },
-                { key: 'high',     label: 'High',      count: highCount, icon: AlertTriangle,  desc: 'Address within 24 hours'  },
-                { key: 'medium',   label: 'Medium',    count: medCount,  icon: Info,           desc: 'Schedule for remediation' },
-                { key: 'low',      label: 'Low',       count: lowCount,  icon: CheckCircle2,   desc: 'Monitor and track'        },
+                { key: 'critical', label: 'Critical',  count: critCount, icon: ShieldAlert,   desc: 'Immediate action required', bg: 'from-rose-500/[0.02] to-slate-surface/30 hover:from-rose-500/[0.06]', border: 'border-rose-500/10 hover:border-rose-500/30', shadow: 'hover:shadow-[0_0_24px_-6px_rgba(239,68,68,0.12)]' },
+                { key: 'high',     label: 'High',      count: highCount, icon: AlertTriangle,  desc: 'Address within 24 hours', bg: 'from-amber-500/[0.02] to-slate-surface/30 hover:from-amber-500/[0.06]', border: 'border-amber-500/10 hover:border-amber-500/30', shadow: 'hover:shadow-[0_0_24px_-6px_rgba(249,115,22,0.12)]' },
+                { key: 'medium',   label: 'Medium',    count: medCount,  icon: Info,           desc: 'Schedule for remediation', bg: 'from-yellow-500/[0.015] to-slate-surface/30 hover:from-yellow-500/[0.05]', border: 'border-yellow-500/10 hover:border-yellow-500/30', shadow: 'hover:shadow-[0_0_24px_-6px_rgba(234,179,8,0.08)]' },
+                { key: 'low',      label: 'Low',       count: lowCount,  icon: CheckCircle2,   desc: 'Monitor and track', bg: 'from-blue-500/[0.02] to-slate-surface/30 hover:from-blue-500/[0.06]', border: 'border-blue-500/10 hover:border-blue-500/30', shadow: 'hover:shadow-[0_0_24px_-6px_rgba(59,130,246,0.12)]' },
               ].map(s => (
                 <div key={s.key}
-                  className={`relative overflow-hidden ${CARD} p-5 cursor-pointer group hover:border-white/[0.14] hover:bg-slate-elevated transition-all duration-200`}>
-                  <div className="absolute left-0 top-0 bottom-0 w-[3px] rounded-l-2xl"
+                  className={`relative overflow-hidden rounded-2xl border ${s.border} bg-gradient-to-br ${s.bg} ${s.shadow} backdrop-blur-md p-5 cursor-pointer transition-all duration-300`}>
+                  <div className="absolute left-0 top-3 bottom-3 w-[4px] rounded-r-lg"
                     style={{ backgroundColor: SEV_HEX[s.key], opacity: s.count > 0 ? 1 : 0.2 }} />
                   <div className="pl-3">
                     <div className="flex items-center justify-between mb-4">
