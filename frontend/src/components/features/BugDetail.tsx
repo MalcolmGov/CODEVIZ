@@ -3,6 +3,7 @@ import { Modal } from '@/components/common/Modal'
 import { Issue } from '@/types'
 import { Badge } from '@/components/common/Badge'
 import { AlertOctagon, Terminal, Copy, Check, GitPullRequest } from 'lucide-react'
+import { AskAIButton } from '@/components/common/AskAIButton'
 
 interface BugDetailProps {
   bug: Issue | null
@@ -74,6 +75,13 @@ export const BugDetail: React.FC<BugDetailProps> = ({ bug, isOpen, onClose, onSt
             </div>
           )}
         </div>
+
+        {/* Ask AI */}
+        <AskAIButton
+          label={bug.type || 'Security Finding'}
+          context={`${bug.type || 'Security issue'} in ${bug.file} line ${bug.line}. Severity: ${bug.severity}. CWE: ${bug.cwe || 'unknown'}. Description: ${bug.message}. ${bug.fix ? `Suggested fix: ${bug.fix}` : ''}`}
+          className="w-full"
+        />
 
         {/* Suggested Solution */}
         {bug.fix && (

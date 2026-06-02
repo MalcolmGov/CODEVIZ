@@ -1,0 +1,120 @@
+version: "3.9"
+
+# ── CodeViz — full stack ───────────────────────────────────────────────────
+#
+#   Development (hot-reload):
+#     docker compose up
+#
+#   Production build:
+#     docker compose -f docker-compose.yml -f docker-compose.prod.yml up --build
+#
+#   With Ollama (local LLM):
+#     docker compose --profile ollama up
+#
+# ──────────────────────────────────────────────────────────────────────────
+
+services:
+
+  # ── Flask backend ──────────────────────────────────────────────────────
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: codeviz-backend
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      FLASK_ENV: ${FLASK_ENV:-development}
+      SECRET_KEY: ${SECRET_KEY:-change-me-in-production}
+      DATABASE_URL: sqlite:////data/codeviz.db
+      GITHUB_CLIENT_ID: ${GITHUB_CLIENT_ID:-}
+      GITHUB_CLIENT_SECRET: ${GITHUB_CLIENT_SECRET:-}
+      GITHUB_TOKEN: ${GITHUB_TOKEN:-}
+      GITHUB_REDIRECT_URI: ${GITHUB_REDIRECT_URI:-http://localhost:8000/api/auth/github/callback}
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:5173}
+      OLLAMA_BASE_URL: ${OLLAMA_BASE_URL:-http://ollama:11434}
+      OLLAMA_MODEL: ${OLLAMA_MODEL:-mistral}
+      ENABLE_LLM_CHAT: ${ENABLE_LLM_CHAT:-1}
+      # Redis optional — sessions fall back to memory if unavailable
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
+    volumes:
+      - codeviz-data:/data          # SQLite persistence
+      - ./backend:/app              # live code reload in dev
+    depends_on:
+      - redis
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
+
+  # ── Vite dev server (development only) ────────────────────────────────
+  frontend-dev:
+    image: node:20-alpine
+    container_name: codeviz-frontend-dev
+    working_dir: /app
+    command: sh -c "npm install && npm run dev -- --host 0.0.0.0"
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules           # anonymous volume keeps node_modules inside container
+    environment:
+      VITE_API_URL: http://localhost:8000
+    depends_on:
+      - backend
+    profiles:
+      - dev
+
+  # ── Nginx + built frontend (production) ───────────────────────────────
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: codeviz-frontend
+    restart: unless-stopped
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+    profiles:
+      - prod
+
+  # ── Redis (session caching) ────────────────────────────────────────────
+  redis:
+    image: redis:7-alpine
+    container_name: codeviz-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    command: redis-server --save 60 1 --loglevel warning
+
+  # ── Ollama (local LLM — optional) ─────────────────────────────────────
+  ollama:
+    image: ollama/ollama:latest
+    container_name: codeviz-ollama
+    restart: unless-stopped
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama-models:/root/.ollama
+    profiles:
+      - ollama
+    # Pull mistral on first run
+    entrypoint: >
+      sh -c "ollama serve &
+             sleep 5 &&
+             ollama pull mistral &&
+             wait"
+
+volumes:
+  codeviz-data:
+    driver: local
+  redis-data:
+    driver: local
+  ollama-models:
+    driver: local

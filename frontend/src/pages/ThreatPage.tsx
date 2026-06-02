@@ -1,6 +1,7 @@
-import React, { useState, useEffect, useRef } from 'react'
+import React, { useState, useEffect } from 'react'
 import { useSessionStore } from '@/store/sessionStore'
 import { threatsService } from '@/services/threats'
+import { AskAIButton } from '@/components/common/AskAIButton'
 import {
   Skull, AlertTriangle, Shield, ChevronRight, RefreshCw,
   Terminal, ArrowRight, X, Target, Zap, TrendingUp,
@@ -164,6 +165,10 @@ function ChainDrawer({ chain, onClose }: { chain: any; onClose: () => void }) {
           )
         })}
       </div>
+      <AskAIButton
+        label={`${chain.severity} kill chain`}
+        context={`Attack chain in ${chain.file} — ${chain.stage_count} MITRE ATT&CK stages: ${chain.stages.join(' → ')}. Severity: ${chain.severity}. Risk score: ${chain.risk_score}. Exploits ${chain.issue_count} vulnerabilities.`}
+      />
     </div>
   )
 }

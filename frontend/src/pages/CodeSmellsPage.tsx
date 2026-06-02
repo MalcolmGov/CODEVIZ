@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { useSessionStore } from '@/store/sessionStore'
 import { smellsService } from '@/services/smells'
+import { AskAIButton } from '@/components/common/AskAIButton'
 import {
   FlaskConical, AlertTriangle, RefreshCw, Terminal,
   CheckCircle2, ChevronRight, X, Code2, Copy, GitBranch,
@@ -179,6 +180,10 @@ function SmellDrawer({ smell, onClose }: { smell: any; onClose: () => void }) {
           </div>
         </div>
       )}
+      <AskAIButton
+        label={smell.type}
+        context={`Code smell: ${smell.type} in ${smell.file} line ${smell.line}. Severity: ${smell.severity}. Effort to fix: ${smell.effort || 'unknown'}. Description: ${smell.description || ''}. Impact: ${smell.impact || ''}. ${smell.refactor ? `Suggested refactor: ${smell.refactor}` : ''}`}
+      />
     </div>
   )
 }

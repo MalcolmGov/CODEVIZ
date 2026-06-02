@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { useSessionStore } from '@/store/sessionStore'
 import { performanceService } from '@/services/performance'
+import { AskAIButton } from '@/components/common/AskAIButton'
 import {
   Gauge, AlertTriangle, TrendingDown, TrendingUp,
   ChevronRight, RefreshCw, Terminal, Zap, Clock,
@@ -137,6 +138,10 @@ function IssueDrawer({ issue, onClose }: { issue: any; onClose: () => void }) {
           </div>
         </div>
       )}
+      <AskAIButton
+        label={issue.type}
+        context={`Performance issue: ${issue.type} in ${issue.file} line ${issue.line}. Severity: ${issue.severity}. Slowdown: ${issue.slowdown || 'unknown'}. Description: ${issue.description || ''}. ${issue.fix ? `Fix: ${issue.fix}` : ''}`}
+      />
     </div>
   )
 }

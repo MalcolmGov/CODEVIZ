@@ -140,3 +140,56 @@ def preview_fix(session_id):
 
     except Exception as e:
         return format_error_response(str(e))[0], 500
+
+
+@remediation_bp.route('/create-pr/<session_id>', methods=['POST'])
+def create_pr(session_id):
+    """
+    Apply auto-fixes and open a GitHub PR.
+    Requires GITHUB_TOKEN in env or X-GitHub-Token header.
+    Body: { "branch": "main" }
+    """
+    try:
+        from api.chat import repo_chats
+
+        if session_id not in repo_chats:
+            return format_error_response('Invalid session ID')[0], 404
+
+        chat     = repo_chats[session_id]
+        repo_url = getattr(chat, '_original_url', None) or getattr(chat, 'repo_path', '')
+
+        if not repo_url or not repo_url.startswith('http'):
+            return format_error_response(
+                'PR creation requires a GitHub repository URL. Scan a GitHub repo to enable this.'
+            )[0], 400
+
+        import os
+        token = (
+            request.headers.get('X-GitHub-Token')
+            or os.getenv('GITHUB_TOKEN', '')
+        )
+        if not token:
+            return format_error_response(
+                'No GITHUB_TOKEN configured. Add it in Settings → API Keys.'
+            )[0], 400
+
+        body   = request.get_json() or {}
+        branch = body.get('branch', 'main')
+
+        from core.remediation_legacy import RemediationEngine, RemediationDetector
+        repo_path_local = getattr(chat, 'repo_path', None)
+        detected = {}
+        if repo_path_local and DETECTOR_AVAILABLE:
+            detected = RemediationDetector().detect_all_issues(str(repo_path_local))
+
+        engine = RemediationEngine(token=token)
+        result = engine.create_remediation_pr(
+            repo_url=repo_url,
+            branch=branch,
+            detected_issues=detected,
+        )
+
+        return format_success_response(result or {}, 'Pull request created successfully')[0], 200
+
+    except Exception as e:
+        return format_error_response(str(e))[0], 500

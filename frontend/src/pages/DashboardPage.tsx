@@ -5,10 +5,11 @@ import { useBugsStore } from '@/store/bugsStore'
 import { useRefactoringStore } from '@/store/refactoringStore'
 import { scoringService, RiskProfile } from '@/services/scoring'
 import { refactoringService } from '@/services/refactoring'
+import { dashboardService } from '@/services/dashboard'
 import {
   Shield, ShieldAlert, AlertTriangle, CheckCircle2, Info,
   Clock, GitBranch, Zap, ChevronRight, Activity,
-  ArrowUpRight, Terminal,
+  ArrowUpRight, Terminal, Gauge, Skull, FlaskConical,
 } from 'lucide-react'
 
 // ─── Severity palette — used ONLY for security state ──────────────────────
@@ -164,6 +165,8 @@ export const DashboardPage: React.FC = () => {
   const [riskProfile, setRiskProfile]         = useState<RiskProfile | null>(null)
   const [refactorLoading, setRefactorLoading] = useState(false)
   const [stamp]                               = useState(() => new Date())
+  const [liveSummary, setLiveSummary]         = useState<any>(null)
+  const [summaryLoading, setSummaryLoading]   = useState(false)
 
   useEffect(() => {
     if (!currentSessionId) return
@@ -179,6 +182,15 @@ export const DashboardPage: React.FC = () => {
       .then(res => setOpportunities((res.data as any)?.data?.opportunities || []))
       .catch(() => {})
       .finally(() => setRefactorLoading(false))
+  }, [currentSessionId])
+
+  useEffect(() => {
+    if (!currentSessionId) return
+    setSummaryLoading(true)
+    dashboardService.getSummary(currentSessionId)
+      .then(res => setLiveSummary((res.data as any)?.data || null))
+      .catch(() => {})
+      .finally(() => setSummaryLoading(false))
   }, [currentSessionId])
 
   // ── Derived counts ─────────────────────────────────────────────────────
@@ -448,6 +460,64 @@ export const DashboardPage: React.FC = () => {
           </div>
         ))}
       </div>
+
+      {/* ── Section 2b: Live Analyser Summary ───────────────────────────── */}
+      {currentSessionId && (
+        <div>
+          <div className="flex items-center justify-between mb-3">
+            <div>
+              <p className="text-[10px] font-bold uppercase tracking-[0.13em] text-slate-600 mb-0.5">Live Analysis</p>
+              <h2 className="text-[15px] font-semibold text-slate-200 font-tight">All Analysers</h2>
+            </div>
+            {summaryLoading && (
+              <span className="text-[10px] font-mono text-slate-700 animate-pulse">Aggregating…</span>
+            )}
+          </div>
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            {[
+              { key: 'security',    label: 'Security',     Icon: Shield,        color: '#ef4444', route: '/security' },
+              { key: 'performance', label: 'Performance',  Icon: Gauge,         color: '#f97316', route: '/performance' },
+              { key: 'smells',      label: 'Code Smells',  Icon: FlaskConical,  color: '#a855f7', route: '/code-smells' },
+              { key: 'threats',     label: 'Attack Chains', Icon: Skull,        color: '#dc2626', route: '/threats' },
+            ].map(({ key, label, Icon, color, route }) => {
+              const sec = liveSummary?.sections?.[key]
+              return (
+                <div key={key}
+                  onClick={() => navigate(route)}
+                  className={`${CARD_P} cursor-pointer hover:border-white/[0.14] transition-all duration-200`}>
+                  <div className="h-[3px] w-8 rounded-full mb-4" style={{ backgroundColor: color }} />
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <p className="text-[10px] font-bold uppercase tracking-[0.13em] text-slate-500 mb-1">{label}</p>
+                      <p className="text-[28px] font-black text-white font-tight leading-none tracking-tight">
+                        {summaryLoading ? '…' : sec ? sec.total : '—'}
+                      </p>
+                      {sec && sec.critical > 0 && (
+                        <p className="text-[10px] mt-1.5" style={{ color }}>
+                          {sec.critical} critical
+                        </p>
+                      )}
+                    </div>
+                    <div className="p-2 rounded-xl border border-white/[0.06] bg-slate-elevated shrink-0">
+                      <Icon size={14} style={{ color }} />
+                    </div>
+                  </div>
+                  {sec && (
+                    <div className="flex gap-1.5 mt-3 flex-wrap">
+                      {sec.critical > 0 && <span className="text-[8px] font-bold px-1.5 py-0.5 rounded border border-red-500/25 bg-red-500/10 text-red-400">{sec.critical} CRIT</span>}
+                      {sec.high     > 0 && <span className="text-[8px] font-bold px-1.5 py-0.5 rounded border border-orange-500/25 bg-orange-500/10 text-orange-400">{sec.high} HIGH</span>}
+                      {sec.medium   > 0 && <span className="text-[8px] font-bold px-1.5 py-0.5 rounded border border-yellow-500/25 bg-yellow-500/10 text-yellow-400">{sec.medium} MED</span>}
+                      {sec.critical === 0 && sec.high === 0 && sec.medium === 0 && sec.total === 0 && (
+                        <span className="text-[8px] font-bold px-1.5 py-0.5 rounded border border-emerald-500/25 bg-emerald-500/10 text-emerald-400">CLEAN</span>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      )}
 
       {/* ── Section 3: Trend Chart + Activity Feed ───────────────────────── */}
       <div className="grid grid-cols-12 gap-5">

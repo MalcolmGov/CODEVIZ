@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react'
 import { useSessionStore } from '@/store/sessionStore'
 import { remediationService } from '@/services/remediation'
+import { api } from '@/services/api'
 import {
   Wrench, AlertTriangle, RefreshCw, Terminal,
   CheckCircle2, ChevronRight, Package, Key,
-  Code2, ShieldAlert, X, Zap,
+  Code2, ShieldAlert, X, Zap, GitPullRequest, ExternalLink,
 } from 'lucide-react'
 import clsx from 'clsx'
 
@@ -195,6 +196,9 @@ export const RemediationPage: React.FC = () => {
   const [done, setDone]         = useState(false)
   const [selected, setSelected] = useState<any>(null)
   const [activeCategory, setActiveCategory] = useState<string | null>(null)
+  const [prLoading, setPrLoading] = useState(false)
+  const [prResult, setPrResult]   = useState<any>(null)
+  const [prError, setPrError]     = useState<string | null>(null)
 
   const runScan = async () => {
     if (!currentSessionId || loading) return
@@ -363,20 +367,71 @@ export const RemediationPage: React.FC = () => {
             </div>
           )}
 
-          {/* PR note */}
+          {/* GitHub PR Panel */}
           {issues.length > 0 && (
-            <div className={`${CARD} px-6 py-4 flex items-start gap-3`}>
-              <div className="p-1.5 rounded-lg bg-slate-elevated border border-white/[0.06] shrink-0 mt-0.5">
-                <Zap size={12} className="text-amber-400" />
+            <div className={`${CARD} p-6`}>
+              <div className="flex items-start justify-between mb-4">
+                <div className="flex items-start gap-3">
+                  <div className="p-1.5 rounded-lg bg-slate-elevated border border-white/[0.06] shrink-0 mt-0.5">
+                    <GitPullRequest size={13} className="text-indigo-400" />
+                  </div>
+                  <div>
+                    <p className="text-[13px] font-semibold text-slate-200">Create Remediation PR</p>
+                    <p className="text-[11px] text-slate-600 mt-0.5 leading-relaxed">
+                      Apply all auto-fixable issues and open a GitHub pull request.
+                      Requires <span className="font-mono text-slate-500">GITHUB_TOKEN</span> and a GitHub repo URL.
+                    </p>
+                  </div>
+                </div>
+                <button
+                  onClick={async () => {
+                    if (!currentSessionId || prLoading) return
+                    setPrLoading(true); setPrError(null); setPrResult(null)
+                    try {
+                      const res = await api.post(`/remediation/create-pr/${currentSessionId}`, { branch: 'main' })
+                      setPrResult((res.data as any)?.data || {})
+                    } catch (e: any) {
+                      setPrError(e?.response?.data?.error || e?.message || 'PR creation failed')
+                    } finally {
+                      setPrLoading(false)
+                    }
+                  }}
+                  disabled={prLoading || !currentSessionId}
+                  className={clsx(
+                    'flex items-center gap-2 px-4 py-2 rounded-xl text-[12px] font-semibold transition-all duration-200 shrink-0',
+                    'bg-indigo-500 hover:bg-indigo-600 text-white shadow-sm shadow-indigo-500/25 disabled:opacity-40'
+                  )}>
+                  {prLoading
+                    ? <><RefreshCw size={12} className="animate-spin" /> Creating…</>
+                    : <><GitPullRequest size={12} /> Create PR</>}
+                </button>
               </div>
-              <div>
-                <p className="text-[12px] font-semibold text-slate-300">Automated PR support</p>
-                <p className="text-[11px] text-slate-600 mt-0.5 leading-relaxed">
-                  Auto-fix and PR creation via <span className="font-mono text-slate-500">RemediationEngine</span> requires
-                  a <span className="font-mono text-slate-500">GITHUB_TOKEN</span> in your backend environment.
-                  Configure it in <span className="font-mono text-slate-500">Settings → API Keys</span> to enable one-click fixes.
-                </p>
-              </div>
+
+              {/* Result */}
+              {prResult && (
+                <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/[0.06] p-4 flex items-start gap-3">
+                  <CheckCircle2 size={14} className="text-emerald-400 shrink-0 mt-0.5" />
+                  <div className="min-w-0">
+                    <p className="text-[12px] font-semibold text-emerald-300">
+                      {prResult.message || 'Pull request created!'}
+                    </p>
+                    {prResult.pr_url && (
+                      <a href={prResult.pr_url} target="_blank" rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1.5 text-[11px] text-indigo-400 hover:text-indigo-300 mt-1">
+                        <ExternalLink size={10} /> View PR on GitHub
+                      </a>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Error */}
+              {prError && (
+                <div className="rounded-xl border border-red-500/20 bg-red-500/[0.06] p-4 flex items-start gap-3">
+                  <AlertTriangle size={14} className="text-red-400 shrink-0 mt-0.5" />
+                  <p className="text-[12px] text-red-400">{prError}</p>
+                </div>
+              )}
             </div>
           )}
         </>
