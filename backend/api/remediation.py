@@ -193,3 +193,139 @@ def create_pr(session_id):
 
     except Exception as e:
         return format_error_response(str(e))[0], 500
+
+
+# ── AI Test Generation ────────────────────────────────────────────────────────
+
+_TEST_PROMPT = """\
+You are an expert software engineer. Given a security or code-quality issue and its fix,
+generate a focused unit test that:
+1. Verifies the vulnerability is NOT present after the fix
+2. Optionally includes a regression test proving the original vulnerable behaviour
+3. Follows best practices for the detected language ({language})
+4. Uses standard test frameworks: pytest for Python, Jest/Vitest for JS/TS
+
+Issue type:   {issue_type}
+File:         {file_path}
+Description:  {description}
+Original code (before fix):
+```
+{original_code}
+```
+Fixed code (after fix):
+```
+{fixed_code}
+```
+
+Return ONLY the test code — no explanation, no markdown fences. Start directly with the import or test function.
+"""
+
+
+@remediation_bp.route('/generate-tests', methods=['POST'])
+def generate_tests():
+    """
+    Generate a unit test for a fix using the local Ollama LLM.
+
+    Body:
+    {
+        "issue_type":    "SQL Injection",
+        "file_path":     "app/models.py",
+        "description":   "Unsanitised user input passed to execute()",
+        "original_code": "...",
+        "fixed_code":    "...",
+        "language":      "python"   // optional, auto-detected if omitted
+    }
+    """
+    try:
+        body         = request.get_json() or {}
+        issue_type   = body.get('issue_type', 'Security Issue')
+        file_path    = body.get('file_path', 'unknown')
+        description  = body.get('description', '')
+        original_code = body.get('original_code', '# (original code not provided)')
+        fixed_code   = body.get('fixed_code', '# (fixed code not provided)')
+
+        # Auto-detect language from file extension
+        ext = file_path.rsplit('.', 1)[-1].lower() if '.' in file_path else ''
+        language = body.get('language') or {
+            'py': 'Python (pytest)', 'ts': 'TypeScript (Jest)',
+            'tsx': 'TypeScript/React (Vitest)', 'js': 'JavaScript (Jest)',
+            'jsx': 'JavaScript/React (Vitest)',
+        }.get(ext, 'Python (pytest)')
+
+        prompt = _TEST_PROMPT.format(
+            language=language,
+            issue_type=issue_type,
+            file_path=file_path,
+            description=description,
+            original_code=original_code[:800],
+            fixed_code=fixed_code[:800],
+        )
+
+        # Try Ollama first
+        test_code = None
+        try:
+            from services.ollama import OllamaClient
+            client    = OllamaClient()
+            test_code = client.generate(prompt)
+        except Exception as llm_err:
+            print(f"[test-gen] Ollama unavailable: {llm_err}")
+
+        # Deterministic fallback when Ollama isn't running
+        if not test_code or len(test_code.strip()) < 20:
+            is_python = 'python' in language.lower()
+            if is_python:
+                test_code = f'''\
+import pytest
+# Auto-generated regression test for: {issue_type}
+# File: {file_path}
+
+def test_{issue_type.lower().replace(" ", "_").replace("-", "_")}_is_fixed():
+    """
+    Verify that the fix for '{issue_type}' in {file_path} is applied correctly.
+    Replace the assertion below with a real call to the fixed function.
+    """
+    # TODO: import the fixed function and assert the vulnerability is gone
+    # Example: assert sanitised_input("'; DROP TABLE users;--") != "'; DROP TABLE users;--"
+    assert True, "Replace with a real assertion targeting the fix"
+
+
+def test_{issue_type.lower().replace(" ", "_").replace("-", "_")}_regression():
+    """Ensure original vulnerable behaviour no longer exists."""
+    # TODO: confirm the dangerous input path is blocked
+    pass
+'''
+            else:
+                test_code = f'''\
+// Auto-generated regression test for: {issue_type}
+// File: {file_path}
+import {{ describe, it, expect }} from 'vitest'
+
+describe('{issue_type}', () => {{
+  it('should not be present after the fix', () => {{
+    // TODO: import the fixed function and assert the vulnerability is gone
+    expect(true).toBe(true) // Replace with a real assertion
+  }})
+
+  it('regression: original vulnerable input should be handled safely', () => {{
+    // TODO: confirm the dangerous input path is blocked
+    expect(true).toBe(true)
+  }})
+}})
+'''
+
+        # Derive a suggested filename
+        base    = file_path.rsplit('/', 1)[-1].rsplit('.', 1)
+        stem    = base[0] if len(base) > 1 else base[0]
+        ext_out = 'py' if 'python' in language.lower() else 'test.ts' if 'typescript' in language.lower() else 'test.js'
+        suggested_filename = f'test_{stem}.{ext_out}' if 'python' in language.lower() else f'{stem}.{ext_out}'
+
+        return format_success_response({
+            'test_code':          test_code.strip(),
+            'language':           language,
+            'suggested_filename': suggested_filename,
+            'issue_type':         issue_type,
+            'llm_used':           test_code is not None and 'TODO' not in test_code,
+        }, 'Test generated')[0], 200
+
+    except Exception as e:
+        return format_error_response(str(e))[0], 500

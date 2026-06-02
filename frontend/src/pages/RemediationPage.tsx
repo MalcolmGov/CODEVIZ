@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react'
 import { useSessionStore } from '@/store/sessionStore'
-import { remediationService } from '@/services/remediation'
+import { remediationService, TestGenResult } from '@/services/remediation'
 import { api } from '@/services/api'
 import {
   Wrench, AlertTriangle, RefreshCw, Terminal,
   CheckCircle2, ChevronRight, Package, Key,
-  Code2, ShieldAlert, X, Zap, GitPullRequest, ExternalLink,
+  Code2, ShieldAlert, X, Zap, GitPullRequest, ExternalLink, FlaskConical,
 } from 'lucide-react'
 import clsx from 'clsx'
 
@@ -119,6 +119,36 @@ function IssueRow({ issue, onSelect, selected }: {
 // ── Issue detail ───────────────────────────────────────────────────────────
 function IssueDetail({ issue, onClose }: { issue: any; onClose: () => void }) {
   const sevColor = SEV_COLOR[issue.severity] || '#64748b'
+  const [genLoading, setGenLoading] = useState(false)
+  const [genResult,  setGenResult]  = useState<TestGenResult | null>(null)
+  const [genError,   setGenError]   = useState<string | null>(null)
+  const [copied,     setCopied]     = useState(false)
+
+  const generateTest = async () => {
+    setGenLoading(true)
+    setGenError(null)
+    try {
+      const res = await remediationService.generateTests({
+        issue_type:    issue.category_label || issue.category || 'Security Issue',
+        file_path:     issue.file || 'unknown',
+        description:   issue.description || '',
+        original_code: issue.original_code || issue.code || '# not available',
+        fixed_code:    issue.fix || '# not available',
+      })
+      setGenResult((res.data as any).data)
+    } catch (err: any) {
+      setGenError(err?.response?.data?.message || 'Test generation failed')
+    } finally {
+      setGenLoading(false) }
+  }
+
+  const copyTest = () => {
+    if (!genResult) return
+    navigator.clipboard.writeText(genResult.test_code)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
+  }
+
   return (
     <div className={`${CARD} p-6 space-y-4`}>
       <div className="flex items-start justify-between">
@@ -161,6 +191,57 @@ function IssueDetail({ issue, onClose }: { issue: any; onClose: () => void }) {
           </div>
         </div>
       )}
+
+      {/* Generate Test */}
+      <div className="pt-1">
+        <div className="flex items-center justify-between mb-2">
+          <p className="text-[10px] font-bold uppercase tracking-[0.1em] text-slate-600">AI Test Generation</p>
+          <button
+            onClick={generateTest}
+            disabled={genLoading}
+            className={clsx(
+              'flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-semibold transition-all duration-200',
+              'border border-violet-500/30 bg-violet-500/[0.08] text-violet-300 hover:bg-violet-500/[0.15] hover:border-violet-500/50',
+              'disabled:opacity-40 disabled:cursor-not-allowed'
+            )}>
+            {genLoading
+              ? <><RefreshCw size={10} className="animate-spin" /> Generating…</>
+              : <><FlaskConical size={10} /> Generate Test</>}
+          </button>
+        </div>
+
+        {genError && (
+          <p className="text-[11px] text-red-400 bg-red-500/[0.06] border border-red-500/20 rounded-lg px-3 py-2">
+            {genError}
+          </p>
+        )}
+
+        {genResult && (
+          <div className="rounded-xl bg-slate-950/80 border border-violet-500/15 overflow-hidden">
+            <div className="flex items-center justify-between px-3 py-2 bg-violet-500/[0.05] border-b border-violet-500/10">
+              <div className="flex items-center gap-1.5">
+                <FlaskConical size={11} className="text-violet-400" />
+                <span className="text-[9px] font-mono text-violet-400/70 uppercase tracking-wider">
+                  {genResult.suggested_filename}
+                </span>
+                {genResult.llm_used && (
+                  <span className="text-[8px] px-1.5 py-0.5 rounded border border-violet-500/20 bg-violet-500/[0.08] text-violet-400/70">
+                    AI
+                  </span>
+                )}
+              </div>
+              <button
+                onClick={copyTest}
+                className="text-[9px] text-slate-500 hover:text-slate-300 transition-colors font-mono">
+                {copied ? '✓ copied' : 'copy'}
+              </button>
+            </div>
+            <pre className="p-4 text-[11px] font-mono text-violet-300/80 overflow-x-auto leading-relaxed max-h-[200px] whitespace-pre-wrap">
+              {genResult.test_code}
+            </pre>
+          </div>
+        )}
+      </div>
 
       {/* Extra fields */}
       <div className="flex flex-wrap gap-4 pt-2">
